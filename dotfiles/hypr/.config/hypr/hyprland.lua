@@ -317,6 +317,12 @@ hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = tr
 hl.bind("XF86AudioPlay",  hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
 hl.bind("XF86AudioPrev",  hl.dsp.exec_cmd("playerctl previous"),   { locked = true })
 
+-- Screenshots (grim + slurp + swappy)
+hl.bind("Print",               hl.dsp.exec_cmd([[grim -g "$(slurp)" - | wl-copy]]))
+hl.bind("CTRL + Print",        hl.dsp.exec_cmd([[grim - | wl-copy]]))
+hl.bind("SHIFT + Print",       hl.dsp.exec_cmd([[mkdir -p "$HOME/Screenshots" && grim -g "$(slurp)" "$HOME/Screenshots/$(date +%Y%m%d-%H%M%S).png"]]))
+hl.bind(mainMod .. " + Print", hl.dsp.exec_cmd([[grim -g "$(slurp)" - | swappy -f -]]))
+
 
 --------------------------------
 ---- WINDOWS AND WORKSPACES ----
