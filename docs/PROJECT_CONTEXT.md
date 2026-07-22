@@ -81,10 +81,28 @@ Ver hardware completo en [`hardware.md`](hardware.md) y la cronología en
 - `power-profiles-daemon` activo (`intel_pstate`; driver de plataforma
   `placeholder`). Sin `tlp` → sin conflicto. **[OK]**
 
-> **[PEND] Observación de energía:** en la auditoría la dGPU estaba en P3
-> (~10 W) con XWayland (`/usr/lib/Xorg`) enganchado, es decir **no suspendida**.
-> Choca con el objetivo de "dGPU dormida bajo demanda". Investigar en fase
-> futura (no urgente); posible causa: XWayland atado a la NVIDIA.
+> **[OK] Runtime PM verificado (2026-07-22, solo sysfs, sin `nvidia-smi`):**
+> `runtime_status = suspended`, `control = auto` en ambas funciones PCI
+> (`0000:01:00.0` y `0000:01:00.1`); `power_state = D3cold`.
+> `runtime_suspended_time` avanza 1:1 con el reloj (≈43 min acumulados en la
+> comprobación de referencia; reconfirmado en esta revisión con ~48 min
+> suspendida sobre 49 min de uptime). `Video Memory: Off` — el RTD3
+> fine-grained apaga también la VRAM (`/proc/driver/nvidia/gpus/.../power`).
+> Que Xorg/XWayland, Hyprland y `claude-desktop` tengan descriptores abiertos
+> en `/dev/nvidia*` (confirmado con `lsof`: Hyprland y `claude-desktop`
+> mantienen `/dev/nvidiactl`/`/dev/nvidia0` abiertos con la GPU ya suspendida;
+> Xwayland solo tiene libs NVIDIA mapeadas en memoria) **no impide la
+> suspensión**. Funciona sin parámetros de kernel ni configuración en
+> `/etc/modprobe.d/` (ninguna presente): con `nvidia-open` 610+ el RTD3 va
+> habilitado por defecto. Solo está la regla udev `60-nvidia.rules` de
+> `nvidia-utils` (creación de nodos de dispositivo, no relacionada con RTD3).
+> `nvidia-persistenced` está **deshabilitado e inactivo** y debe seguir así
+> (activarlo impediría la suspensión).
+>
+> **Importante para futuras comprobaciones:** no usar `nvidia-smi`, porque
+> despierta la GPU y falsea la lectura. Usar sysfs
+> (`/sys/bus/pci/devices/0000:01:00.*/power/`) y
+> `/proc/driver/nvidia/gpus/*/power`.
 
 ## 7. Entorno gráfico
 
@@ -154,10 +172,9 @@ Ver hardware completo en [`hardware.md`](hardware.md) y la cronología en
 
 ## 13. Tareas pendientes (fases futuras)
 
-1. Investigar suspensión de la dGPU (XWayland / RTD3).
-2. Decidir estrategia de prefix de npm.
-3. (Opcional) `rtkit`, `upower`.
-4. Definir y aplicar atajos de captura de pantalla y el mapa de teclas.
+1. Decidir estrategia de prefix de npm.
+2. (Opcional) `rtkit`, `upower`.
+3. Definir y aplicar atajos de captura de pantalla y el mapa de teclas.
 
 ## 14. Información sin verificar
 
