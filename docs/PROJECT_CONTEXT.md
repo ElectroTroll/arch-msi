@@ -135,6 +135,20 @@ Ver hardware completo en [`hardware.md`](hardware.md) y la cronología en
   desaparecido del journal de PipeWire tras el reinicio del servicio. `upower`
   reporta la batería correctamente (capacidad real 70,86 Wh). `upower` será
   necesario para el módulo de batería de Waybar.
+- **[OK] `sof-firmware` es imprescindible en este hardware.** El driver
+  `snd-sof-pci-intel-mtl` (DSP de audio de Meteor Lake) necesita los
+  firmwares/topologías del paquete `sof-firmware` para inicializar la tarjeta.
+  Sin él, el driver falla al arrancar el DSP (`sof_probe_work failed err: -2`
+  en `dmesg`) y el sistema se queda sin salida de audio: `aplay -l` solo
+  muestra el HDMI de la NVIDIA (sin altavoces), PipeWire únicamente ofrece un
+  sink ficticio "Dummy Output" en estado `MUTED`, y `speaker-test` falla con
+  "no such file or directory". Es el síntoma a reconocer si el audio
+  desaparece tras una reinstalación o una limpieza de paquetes. Solución:
+  `sudo pacman -S sof-firmware` + reinicio.
+  **Verificado 2026-07-22:** tras instalar `sof-firmware` aparece la tarjeta
+  `sofhdadsp` (`sof-hda-dsp`) con altavoces, micrófono digital, micrófono
+  estéreo y salidas HDMI (`aplay -l`, `wpctl status`). Altavoces, micrófono y
+  webcam funcionan correctamente.
 
 ## 9. Herramientas de IA  **[OK]**
 

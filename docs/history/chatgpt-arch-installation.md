@@ -61,6 +61,16 @@ registran timestamps reales. Las decisiones de diseño se anotan aparte.
 - **`claude` no encontrado**: `~/.local/bin` no estaba en `PATH`. Se añadió un
   bloque idempotente en `~/.bash_profile`; verificado que una shell de login
   lo incluye y `bash -n` da sintaxis OK.
+- **Sin sonido (2026-07-22)**: faltaba el paquete `sof-firmware`. Sin él, el
+  driver `sof-audio-pci-intel-mtl` (DSP de audio de Meteor Lake) fallaba al
+  inicializarse; pista diagnóstica en `dmesg`:
+  `sof_probe_work failed err: -2`. Como consecuencia, `aplay -l` solo mostraba
+  el HDMI de la NVIDIA, PipeWire ofrecía únicamente un sink ficticio "Dummy
+  Output" en estado `MUTED`, y `speaker-test` fallaba con "no such file or
+  directory". Resuelto con `sudo pacman -S sof-firmware` + reinicio. Tras ello
+  aparece la tarjeta `sofhdadsp` (`sof-hda-dsp`) con altavoces, micrófono
+  digital, micrófono estéreo y salidas HDMI. Verificado: altavoces, micrófono
+  y webcam funcionan.
 
 ## Decisión de organizar dotfiles
 

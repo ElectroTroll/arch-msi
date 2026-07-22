@@ -70,12 +70,14 @@ arch-msi/
 │   ├── hardware.md
 │   ├── keybindings.md
 │   └── history/chatgpt-arch-installation.md
-└── packages/
-    ├── pacman-explicit.txt
-    ├── aur.txt
-    ├── npm-global.txt
-    └── services-enabled.txt
+├── packages/
+│   ├── pacman-explicit.txt
+│   ├── aur.txt
+│   ├── npm-global.txt
+│   └── services-enabled.txt
+└── scripts/
+    └── update-inventories.sh   # regenera los 4 archivos de packages/ con cabecera
 ```
 
-Los directorios `dotfiles/` y `scripts/` se crearán cuando se migre el primer
-componente, no antes (nada de carpetas vacías).
+El directorio `dotfiles/` se creará cuando se migre el primer componente, no
+antes (nada de carpetas vacías).

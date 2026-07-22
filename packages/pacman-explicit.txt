@@ -1,6 +1,8 @@
 # Paquetes instalados explícitamente (pacman -Qqe)
 # Fuente: auditoría 2026-07-22 en elok-archmsi
 # Regenerar con: pacman -Qqe > packages/pacman-explicit.txt
+# AVISO: al regenerar, esta cabecera se pierde. Debe volver a añadirse a mano
+# (o usar scripts/update-inventories.sh, que la conserva).
 
 7zip
 alsa-utils
@@ -57,6 +59,7 @@ man-db
 man-pages
 mediainfo
 mesa-utils
+mpv
 network-manager-applet
 networkmanager
 nodejs
@@ -94,6 +97,7 @@ seahorse
 slurp
 snap-pac
 snapper
+sof-firmware
 stow
 sudo
 swappy

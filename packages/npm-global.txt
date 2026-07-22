@@ -6,10 +6,10 @@
 # globales caen en ~/.local/lib/node_modules con binarios en ~/.local/bin,
 # que ya está en PATH.
 #
-# Único paquete instalado por el usuario:
+# Paquetes instalados por el usuario:
 @openai/codex@0.145.0
 
 # Dependencias propias de npm/node (no instaladas manualmente):
-# npm list -g solo muestra Codex al leer el prefix nuevo (~/.local); las
+# npm list -g solo muestra lo anterior al leer el prefix nuevo (~/.local); las
 # dependencias internas de npm/node quedan bajo el prefix del sistema (/usr)
 # y no aparecen aquí.
