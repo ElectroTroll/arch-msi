@@ -120,7 +120,7 @@ Ver hardware completo en [`hardware.md`](hardware.md) y la cronología en
 
 > **Realidad de configuración:** solo Hyprland tiene config propia. Las carpetas
 > de `kitty`, `rofi`, `yazi`, `waybar` y `dunst` están **vacías o inexistentes**
-> (usan defaults). Ver §13.
+> (usan defaults). Ver §13 (Dotfiles y estado del repositorio).
 
 ## 8. Audio, Bluetooth y sesión  **[OK]**
 

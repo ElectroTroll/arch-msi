@@ -34,7 +34,7 @@ registran timestamps reales. Las decisiones de diseño se anotan aparte.
 
 > Codex CLI (npm global) y Claude Code (instalador nativo en `~/.local/bin`) se
 > instalaron por fuera de pacman, por lo que no aparecen en esta cronología de
-> snapshots. Ver `../PROJECT_CONTEXT.md` §9.
+> snapshots. Ver `../PROJECT_CONTEXT.md` §10 (Herramientas de IA).
 
 ## Decisiones de diseño
 

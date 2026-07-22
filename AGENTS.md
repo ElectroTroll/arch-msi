@@ -22,7 +22,8 @@ divergencias, la fuente canónica es [`CLAUDE.md`](CLAUDE.md). Léelo y síguelo
 
 Codex y Claude Code trabajan sobre el mismo repositorio pero **no deben modificar
 los mismos archivos a la vez**. Un solo asistente conduce cada tarea. Consulta el
-estado y las tareas pendientes en `docs/PROJECT_CONTEXT.md` §13 antes de empezar.
+estado y las tareas pendientes en `docs/PROJECT_CONTEXT.md` §14 (Tareas
+pendientes (fases futuras)) antes de empezar.
 
 ## Nota específica de Codex
 
