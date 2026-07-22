@@ -1,11 +1,12 @@
 # Servicios y timers habilitados
-# Fuente: auditoría 2026-07-22 en elok-archmsi
+# Fuente: auditoría 2026-07-23 en elok-archmsi
 # Regenerar con:
 #   systemctl list-unit-files --state=enabled
 #   systemctl --user list-unit-files --state=enabled
 
 ## Sistema (systemctl)
 bluetooth.service
+firewalld.service
 getty@.service
 grub-btrfsd.service
 NetworkManager-dispatcher.service

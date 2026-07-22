@@ -1,7 +1,7 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-07-22, tras auditoría no destructiva completa.
+Última actualización: 2026-07-23, tras auditoría no destructiva completa.
 
 Convención de estado: **[OK]** verificado en la máquina · **[PEND]** pendiente ·
 **[VER]** afirmado pero sin verificar.
@@ -120,7 +120,7 @@ Ver hardware completo en [`hardware.md`](hardware.md) y la cronología en
 
 > **Realidad de configuración:** solo Hyprland tiene config propia. Las carpetas
 > de `kitty`, `rofi`, `yazi`, `waybar` y `dunst` están **vacías o inexistentes**
-> (usan defaults). Ver §12.
+> (usan defaults). Ver §13.
 
 ## 8. Audio, Bluetooth y sesión  **[OK]**
 
@@ -150,7 +150,34 @@ Ver hardware completo en [`hardware.md`](hardware.md) y la cronología en
   estéreo y salidas HDMI (`aplay -l`, `wpctl status`). Altavoces, micrófono y
   webcam funcionan correctamente.
 
-## 9. Herramientas de IA  **[OK]**
+## 9. Red y seguridad  **[OK]**
+
+- **firewalld** activo y habilitado (`systemctl is-active` / `is-enabled` →
+  `active` / `enabled`), instalado junto con sus dependencias
+  `python-firewall` y `python-capng`.
+- Zona por defecto **`public`**, activa con la interfaz Wi-Fi `wlp44s0f0`
+  asignada (`firewall-cmd --get-default-zone`, `--list-all`).
+- Política de entrada: **denegación por defecto** — solo se permite lo
+  explícitamente listado en la zona. Único servicio permitido:
+  `dhcpv6-client`, necesario para conectividad IPv6. **No se filtra tráfico
+  saliente** (firewalld solo filtra entrada por defecto; no hay reglas de
+  egress configuradas).
+- Se retiró el servicio **`ssh`** de la zona `public` (venía permitido por
+  defecto). Motivo: no hay servidor SSH escuchando — `sshd` está
+  **deshabilitado e inactivo a propósito** (`openssh` se usa solo como
+  cliente) — y dejarlo abierto sería una puerta entreabierta en redes
+  públicas.
+- **Contexto de la instalación:** medida preventiva, no correctiva. Antes de
+  instalar firewalld, `ss -tulpn` no mostraba ningún socket escuchando: la
+  superficie de ataque entrante ya era cero. Se instaló por el uso previsto
+  del portátil en redes no confiables (viajes, cafeterías).
+  **Verificado 2026-07-23.**
+- **[PEND]** Las zonas de firewalld se asignan **por interfaz**. Al instalar
+  ProtonVPN (o cualquier VPN) en el futuro, habrá que decidir explícitamente a
+  qué zona pertenece su interfaz (p. ej. `tun0`/`proton0`) — no dar por hecho
+  que hereda `public`. Pendiente de decidir cuando se instale la VPN.
+
+## 10. Herramientas de IA  **[OK]**
 
 - **OpenAI Codex CLI 0.145.0** · `~/.local/bin/codex` →
   `~/.local/lib/node_modules/@openai/codex`. Instalado como global npm.
@@ -164,12 +191,12 @@ Ver hardware completo en [`hardware.md`](hardware.md) y la cronología en
 - **Claude Desktop** (AUR `claude-desktop`) también instalado.
 - Ambos asistentes se ejecutan **como usuario normal, nunca con sudo**.
 
-## 10. VS Code  **[OK]**
+## 11. VS Code  **[OK]**
 
 - `visual-studio-code-bin` 1.129.1 (AUR, no Code OSS) · `/usr/bin/code`.
 - Keyring funcionando vía `libsecret` / `secret-tool`.
 
-## 11. Capturas de pantalla  **[OK]**
+## 12. Capturas de pantalla  **[OK]**
 
 - `grim` + `slurp` + `wl-clipboard` + `swappy` instalados. **[OK]**
 - `grim -g "$(slurp)" - | wl-copy` funciona.
@@ -180,7 +207,7 @@ Ver hardware completo en [`hardware.md`](hardware.md) y la cronología en
   Stow) para guardar en `~/Screenshots`.
 - Referencia completa de atajos: [`docs/keybindings.md`](keybindings.md).
 
-## 12. Dotfiles y estado del repositorio  **[EN CURSO]**
+## 13. Dotfiles y estado del repositorio  **[EN CURSO]**
 
 - Repo `~/Projects/arch-msi` con `git init`: creado.
 - `stow` 2.4.1 instalado; migración **en curso**. Existe el paquete `dotfiles/`
@@ -193,7 +220,7 @@ Ver hardware completo en [`hardware.md`](hardware.md) y la cronología en
 - Sin config todavía: `kitty`, `rofi`, `yazi`, `waybar`, `dunst`. Se difieren
   hasta que existan (o se cree una config mínima como tarea propia).
 
-## 13. Tareas pendientes (fases futuras)
+## 14. Tareas pendientes (fases futuras)
 
 Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
 
@@ -203,6 +230,6 @@ Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
 - Limpiar la variable `menu = "hyprlauncher"` sobrante en `hyprland.lua` (no
   se usa en ningún bind).
 
-## 14. Información sin verificar
+## 15. Información sin verificar
 
 - Estado de autenticación de Claude Code (no comprobado; no exponer credenciales).

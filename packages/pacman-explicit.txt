@@ -1,5 +1,5 @@
 # Paquetes instalados explícitamente (pacman -Qqe)
-# Fuente: auditoría 2026-07-22 en elok-archmsi
+# Fuente: auditoría 2026-07-23 en elok-archmsi
 # Regenerar con: pacman -Qqe > packages/pacman-explicit.txt
 # AVISO: al regenerar, esta cabecera se pierde. Debe volver a añadirse a mano
 # (o usar scripts/update-inventories.sh, que la conserva).
@@ -28,6 +28,7 @@ fastfetch
 fd
 ffmpegthumbs
 firefox
+firewalld
 fzf
 git
 github-cli

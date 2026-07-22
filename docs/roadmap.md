@@ -94,13 +94,14 @@ vistosos.**
 
 | # | Tarea | Esfuerzo | Riesgo |
 |---|-------|----------|--------|
-| 5.1 | **Cortafuegos** — no hay ninguno instalado | Bajo | Bajo |
+| 5.1 | ~~**Cortafuegos** — no hay ninguno instalado~~ **[OK] Completada** | Bajo | Bajo |
 | 5.2 | **Copias de seguridad reales** fuera del disco | Alto | Bajo |
 | 5.3 | **Probar arranque desde snapshot** en GRUB | Bajo | **Medio** |
 | 5.4 | Bloqueo de sesión (ver 2.3) | — | — |
 
-**5.1** El inventario no incluye `ufw`, `firewalld` ni `nftables` configurado.
-En un portátil que se conecta a redes ajenas, conviene.
+**5.1** **[OK] Completada (2026-07-23).** Instalado y habilitado `firewalld`,
+zona `public` con denegación entrante por defecto, servicio `ssh` retirado.
+Ver detalle en `docs/PROJECT_CONTEXT.md` §9 (Red y seguridad).
 
 **5.2** ⚠️ **Importante**: los snapshots de Btrfs **no son copias de
 seguridad**. Viven en el mismo disco: si falla el NVMe o se corrompe el sistema
@@ -150,8 +151,8 @@ herramientas para 7.1; qué se quiere automatizar y con qué límites para 7.2.
 
 ## Orden recomendado
 
-1. **2.3 (bloqueo de sesión)** y **5.1 (cortafuegos)** — huecos de seguridad
-   reales, esfuerzo bajo.
+1. **2.3 (bloqueo de sesión)** — hueco de seguridad real, esfuerzo bajo.
+   (**5.1**, cortafuegos, ya completada.)
 2. **2.1 + 2.2 + 2.4** — el escritorio pasa a sentirse completo.
 3. **5.3 (probar snapshots)** — validar la red de seguridad antes de seguir
    cambiando cosas.
