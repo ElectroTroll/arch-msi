@@ -41,8 +41,15 @@ Ver hardware completo en [`hardware.md`](hardware.md) y la cronología en
 - Snapper config `root` activa, con 64+ snapshots (`snap-pac` genera pre/post
   en cada operación de pacman; `snapper-timeline.timer` genera los horarios).
 - `grub-btrfsd` vigila `/.snapshots` y regenera el menú de GRUB. **[OK]**
-- **[PEND]** `snapper-cleanup.timer` NO está habilitado → los snapshots no se
-  purgan automáticamente. Tarea futura: habilitarlo.
+- **[OK]** `snapper-cleanup.timer` habilitado y activo (verificado con
+  `systemctl is-enabled` / `is-active` → `enabled` / `active`). Política real
+  de la config `root`: `NUMBER_LIMIT=50` (`NUMBER_LIMIT_IMPORTANT=10`),
+  timeline con 10 horarios / 10 diarios / 10 mensuales / 10 anuales (semanal y
+  trimestral en 0), y `MIN_AGE=3600` (`NUMBER_MIN_AGE` y `TIMELINE_MIN_AGE`).
+- El snapshot **#2** ("Sistema base limpio") no tiene algoritmo de limpieza
+  asignado (columna "Limpieza" vacía en `snapper -c root list`), por lo que
+  queda **protegido de forma permanente** frente a la purga automática.
+  Metadatos de usuario: `motivo=punto-base-instalacion`, `proteger=si`.
 
 ## 3. Bootloader  **[OK]**
 
@@ -133,28 +140,25 @@ Ver hardware completo en [`hardware.md`](hardware.md) y la cronología en
 - **[PEND]** No hay atajos de Hyprland para `Print` (comprobado, vacío).
   Diseño de atajos sin aplicar.
 
-## 12. Dotfiles y estado del repositorio  **[PEND]**
+## 12. Dotfiles y estado del repositorio  **[EN CURSO]**
 
-- **[PEND]** `~/Projects/arch-msi` y `git init`: aún no creados.
-- `stow` 2.4.1 instalado; migración **no iniciada**.
-- Superficie real a versionar hoy:
-  - `hypr/` → `hyprland.lua` (excluyendo `.backup`).
-  - `shell/` → `.bashrc` y `.bash_profile` (10 líneas cada uno; preservar el
-    bloque de PATH).
+- Repo `~/Projects/arch-msi` con `git init`: creado.
+- `stow` 2.4.1 instalado; migración **en curso**. Existe el paquete `dotfiles/`
+  con los componentes `hypr/` y `shell/` ya enlazados.
+- Migrado y validado:
+  - **Hyprland** → `dotfiles/hypr/` (commit `f2c9f4d`).
+  - **Shell** → `dotfiles/shell/` (`.bashrc`, `.bash_profile`; commit
+    `a4dbf92`).
 - Sin config todavía: `kitty`, `rofi`, `yazi`, `waybar`, `dunst`. Se difieren
   hasta que existan (o se cree una config mínima como tarea propia).
 
 ## 13. Tareas pendientes (fases futuras)
 
-1. Crear repo `~/Projects/arch-msi` + `git init` y colocar esta documentación.
-2. Migrar Hyprland a Stow (excluyendo `.backup`), validar recarga.
-3. Migrar shell a Stow preservando el bloque de PATH.
-4. Habilitar `snapper-cleanup.timer`.
-5. Investigar suspensión de la dGPU (XWayland / RTD3).
-6. Decidir estrategia de prefix de npm.
-7. (Opcional) `rtkit`, `upower`.
-8. Definir y aplicar atajos de captura de pantalla y el mapa de teclas.
-9. Verificar panel: QHD+ / 165 Hz / táctil.
+1. Investigar suspensión de la dGPU (XWayland / RTD3).
+2. Decidir estrategia de prefix de npm.
+3. (Opcional) `rtkit`, `upower`.
+4. Definir y aplicar atajos de captura de pantalla y el mapa de teclas.
+5. Verificar panel: QHD+ / 165 Hz / táctil.
 
 ## 14. Información sin verificar
 

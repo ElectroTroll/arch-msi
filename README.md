@@ -19,7 +19,8 @@ RTX 4060 (híbrido) · 16 GB LPDDR5 · NVMe 1 TB · Wi-Fi 7. Detalle completo en
 
 En construcción. La documentación de base ya refleja una auditoría no
 destructiva completa del sistema real (2026-07-22). La migración de dotfiles a
-Stow **aún no ha comenzado**. Ver el estado detallado en
+Stow **está en curso**: Hyprland y shell (`.bashrc`, `.bash_profile`) ya están
+migrados y validados. Ver el estado detallado en
 [`docs/PROJECT_CONTEXT.md`](docs/PROJECT_CONTEXT.md).
 
 ## ⚠️ Advertencia de dual boot
