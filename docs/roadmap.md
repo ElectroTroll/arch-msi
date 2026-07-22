@@ -1,0 +1,168 @@
+# Roadmap
+
+Plan de trabajo del proyecto `arch-msi` tras completar la fase inicial
+(auditoría, repositorio, documentación y primeras migraciones a Stow).
+
+Cada tarea indica **esfuerzo** aproximado y **riesgo**. Se mantiene el método del
+proyecto: inspeccionar → plan → cambio mínimo → diff → validar → commit.
+
+> Estado de partida (2026-07-22): sistema auditado, repo público en GitHub,
+> tres paquetes Stow (`hypr`, `shell`, `swappy`), snapshots con purga automática,
+> capturas de pantalla funcionando.
+
+---
+
+## Fase 2 — Escritorio funcional
+
+El objetivo es cerrar lo que falta para un uso diario cómodo. Es lo que más se
+nota y lo más inmediato.
+
+| # | Tarea | Esfuerzo | Riesgo |
+|---|-------|----------|--------|
+| 2.1 | **Waybar** — barra de estado | Medio | Bajo |
+| 2.2 | **Dunst** — notificaciones | Bajo | Bajo |
+| 2.3 | **hypridle + hyprlock** — bloqueo automático | Medio | **Medio** |
+| 2.4 | **hyprpaper** — fondo de pantalla | Bajo | Bajo |
+| 2.5 | Limpieza: variable `menu` sobrante en `hyprland.lua` | Trivial | Nulo |
+
+**2.1 Waybar.** Instalada pero sin configurar (`~/.config/waybar` vacío).
+Módulos a considerar: workspaces de Hyprland, reloj, batería (ya funciona
+`upower`), red, volumen, brillo, temperatura y estado de la dGPU. Requiere
+`config` (JSON) + `style.css`. Migrar a Stow como cuarto paquete.
+
+**2.2 Dunst.** Instalado pero sin configurar. Sin él, las notificaciones de
+aplicaciones no se muestran. Configuración corta; buen candidato para
+homogeneizar colores con Waybar y Kitty.
+
+**2.3 hypridle + hyprlock.** ⚠️ **Hueco de seguridad actual**: ambos están
+instalados pero sin configurar, por lo que la sesión **nunca se bloquea sola**.
+Riesgo medio porque una configuración errónea puede dejar la sesión bloqueada
+sin poder entrar — probar siempre con una TTY libre (`Ctrl+Alt+F2`) antes de
+dar por buena la config.
+
+**2.4 hyprpaper.** Fondo de pantalla. Requiere decidir dónde se guardan las
+imágenes (¿versionar en el repo o mantener fuera por tamaño?).
+
+---
+
+## Fase 3 — Configuración de aplicaciones
+
+Ninguna tiene configuración propia todavía: usan los valores por defecto. Cada
+una que se configure se migra a Stow con el patrón ya validado.
+
+| # | Tarea | Esfuerzo | Riesgo |
+|---|-------|----------|--------|
+| 3.1 | **Kitty** — tema, fuente, opacidad | Bajo | Nulo |
+| 3.2 | **Rofi** — tema y comportamiento | Bajo | Nulo |
+| 3.3 | **yazi** — atajos, previsualizaciones | Bajo | Nulo |
+| 3.4 | **Dolphin** — solo archivos versionables | Medio | Bajo |
+| 3.5 | **Theming GTK/Qt coherente** con `nwg-look` | Medio | Bajo |
+
+Ya está instalada la fuente `ttf-jetbrains-mono-nerd` y el tema de iconos
+`papirus-icon-theme`, así que hay base para una estética unificada.
+
+En 3.4, cuidado: Dolphin genera muchos archivos de estado y cachés. Versionar
+solo lo relevante (`dolphinrc`, atajos), nunca el directorio completo.
+
+---
+
+## Fase 4 — Hardware específico del convertible
+
+Es lo más distintivo de este equipo y lo que ningún dotfiles genérico cubre.
+
+| # | Tarea | Esfuerzo | Riesgo |
+|---|-------|----------|--------|
+| 4.1 | **Pantalla táctil** en Hyprland | Medio | Bajo |
+| 4.2 | **Rotación automática** en modo tableta | Alto | Medio |
+| 4.3 | **Stylus** — presión, botones, mapeo | Medio | Bajo |
+| 4.4 | **Gestos del touchpad** (3–4 dedos) | Bajo | Bajo |
+| 4.5 | Revisar **S0ix** (aparecía `Disabled`) | Medio | Bajo |
+| 4.6 | **Dynamic Boost** / `nvidia-powerd` | Bajo | Bajo |
+
+**4.2** requiere leer el acelerómetro (`iio-sensor-proxy`) y rotar pantalla y
+entrada táctil de forma coordinada. Es la tarea más compleja de esta fase.
+
+**4.5** conviene mirarlo junto con el comportamiento de suspensión general:
+verificar que suspender/reanudar funciona bien con la dGPU y RTD3.
+
+---
+
+## Fase 5 — Seguridad y resiliencia
+
+Huecos reales detectados durante la auditoría. **Prioridad alta pese a no ser
+vistosos.**
+
+| # | Tarea | Esfuerzo | Riesgo |
+|---|-------|----------|--------|
+| 5.1 | **Cortafuegos** — no hay ninguno instalado | Bajo | Bajo |
+| 5.2 | **Copias de seguridad reales** fuera del disco | Alto | Bajo |
+| 5.3 | **Probar arranque desde snapshot** en GRUB | Bajo | **Medio** |
+| 5.4 | Bloqueo de sesión (ver 2.3) | — | — |
+
+**5.1** El inventario no incluye `ufw`, `firewalld` ni `nftables` configurado.
+En un portátil que se conecta a redes ajenas, conviene.
+
+**5.2** ⚠️ **Importante**: los snapshots de Btrfs **no son copias de
+seguridad**. Viven en el mismo disco: si falla el NVMe o se corrompe el sistema
+de archivos, se pierden con todo lo demás. Falta una estrategia real
+(`borg`, `restic`, `btrfs send/receive` a disco externo) al menos para `@home`.
+
+**5.3** Nunca se ha probado arrancar desde un snapshot en el menú de GRUB.
+Descubrir que no funciona el día que haga falta sería el peor momento. Probarlo
+en frío, con el snapshot #2 protegido como red.
+
+---
+
+## Fase 6 — Reproducibilidad completa
+
+Cerrar el objetivo original: poder reinstalar y recuperar el sistema.
+
+| # | Tarea | Esfuerzo | Riesgo |
+|---|-------|----------|--------|
+| 6.1 | `install/packages.sh`, `aur.sh`, `services.sh` | Medio | Bajo |
+| 6.2 | `install/ai-tools.sh` (Codex, Claude Code) | Bajo | Bajo |
+| 6.3 | `docs/installation.md` — procedimiento completo | Medio | Nulo |
+| 6.4 | `scripts/update.sh`, `backup.sh` | Medio | Bajo |
+| 6.5 | **Prueba real de restauración en una VM** | Alto | Nulo |
+
+**6.3** debe recoger los detalles no obvios: VMD activo en BIOS, ESP compartida
+con Windows, layout de subvolúmenes, orden de instalación.
+
+**6.5** es la única forma de saber si el proyecto cumple su propósito. Ya están
+instalados `edk2-ovmf` y `virtiofsd`, así que hay base para virtualizar. Sin
+esta prueba, la reproducibilidad es una hipótesis.
+
+---
+
+## Fase 7 — Objetivos originales pendientes
+
+Del README inicial del repositorio, aún sin abordar.
+
+| # | Tarea | Esfuerzo | Riesgo |
+|---|-------|----------|--------|
+| 7.1 | **Entorno de desarrollo** | Alto | Bajo |
+| 7.2 | **Automatización con IA** | Alto | Bajo |
+
+Ambos requieren definir primero qué significan en concreto: lenguajes y
+herramientas para 7.1; qué se quiere automatizar y con qué límites para 7.2.
+
+---
+
+## Orden recomendado
+
+1. **2.3 (bloqueo de sesión)** y **5.1 (cortafuegos)** — huecos de seguridad
+   reales, esfuerzo bajo.
+2. **2.1 + 2.2 + 2.4** — el escritorio pasa a sentirse completo.
+3. **5.3 (probar snapshots)** — validar la red de seguridad antes de seguir
+   cambiando cosas.
+4. **Fase 3** — pulido estético, sin riesgo, buen trabajo de relleno.
+5. **5.2 (backups)** — antes de acumular datos importantes.
+6. **Fase 4** — cuando apetezca algo técnico y específico.
+7. **Fase 6** — cuando el sistema esté estable y merezca congelarse.
+
+## Mantenimiento continuo
+
+- Actualizar `packages/*.txt` periódicamente (`pacman -Qqe`, `pacman -Qqm`).
+- Actualizar `docs/keybindings.md` al tocar binds.
+- Revisar que la documentación siga coincidiendo con el sistema real.
+- Registrar decisiones relevantes en `docs/history/`.
