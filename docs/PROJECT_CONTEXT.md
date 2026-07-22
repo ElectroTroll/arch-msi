@@ -134,11 +134,11 @@ Ver hardware completo en [`hardware.md`](hardware.md) y la cronología en
 
 ## 9. Herramientas de IA  **[OK]**
 
-- **OpenAI Codex CLI 0.144.6** · `/usr/bin/codex` →
-  `/usr/lib/node_modules/@openai/codex`. Instalado como global npm.
+- **OpenAI Codex CLI 0.145.0** · `~/.local/bin/codex` →
+  `~/.local/lib/node_modules/@openai/codex`. Instalado como global npm.
   `node` v26.4.0 / `npm` 12.0.1.
-  **[PEND] Deuda técnica:** `npm prefix -g = /usr` (territorio de pacman;
-  las globales requieren sudo). Considerar prefix de usuario.
+  **[OK] Prefix de npm migrado a `~/.local`:** instalaciones globales sin
+  sudo. `~/.npmrc` contiene `prefix=/home/elok/.local`.
 - **Anthropic Claude Code 2.1.217** (instalador nativo) ·
   `~/.local/bin/claude` → `~/.local/share/claude/versions/2.1.217`.
   PATH corregido con bloque idempotente en `~/.bash_profile` (verificado
@@ -172,9 +172,8 @@ Ver hardware completo en [`hardware.md`](hardware.md) y la cronología en
 
 ## 13. Tareas pendientes (fases futuras)
 
-1. Decidir estrategia de prefix de npm.
-2. (Opcional) `rtkit`, `upower`.
-3. Definir y aplicar atajos de captura de pantalla y el mapa de teclas.
+1. (Opcional) `rtkit`, `upower`.
+2. Definir y aplicar atajos de captura de pantalla y el mapa de teclas.
 
 ## 14. Información sin verificar
 

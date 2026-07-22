@@ -26,6 +26,6 @@ estado y las tareas pendientes en `docs/PROJECT_CONTEXT.md` §13 antes de empeza
 
 ## Nota específica de Codex
 
-Codex está instalado como global de npm bajo `/usr` (`npm prefix -g = /usr`).
-Cualquier operación sobre esa instalación toca territorio de pacman; trátalo con
-cuidado y no lo modifiques sin plan aprobado.
+Codex está instalado como global de npm bajo `~/.local`
+(`npm prefix -g = /home/elok/.local`). Se gestiona sin sudo; no es territorio
+de pacman.

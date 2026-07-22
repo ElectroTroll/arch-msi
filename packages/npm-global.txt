@@ -1,16 +1,15 @@
 # Paquetes npm globales (npm list -g --depth=0)
 # Fuente: auditoría 2026-07-22 en elok-archmsi
-# node v26.4.0 / npm 12.0.1 / npm prefix -g = /usr
+# node v26.4.0 / npm 12.0.1 / npm prefix -g = /home/elok/.local
 #
-# NOTA: el prefix global es /usr (npm instalado vía pacman), por lo que las
-# instalaciones globales caen en /usr/lib/node_modules y requieren sudo.
-# Es territorio de pacman; considerar un prefix de usuario en el futuro.
+# NOTA: el prefix global se migró a ~/.local (sin sudo). Las instalaciones
+# globales caen en ~/.local/lib/node_modules con binarios en ~/.local/bin,
+# que ya está en PATH.
 #
 # Único paquete instalado por el usuario:
-@openai/codex@0.144.6
+@openai/codex@0.145.0
 
 # Dependencias propias de npm/node (no instaladas manualmente):
-# node-gyp@13.0.1
-# nopt@10.0.1
-# npm@12.0.1
-# semver@7.8.5
+# npm list -g solo muestra Codex al leer el prefix nuevo (~/.local); las
+# dependencias internas de npm/node quedan bajo el prefix del sistema (/usr)
+# y no aparecen aquí.
