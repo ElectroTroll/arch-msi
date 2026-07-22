@@ -72,9 +72,17 @@ equipo real. Salvo donde se indica, todos los datos provienen de `hostnamectl`,
 
 ## Pantalla
 
-> Según documentación del proyecto (no verificado por esta auditoría):
-> panel convertible/táctil, QHD+, 165 Hz.
-> Verificar con `hyprctl monitors` y `libinput list-devices` en una fase futura.
+Verificado con `hyprctl monitors` y `hyprctl devices` (2026-07-22).
+
+- **Salida:** `eDP-1` · panel **AU Optronics 0xD298** · 340×220 mm.
+- **Resolución:** 2560×1600 (QHD+, 16:10) a **165.04 Hz**.
+  Modos disponibles: `2560x1600@165.04Hz` y `2560x1600@60.04Hz`.
+- **Escala:** 1.60 (HiDPI) · gestión de color: preset **sRGB** · **VRR
+  desactivado**.
+- **Táctil:** panel táctil `elan9024:00-04f3:4297` (Touch Device).
+- **Lápiz activo:** soportado vía tablet `elan9024:00-04f3:4297-stylus`.
+- **Touchpad:** `elan0305:00-04f3:31fd-touchpad` · **natural scrolling
+  activado** (scroll factor `-1.00`).
 
 ## Firmware / BIOS
 

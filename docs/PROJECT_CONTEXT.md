@@ -158,9 +158,7 @@ Ver hardware completo en [`hardware.md`](hardware.md) y la cronología en
 2. Decidir estrategia de prefix de npm.
 3. (Opcional) `rtkit`, `upower`.
 4. Definir y aplicar atajos de captura de pantalla y el mapa de teclas.
-5. Verificar panel: QHD+ / 165 Hz / táctil.
 
 ## 14. Información sin verificar
 
-- Resolución/refresco/táctil del panel (según documentación, no auditado).
 - Estado de autenticación de Claude Code (no comprobado; no exponer credenciales).
