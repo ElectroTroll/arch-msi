@@ -68,6 +68,7 @@ arch-msi/
 ├── docs/
 │   ├── PROJECT_CONTEXT.md
 │   ├── hardware.md
+│   ├── keybindings.md
 │   └── history/chatgpt-arch-installation.md
 └── packages/
     ├── pacman-explicit.txt
