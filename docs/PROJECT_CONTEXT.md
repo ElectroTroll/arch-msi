@@ -155,28 +155,39 @@ Ver hardware completo en [`hardware.md`](hardware.md) y la cronología en
 - `visual-studio-code-bin` 1.129.1 (AUR, no Code OSS) · `/usr/bin/code`.
 - Keyring funcionando vía `libsecret` / `secret-tool`.
 
-## 11. Capturas de pantalla
+## 11. Capturas de pantalla  **[OK]**
 
 - `grim` + `slurp` + `wl-clipboard` + `swappy` instalados. **[OK]**
 - `grim -g "$(slurp)" - | wl-copy` funciona.
-- **[PEND]** No hay atajos de Hyprland para `Print` (comprobado, vacío).
-  Diseño de atajos sin aplicar.
+- Cuatro atajos de Hyprland aplicados: `Print` (región → portapapeles),
+  `Ctrl+Print` (pantalla completa → portapapeles), `Shift+Print` (región →
+  archivo en `~/Screenshots`) y `Super+Print` (región → swappy para anotar).
+- `swappy` configurado (`dotfiles/swappy/.config/swappy/config`, enlazado vía
+  Stow) para guardar en `~/Screenshots`.
+- Referencia completa de atajos: [`docs/keybindings.md`](keybindings.md).
 
 ## 12. Dotfiles y estado del repositorio  **[EN CURSO]**
 
 - Repo `~/Projects/arch-msi` con `git init`: creado.
 - `stow` 2.4.1 instalado; migración **en curso**. Existe el paquete `dotfiles/`
-  con los componentes `hypr/` y `shell/` ya enlazados.
+  con los componentes `hypr/`, `shell/` y `swappy/` ya enlazados.
 - Migrado y validado:
   - **Hyprland** → `dotfiles/hypr/` (commit `f2c9f4d`).
   - **Shell** → `dotfiles/shell/` (`.bashrc`, `.bash_profile`; commit
     `a4dbf92`).
+  - **swappy** → `dotfiles/swappy/` (`config`; commit `0bc8922`).
 - Sin config todavía: `kitty`, `rofi`, `yazi`, `waybar`, `dunst`. Se difieren
   hasta que existan (o se cree una config mínima como tarea propia).
 
 ## 13. Tareas pendientes (fases futuras)
 
-1. Definir y aplicar atajos de captura de pantalla y el mapa de teclas.
+Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
+
+- Configurar Waybar.
+- Configurar Dunst.
+- Crear configs propias para Kitty, Rofi y yazi, y migrarlas a Stow.
+- Limpiar la variable `menu = "hyprlauncher"` sobrante en `hyprland.lua` (no
+  se usa en ningún bind).
 
 ## 14. Información sin verificar
 
