@@ -129,8 +129,12 @@ Ver hardware completo en [`hardware.md`](hardware.md) y la cronología en
 - GNOME Keyring (`gnome-keyring` + `libsecret` + `seahorse`) — resolvió el aviso
   de keyring de VS Code.
 - NetworkManager para la red.
-- **[PEND] Menores:** `rtkit` ausente (PipeWire sin prioridad RT) y `upower`
-  ausente (WirePlumber no obtiene estado de batería). Opcional a futuro.
+- **[OK]** `rtkit` y `upower` instalados. Ambos se activan por D-Bus bajo
+  demanda; quedan `disabled` en systemd (es lo correcto, no requieren
+  `enable`). Los avisos de RTKit (`RTKit error: ServiceUnknown`) han
+  desaparecido del journal de PipeWire tras el reinicio del servicio. `upower`
+  reporta la batería correctamente (capacidad real 70,86 Wh). `upower` será
+  necesario para el módulo de batería de Waybar.
 
 ## 9. Herramientas de IA  **[OK]**
 
@@ -172,8 +176,7 @@ Ver hardware completo en [`hardware.md`](hardware.md) y la cronología en
 
 ## 13. Tareas pendientes (fases futuras)
 
-1. (Opcional) `rtkit`, `upower`.
-2. Definir y aplicar atajos de captura de pantalla y el mapa de teclas.
+1. Definir y aplicar atajos de captura de pantalla y el mapa de teclas.
 
 ## 14. Información sin verificar
 
