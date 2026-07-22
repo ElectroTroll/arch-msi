@@ -1,0 +1,52 @@
+# === Secretos y credenciales (NUNCA versionar) ===
+*.key
+*.pem
+*.gpg
+*.token
+*.secret
+*_token
+*_secret
+.env
+.env.*
+*.credentials
+.netrc
+.git-credentials
+
+# Artefactos de autenticación de asistentes / apps
+.claude/
+**/.claude/
+.codex/
+**/.codex/
+.config/Code/User/globalStorage/
+.config/Code/**/secrets*
+.config/Code/**/*.vscdb
+
+# Keyring / secretos del sistema
+**/keyrings/
+*.keyring
+
+# === Caches, logs y temporales ===
+*.log
+*.tmp
+*.swp
+*~
+.cache/
+**/.cache/
+__pycache__/
+node_modules/
+
+# === Backups locales ===
+*.backup
+*.bak
+*.old
+hyprland.lua.backup
+
+# === Sockets / bases de datos generadas ===
+*.socket
+*.sock
+*.db
+*.sqlite
+
+# === Sistema de archivos ===
+.DS_Store
+lost+found

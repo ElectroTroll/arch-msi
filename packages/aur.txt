@@ -1,0 +1,9 @@
+# Paquetes extranjeros / AUR (pacman -Qqm)
+# Fuente: auditoría 2026-07-22 en elok-archmsi
+# Helper de AUR en uso: paru
+# Regenerar con: pacman -Qqm > packages/aur.txt
+
+claude-desktop
+paru
+paru-debug
+visual-studio-code-bin

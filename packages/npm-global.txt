@@ -1,0 +1,16 @@
+# Paquetes npm globales (npm list -g --depth=0)
+# Fuente: auditoría 2026-07-22 en elok-archmsi
+# node v26.4.0 / npm 12.0.1 / npm prefix -g = /usr
+#
+# NOTA: el prefix global es /usr (npm instalado vía pacman), por lo que las
+# instalaciones globales caen en /usr/lib/node_modules y requieren sudo.
+# Es territorio de pacman; considerar un prefix de usuario en el futuro.
+#
+# Único paquete instalado por el usuario:
+@openai/codex@0.144.6
+
+# Dependencias propias de npm/node (no instaladas manualmente):
+# node-gyp@13.0.1
+# nopt@10.0.1
+# npm@12.0.1
+# semver@7.8.5
