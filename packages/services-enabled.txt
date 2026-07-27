@@ -1,5 +1,5 @@
 # Servicios y timers habilitados
-# Fuente: auditoría 2026-07-23 en elok-archmsi
+# Fuente: auditoría 2026-07-27 en elok-archmsi
 # Regenerar con:
 #   systemctl list-unit-files --state=enabled
 #   systemctl --user list-unit-files --state=enabled
@@ -25,6 +25,7 @@ snapper-cleanup.timer
 snapper-timeline.timer
 
 ## Usuario (systemctl --user)
+hypridle.service
 wireplumber.service
 xdg-user-dirs.service
 gnome-keyring-daemon.socket
