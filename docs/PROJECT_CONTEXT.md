@@ -1,7 +1,8 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-07-23, tras auditoría no destructiva completa.
+Última actualización: 2026-07-27, tras cerrar la tarea 2.3 (bloqueo de
+pantalla e inactividad). Auditoría no destructiva completa: 2026-07-23.
 
 Convención de estado: **[OK]** verificado en la máquina · **[PEND]** pendiente ·
 **[VER]** afirmado pero sin verificar.
@@ -80,6 +81,13 @@ Ver hardware completo en [`hardware.md`](hardware.md) y la cronología en
 - Runtime D3 **fine-grained habilitado**. **[OK]**
 - `power-profiles-daemon` activo (`intel_pstate`; driver de plataforma
   `placeholder`). Sin `tlp` → sin conflicto. **[OK]**
+- **[OK] Drop-in de NVIDIA para la suspensión** (verificado 2026-07-27):
+  `/usr/lib/systemd/system/systemd-suspend.service.d/10-nvidia-no-freeze-session.conf`
+  fija `Environment="SYSTEMD_SLEEP_FREEZE_USER_SESSIONS=false"`. Es propiedad
+  del paquete `nvidia-utils` 610.43.03-3 (`pacman -Qo`), **no** una
+  personalización local. Al vivir en `/usr/lib`, una actualización del paquete
+  puede modificarlo o retirarlo sin aviso: si la suspensión empieza a fallar
+  tras actualizar, comprobar este archivo primero.
 
 > **[OK] Runtime PM verificado (2026-07-22, solo sysfs, sin `nvidia-smi`):**
 > `runtime_status = suspended`, `control = auto` en ambas funciones PCI
@@ -177,6 +185,82 @@ Ver hardware completo en [`hardware.md`](hardware.md) y la cronología en
   qué zona pertenece su interfaz (p. ej. `tun0`/`proton0`) — no dar por hecho
   que hereda `public`. Pendiente de decidir cuando se instale la VPN.
 
+### Bloqueo de pantalla e inactividad  **[OK]**
+
+Tarea 2.3 completada (commits `887cfb3`, `03f4bc5`, `0d8a364`, `b99f62d`,
+`c36e5c5`). Configuración en `dotfiles/hypr/`, enlazada con Stow.
+
+- **hyprlock** (`hyprlock.conf`): bloqueo manual de pantalla, desbloqueo por
+  contraseña vía PAM.
+- **hypridle** (`hypridle.conf`): bloque `general` + 3 listeners.
+  - `lock_cmd = pidof hyprlock || hyprlock` (el `pidof` evita apilar
+    instancias si llegan varios eventos de bloqueo).
+  - `before_sleep_cmd = loginctl lock-session` — cierra el agujero "cerrar
+    tapa → suspender → abrir → escritorio sin contraseña".
+  - `inhibit_sleep = 2` (modo fuerte): retiene el inhibidor de logind hasta
+    que el compositor confirma el bloqueo, así que no hay carrera entre
+    bloqueo y suspensión. **No subir a 3**: rompe `on_lock_cmd` /
+    `on_unlock_cmd`.
+  - **Sin `after_sleep_cmd`** — ver la trampa del DPMS más abajo.
+  - Listeners: **240 s** atenuar el brillo al 10%
+    (`brightnessctl -s set 10%` / `on-resume: brightnessctl -r`), **300 s**
+    bloquear (`loginctl lock-session`), **900 s** suspender **solo con
+    batería** (`grep -qx 0 /sys/class/power_supply/ADP1/online &&
+    systemctl suspend`).
+- **Brillo:** `intel_backlight` con `max_brightness = 192000`. Usar siempre
+  **porcentaje** (`set 10%`); un `set 10` crudo sería 0,005% → pantalla negra.
+  Este equipo **no tiene `kbd_backlight`**.
+- **Guarda de alimentación:** `ADP1/online` cubre toda la alimentación externa
+  del equipo. No hay conector de corriente propio; ambos puertos USB-C dan
+  `online=1` con `BAT1/status=Charging` (verificado 2026-07-27, confirmado vía
+  `ucsi-source-psy-USBC000:001`, `usb_type = C [PD] PD_PPS`).
+- **Sin hibernación** (solo zram, sin swap en disco): la suspensión es a RAM.
+  Si la batería se agota mientras está suspendido, se pierde lo no guardado.
+- **`hypridle.service` habilitado** (unidad del paquete, con
+  `WantedBy=graphical-session.target` y `ConditionEnvironment=WAYLAND_DISPLAY`).
+  **Verificado tras reinicio 2026-07-27:** systemd lo arranca solo, el journal
+  muestra `found 3 rules` con las tres reglas registradas y **sin**
+  `[ERR] Config has errors`.
+- **El estado del servicio vive fuera de los dotfiles.** El `enable` crea
+  `~/.config/systemd/user/graphical-session.target.wants/hypridle.service`,
+  que no está versionado; solo queda constancia en
+  `packages/services-enabled.txt`. **Al restaurar desde el repo hay que
+  rehabilitarlo a mano**, o el bloqueo automático quedará silenciosamente
+  inactivo.
+
+> **Vías de rescate y trampas conocidas (2026-07-27).** Cada punto lleva su
+> propio estado: **[OK]** observado en la máquina · **[VER]** deducido de la
+> configuración, sin provocar.
+>
+> - **[OK] `Ctrl+Alt+F2` NO funciona bajo Hyprland**: el compositor captura la
+>   combinación y no la traduce a un cambio de VT. La vía válida es **tty3**,
+>   alcanzable con `sudo chvt 3` desde una terminal.
+> - **[OK] tty2 tiene un Xorg huérfano** del greeter de SDDM (PID variable; en la
+>   comprobación de referencia, PID 756 en `vt2` con
+>   `-auth /run/sddm/xauth_*`). Su sesión `c1` ya fue eliminada:
+>   `loginctl list-sessions` solo muestra la sesión de tty1 y el manager de
+>   usuario. **No es un destino válido de rescate.**
+> - **[OK] faillock es compartido** entre hyprlock y el login por TTY:
+>   `/etc/pam.d/hyprlock` hace `auth include login`, y `login` encadena a
+>   `system-auth`, que invoca `pam_faillock.so`. Cadena PAM verificada
+>   leyendo los archivos.
+>   `/etc/security/faillock.conf` está **enteramente comentado**, así que
+>   rigen los valores por defecto que el propio archivo documenta:
+>   `deny = 3`, `unlock_time = 600`. Según esa configuración vigente, tres
+>   fallos bloquearían **ambos** caminos durante 10 minutos, incluida la vía
+>   de rescate por TTY.
+>   **[VER] El bloqueo NO se ha provocado nunca en esta máquina**: lo anterior
+>   se deduce de la configuración leída, no de una observación. Tampoco se ha
+>   comprobado que los defaults sigan vigentes tras una actualización de
+>   `pam`, que podría descomentar o cambiar esos valores sin aviso.
+> - **[OK] DPMS descartado.** `hyprctl dispatch dpms on` (sintaxis hyprlang del
+>   sample) no es válida en Hyprland 0.56 con configuración Lua. El
+>   equivalente Lua `hyprctl dispatch 'hl.dsp.dpms("on")'` **apagó la pantalla
+>   en lugar de encenderla** (2026-07-27), de forma irrecuperable: sin
+>   respuesta a teclado, ratón, tapa ni cambio de VT. Solo se recuperó con
+>   `systemctl reboot`. No hay sintaxis DPMS verificada para 0.56 + Lua.
+>   **No usar dispatchers DPMS en este equipo.**
+
 ## 10. Herramientas de IA  **[OK]**
 
 - **OpenAI Codex CLI 0.145.0** · `~/.local/bin/codex` →
@@ -217,6 +301,9 @@ Ver hardware completo en [`hardware.md`](hardware.md) y la cronología en
   - **Shell** → `dotfiles/shell/` (`.bashrc`, `.bash_profile`; commit
     `a4dbf92`).
   - **swappy** → `dotfiles/swappy/` (`config`; commit `0bc8922`).
+  - **hyprlock + hypridle** → `dotfiles/hypr/` (`hyprlock.conf`,
+    `hypridle.conf`; commits `887cfb3`, `03f4bc5`, `0d8a364`, `b99f62d`,
+    `c36e5c5`). Detalle en §9.
 - Sin config todavía: `kitty`, `rofi`, `yazi`, `waybar`, `dunst`. Se difieren
   hasta que existan (o se cree una config mínima como tarea propia).
 
@@ -229,7 +316,14 @@ Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
 - Crear configs propias para Kitty, Rofi y yazi, y migrarlas a Stow.
 - Limpiar la variable `menu = "hyprlauncher"` sobrante en `hyprland.lua` (no
   se usa en ningún bind).
+- Decidir cómo versionar el **estado de habilitación de servicios de usuario**.
+  Hoy `hypridle.service` solo deja rastro en `packages/services-enabled.txt`;
+  una restauración desde el repo no lo rehabilita sola (ver §9).
 
 ## 15. Información sin verificar
 
 - Estado de autenticación de Claude Code (no comprobado; no exponer credenciales).
+- **[VER]** hyprlock registra `Starting fade in` pese a tener
+  `animations { enabled = false }` en `hyprlock.conf`. Cosmético: no se ha
+  observado efecto sobre el bloqueo ni sobre el desbloqueo. Sin resolver
+  (2026-07-27).
