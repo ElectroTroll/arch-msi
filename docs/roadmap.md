@@ -21,7 +21,7 @@ nota y lo más inmediato.
 |---|-------|----------|--------|
 | 2.1 | **Waybar** — barra de estado | Medio | Bajo |
 | 2.2 | **Dunst** — notificaciones | Bajo | Bajo |
-| 2.3 | **hypridle + hyprlock** — bloqueo automático | Medio | **Medio** |
+| 2.3 | ~~**hypridle + hyprlock** — bloqueo automático~~ **[OK] Completada** | Medio | **Medio** |
 | 2.4 | **hyprpaper** — fondo de pantalla | Bajo | Bajo |
 | 2.5 | Limpieza: variable `menu` sobrante en `hyprland.lua` | Trivial | Nulo |
 
@@ -34,11 +34,23 @@ Módulos a considerar: workspaces de Hyprland, reloj, batería (ya funciona
 aplicaciones no se muestran. Configuración corta; buen candidato para
 homogeneizar colores con Waybar y Kitty.
 
-**2.3 hypridle + hyprlock.** ⚠️ **Hueco de seguridad actual**: ambos están
-instalados pero sin configurar, por lo que la sesión **nunca se bloquea sola**.
-Riesgo medio porque una configuración errónea puede dejar la sesión bloqueada
-sin poder entrar — probar siempre con una TTY libre (`Ctrl+Alt+F2`) antes de
-dar por buena la config.
+**2.3 hypridle + hyprlock.** **[OK] Completada (2026-07-27).** hyprlock con
+desbloqueo por contraseña vía PAM e hypridle con tres listeners (240 s atenuar
+el brillo, 300 s bloquear, 900 s suspender **solo con batería**), más
+`before_sleep_cmd` e `inhibit_sleep = 2`; `hypridle.service` habilitado y
+verificado tras reinicio. Ver detalle en `docs/PROJECT_CONTEXT.md` §9 (Bloqueo
+de pantalla e inactividad).
+
+> ⚠️ **Vía de rescate — corrección importante (verificado 2026-07-27).**
+> `Ctrl+Alt+F2` **no funciona** en este equipo: Hyprland captura la combinación
+> y no la traduce a un cambio de VT, así que no hace nada. Además **tty2 está
+> ocupado** por un Xorg huérfano del greeter de SDDM (framebuffer muerto, no
+> acepta entrada): no es un destino válido. La vía válida es **tty3**,
+> alcanzable solo con `sudo chvt 3` desde una terminal, no por teclado. Antes de
+> cualquier cambio que pueda dejar la sesión bloqueada sin poder entrar, tener
+> esa terminal abierta y lista. Ojo también con **faillock**, compartido entre
+> hyprlock y el login por TTY (por defecto `deny = 3`, `unlock_time = 600`):
+> tres fallos cerrarían también la vía de rescate durante 10 minutos.
 
 **2.4 hyprpaper.** Fondo de pantalla. Requiere decidir dónde se guardan las
 imágenes (¿versionar en el repo o mantener fuera por tamaño?).
@@ -97,7 +109,7 @@ vistosos.**
 | 5.1 | ~~**Cortafuegos** — no hay ninguno instalado~~ **[OK] Completada** | Bajo | Bajo |
 | 5.2 | **Copias de seguridad reales** fuera del disco | Alto | Bajo |
 | 5.3 | **Probar arranque desde snapshot** en GRUB | Bajo | **Medio** |
-| 5.4 | Bloqueo de sesión (ver 2.3) | — | — |
+| 5.4 | ~~Bloqueo de sesión (ver 2.3)~~ **[OK] Completada** | — | — |
 
 **5.1** **[OK] Completada (2026-07-23).** Instalado y habilitado `firewalld`,
 zona `public` con denegación entrante por defecto, servicio `ssh` retirado.
@@ -111,6 +123,10 @@ de archivos, se pierden con todo lo demás. Falta una estrategia real
 **5.3** Nunca se ha probado arrancar desde un snapshot en el menú de GRUB.
 Descubrir que no funciona el día que haga falta sería el peor momento. Probarlo
 en frío, con el snapshot #2 protegido como red.
+
+**5.4** **[OK] Completada (2026-07-27)** junto con **2.3**: la sesión se bloquea
+sola por inactividad y antes de suspender. Ver 2.3 y `docs/PROJECT_CONTEXT.md`
+§9 (Bloqueo de pantalla e inactividad).
 
 ---
 
@@ -151,15 +167,15 @@ herramientas para 7.1; qué se quiere automatizar y con qué límites para 7.2.
 
 ## Orden recomendado
 
-1. **2.3 (bloqueo de sesión)** — hueco de seguridad real, esfuerzo bajo.
-   (**5.1**, cortafuegos, ya completada.)
-2. **2.1 + 2.2 + 2.4** — el escritorio pasa a sentirse completo.
-3. **5.3 (probar snapshots)** — validar la red de seguridad antes de seguir
+(Ya completadas: **5.1** cortafuegos y **2.3 / 5.4** bloqueo de sesión.)
+
+1. **2.1 + 2.2 + 2.4** — el escritorio pasa a sentirse completo.
+2. **5.3 (probar snapshots)** — validar la red de seguridad antes de seguir
    cambiando cosas.
-4. **Fase 3** — pulido estético, sin riesgo, buen trabajo de relleno.
-5. **5.2 (backups)** — antes de acumular datos importantes.
-6. **Fase 4** — cuando apetezca algo técnico y específico.
-7. **Fase 6** — cuando el sistema esté estable y merezca congelarse.
+3. **Fase 3** — pulido estético, sin riesgo, buen trabajo de relleno.
+4. **5.2 (backups)** — antes de acumular datos importantes.
+5. **Fase 4** — cuando apetezca algo técnico y específico.
+6. **Fase 6** — cuando el sistema esté estable y merezca congelarse.
 
 ## Mantenimiento continuo
 
