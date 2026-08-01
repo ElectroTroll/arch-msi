@@ -126,9 +126,11 @@ Ver hardware completo en [`hardware.md`](hardware.md) y la cronología en
   `dunst`, `rofi`, `kitty`, `yazi`, `dolphin`, `firefox` (Wayland),
   `xdg-desktop-portal-hyprland`. **[OK]**
 
-> **Realidad de configuración:** solo Hyprland tiene config propia. Las carpetas
-> de `kitty`, `rofi`, `yazi`, `waybar` y `dunst` están **vacías o inexistentes**
-> (usan defaults). Ver §13 (Dotfiles y estado del repositorio).
+> **Realidad de configuración:** tienen config propia y versionada **Hyprland**
+> (`hyprland.lua`), **hyprlock** (`hyprlock.conf`) e **hypridle**
+> (`hypridle.conf`), los tres en `dotfiles/hypr/`. Las carpetas de `kitty`,
+> `rofi`, `yazi`, `waybar` y `dunst` siguen **vacías o inexistentes** (usan
+> defaults). Ver §13 (Dotfiles y estado del repositorio).
 
 ## 8. Audio, Bluetooth y sesión  **[OK]**
 
@@ -190,8 +192,11 @@ Ver hardware completo en [`hardware.md`](hardware.md) y la cronología en
 Tarea 2.3 completada (commits `887cfb3`, `03f4bc5`, `0d8a364`, `b99f62d`,
 `c36e5c5`). Configuración en `dotfiles/hypr/`, enlazada con Stow.
 
-- **hyprlock** (`hyprlock.conf`): bloqueo manual de pantalla, desbloqueo por
-  contraseña vía PAM.
+- **hyprlock** (`hyprlock.conf`): pantalla de bloqueo, desbloqueo por contraseña
+  vía PAM. **No se invoca nunca directamente**: siempre por dbus
+  (`loginctl lock-session`), que hace que hypridle ejecute su `lock_cmd`.
+  Tres caminos llegan a él: el atajo **`Super + L`**, el listener de 300 s y
+  `before_sleep_cmd`. Ver `docs/keybindings.md` §Sesión.
 - **hypridle** (`hypridle.conf`): bloque `general` + 3 listeners.
   - `lock_cmd = pidof hyprlock || hyprlock` (el `pidof` evita apilar
     instancias si llegan varios eventos de bloqueo).
@@ -214,6 +219,13 @@ Tarea 2.3 completada (commits `887cfb3`, `03f4bc5`, `0d8a364`, `b99f62d`,
   del equipo. No hay conector de corriente propio; ambos puertos USB-C dan
   `online=1` con `BAT1/status=Charging` (verificado 2026-07-27, confirmado vía
   `ucsi-source-psy-USBC000:001`, `usb_type = C [PD] PD_PPS`).
+  ⚠️ **Ruta absoluta dependiente del hardware.**
+  `/sys/class/power_supply/ADP1/online` es la única ruta frágil de la config.
+  Si tras una reinstalación el kernel enumerase el conector como `ADP0`, el
+  `grep` fallaría siempre, el `&&` cortocircuitaría y **el equipo dejaría de
+  suspenderse con batería, sin ningún aviso**. Falla hacia el lado seguro (no
+  afecta al bloqueo), pero es silencioso: al restaurar, comprobar con
+  `ls /sys/class/power_supply/`.
 - **Sin hibernación** (solo zram, sin swap en disco): la suspensión es a RAM.
   Si la batería se agota mientras está suspendido, se pierde lo no guardado.
 - **`hypridle.service` habilitado** (unidad del paquete, con
@@ -221,6 +233,17 @@ Tarea 2.3 completada (commits `887cfb3`, `03f4bc5`, `0d8a364`, `b99f62d`,
   **Verificado tras reinicio 2026-07-27:** systemd lo arranca solo, el journal
   muestra `found 3 rules` con las tres reglas registradas y **sin**
   `[ERR] Config has errors`.
+  **Reverificado en el arranque del 2026-07-31** (auditoría 2026-08-01):
+  arranque del sistema 16:52, `hypridle` a las 16:53:20 dentro del cgroup
+  `hypridle.service` (`Main PID 1085`), `enabled` y `active`. No es un
+  lanzamiento manual heredado de la sesión de configuración.
+- **Ciclo completo observado en el journal** (mismo arranque, sin provocarlo):
+  `17:09:22` bloqueo por los 300 s (`Wayland session got locked`) →
+  `17:19:22` `Got PrepareForSleep` con `before_sleep_cmd` → suspensión por los
+  900 s estando con batería → `ago 01 13:42:20 System returned from sleep` →
+  `13:42:37 auth: authenticated for hyprlock` → `Unlocking session`. Los tres
+  listeners, el bloqueo previo a dormir y el desbloqueo por contraseña quedan
+  verificados de extremo a extremo. **[OK]**
 - **El estado del servicio vive fuera de los dotfiles.** El `enable` crea
   `~/.config/systemd/user/graphical-session.target.wants/hypridle.service`,
   que no está versionado; solo queda constancia en
@@ -253,6 +276,15 @@ Tarea 2.3 completada (commits `887cfb3`, `03f4bc5`, `0d8a364`, `b99f62d`,
 >   se deduce de la configuración leída, no de una observación. Tampoco se ha
 >   comprobado que los defaults sigan vigentes tras una actualización de
 >   `pam`, que podría descomentar o cambiar esos valores sin aviso.
+>   **Este es el único escenario realista de quedarse fuera de la sesión en
+>   este equipo**, y es justo el que inutiliza la vía de rescate descrita
+>   arriba: si hyprlock ya ha consumido los tres intentos, `sudo chvt 3` lleva
+>   a un login que también rechazará la contraseña. La salida es **esperar los
+>   10 minutos**. No hay nada que cambiar en la configuración; debe constar.
+>   **[OK] Reverificado 2026-08-01:** `/etc/security/faillock.conf` sigue
+>   enteramente comentado (defaults vigentes) y `/etc/pam.d/hyprlock` sigue
+>   siendo el del paquete, sin alterar (`pacman -Qkk hyprlock`: 0 archivos
+>   alterados).
 > - **[OK] DPMS descartado.** `hyprctl dispatch dpms on` (sintaxis hyprlang del
 >   sample) no es válida en Hyprland 0.56 con configuración Lua. El
 >   equivalente Lua `hyprctl dispatch 'hl.dsp.dpms("on")'` **apagó la pantalla

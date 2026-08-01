@@ -3,8 +3,8 @@
 > Este archivo se genera a partir de
 > [`dotfiles/hypr/.config/hypr/hyprland.lua`](../dotfiles/hypr/.config/hypr/hyprland.lua)
 > y debe actualizarse cada vez que cambien los binds de esa config. Contrastado
-> con `hyprctl binds` el 2026-07-22: todos los atajos documentados coinciden con
-> los cargados en la sesión actual.
+> con `hyprctl binds` el 2026-07-22 y de nuevo el 2026-08-01 (53 binds): todos
+> los atajos documentados coinciden con los cargados en la sesión actual.
 
 `Super` es la tecla `mainMod` de la config (`SUPER`, la tecla "Windows").
 
@@ -64,6 +64,13 @@ captura se cancela con `Esc` o clic derecho.
 Todos los atajos de esta sección tienen `locked = true`: funcionan también con
 la sesión bloqueada.
 
+> ⚠️ **Es una decisión consciente, no un descuido.** Con hyprlock en pantalla,
+> cualquiera que esté delante del equipo puede subir y bajar el volumen y el
+> brillo, silenciar el micrófono y controlar la reproducción (pausa, pista
+> siguiente y anterior) **sin introducir la contraseña**. No dan acceso a datos
+> ni a la sesión. Si alguna vez se quiere cerrar ese hueco, basta con quitar
+> `locked = true` del bind correspondiente en `hyprland.lua`.
+
 | Atajo                    | Acción                                          |
 |----------------------------|----------------------------------------------------|
 | XF86AudioRaiseVolume       | Subir volumen 5% (límite superior 100%, `wpctl`)    |
@@ -81,4 +88,12 @@ la sesión bloqueada.
 
 | Atajo      | Acción                                                                                          |
 |------------|----------------------------------------------------------------------------------------------------|
+| Super + L  | Bloquear la pantalla (`loginctl lock-session` → hypridle lanza hyprlock).                          |
 | Super + M  | Salir de Hyprland: ejecuta `hyprshutdown` si está disponible; si no, cierra la sesión de Hyprland. |
+
+`Super + L` va por dbus y **no** invoca `hyprlock` directamente: así hypridle
+recibe el evento y ejecuta su `lock_cmd`, el mismo camino que usan el bloqueo
+por inactividad (300 s) y `before_sleep_cmd`. No lleva `locked = true`: con la
+sesión ya bloqueada no debe hacer nada. Detalle en
+`docs/PROJECT_CONTEXT.md` §9 (Red y seguridad) → «Bloqueo de pantalla e
+inactividad».

@@ -38,8 +38,9 @@ homogeneizar colores con Waybar y Kitty.
 desbloqueo por contraseña vía PAM e hypridle con tres listeners (240 s atenuar
 el brillo, 300 s bloquear, 900 s suspender **solo con batería**), más
 `before_sleep_cmd` e `inhibit_sleep = 2`; `hypridle.service` habilitado y
-verificado tras reinicio. Ver detalle en `docs/PROJECT_CONTEXT.md` §9 (Bloqueo
-de pantalla e inactividad).
+verificado tras reinicio, y atajo manual **`Super + L`**. Ver detalle en
+`docs/PROJECT_CONTEXT.md` §9 (Red y seguridad) → «Bloqueo de pantalla e
+inactividad».
 
 > ⚠️ **Vía de rescate — corrección importante (verificado 2026-07-27).**
 > `Ctrl+Alt+F2` **no funciona** en este equipo: Hyprland captura la combinación
@@ -125,8 +126,9 @@ Descubrir que no funciona el día que haga falta sería el peor momento. Probarl
 en frío, con el snapshot #2 protegido como red.
 
 **5.4** **[OK] Completada (2026-07-27)** junto con **2.3**: la sesión se bloquea
-sola por inactividad y antes de suspender. Ver 2.3 y `docs/PROJECT_CONTEXT.md`
-§9 (Bloqueo de pantalla e inactividad).
+sola por inactividad, antes de suspender y a demanda con `Super + L`. Ver 2.3 y
+`docs/PROJECT_CONTEXT.md` §9 (Red y seguridad) → «Bloqueo de pantalla e
+inactividad».
 
 ---
 
@@ -136,11 +138,24 @@ Cerrar el objetivo original: poder reinstalar y recuperar el sistema.
 
 | # | Tarea | Esfuerzo | Riesgo |
 |---|-------|----------|--------|
-| 6.1 | `install/packages.sh`, `aur.sh`, `services.sh` | Medio | Bajo |
+| 6.1 | `install/packages.sh`, `aur.sh`, `services.sh` — **incluye `services.sh` como requisito bloqueante** | Medio | Bajo |
 | 6.2 | `install/ai-tools.sh` (Codex, Claude Code) | Bajo | Bajo |
 | 6.3 | `docs/installation.md` — procedimiento completo | Medio | Nulo |
 | 6.4 | `scripts/update.sh`, `backup.sh` | Medio | Bajo |
 | 6.5 | **Prueba real de restauración en una VM** | Alto | Nulo |
+
+**6.1** ⚠️ **Requisito bloqueante, no una nota menor: `install/services.sh`
+tiene que rehabilitar `hypridle.service`.** El `enable` de un servicio de
+usuario **no vive en los dotfiles**: crea
+`~/.config/systemd/user/graphical-session.target.wants/hypridle.service`, que no
+está versionado, y de él solo queda rastro en `packages/services-enabled.txt`.
+Consecuencia: **una restauración desde el repositorio deja el bloqueo de sesión
+sin funcionar y no avisa de nada.** Los archivos estarían todos en su sitio,
+`hyprlock` y `Super + L` seguirían funcionando a mano, y el equipo simplemente
+no se bloquearía solo nunca — el mismo hueco de seguridad que cerró la tarea
+2.3, reabierto en silencio. La fase 6 **no puede darse por completada** sin
+esto, y la prueba de restauración en VM (6.5) debe verificarlo explícitamente.
+Ver `docs/PROJECT_CONTEXT.md` §9 (Red y seguridad) y §14.
 
 **6.3** debe recoger los detalles no obvios: VMD activo en BIOS, ESP compartida
 con Windows, layout de subvolúmenes, orden de instalación.
