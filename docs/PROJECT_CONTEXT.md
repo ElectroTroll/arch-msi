@@ -62,8 +62,15 @@ Ver hardware completo en [`hardware.md`](hardware.md) y la cronología en
 
 ## 4. Kernel y arranque  **[OK]**
 
-- Arrancando `linux-lts` (6.18.39-1-lts). También instalado `linux` (mainline).
+- Arrancando `linux-lts` (**6.18.41-1-lts**, verificado 2026-08-01). También
+  instalado `linux` (mainline, 7.1.5.arch1-2). La versión concreta del kernel
+  deriva con cada actualización; lo estable aquí es **que se arranca la LTS**.
 - `intel-ucode` presente. DKMS reconstruye `nvidia-open` para ambos kernels.
+- **Tras actualizar el kernel hay que reiniciar antes de seguir trabajando.**
+  Pacman borra `/usr/lib/modules/<versión-vieja>`, así que el kernel en
+  ejecución se queda sin árbol de módulos: lo ya cargado sigue funcionando,
+  pero **ningún módulo nuevo puede cargarse** hasta el reinicio (observado el
+  2026-08-01 con 6.18.39 → 6.18.41).
 
 ## 5. Memoria y swap  **[OK]**
 
@@ -204,7 +211,8 @@ Tarea 2.3 completada (commits `887cfb3`, `03f4bc5`, `0d8a364`, `b99f62d`,
     tapa → suspender → abrir → escritorio sin contraseña".
   - `inhibit_sleep = 2` (modo fuerte): retiene el inhibidor de logind hasta
     que el compositor confirma el bloqueo, así que no hay carrera entre
-    bloqueo y suspensión. **No subir a 3**: rompe `on_lock_cmd` /
+    bloqueo y suspensión. Se fija **explícitamente**, sin depender del default
+    de ninguna versión. **No subir a 3**: rompe `on_lock_cmd` /
     `on_unlock_cmd`.
   - **Sin `after_sleep_cmd`** — ver la trampa del DPMS más abajo.
   - Listeners: **240 s** atenuar el brillo al 10%
@@ -244,6 +252,21 @@ Tarea 2.3 completada (commits `887cfb3`, `03f4bc5`, `0d8a364`, `b99f62d`,
   `13:42:37 auth: authenticated for hyprlock` → `Unlocking session`. Los tres
   listeners, el bloqueo previo a dormir y el desbloqueo por contraseña quedan
   verificados de extremo a extremo. **[OK]**
+- **Revalidado tras subir a hypridle 0.1.8-1** (2026-08-01, arranque de las
+  16:06 con kernel 6.18.41-1-lts y Hyprland 0.56.1). Servicio `enabled` y
+  `active`, las tres reglas registradas, **sin** `Config has errors`, y el
+  listener de 300 s se disparó solo a las `16:14:55` lanzando hyprlock 0.9.6.
+  La configuración no necesitó ningún cambio. **[OK]**
+  > **Cambia cómo se verifica `inhibit_sleep = 2`, no su comportamiento.** En
+  > 0.1.7-10 se comprobó leyendo el binario (`mov esi,0x2`); en 0.1.8 ese
+  > patrón ya no aparece porque cambió la generación de código, así que **el
+  > default de esta versión no está verificado**. Es irrelevante: la config
+  > fija el valor explícitamente. Lo que sí hay ahora es evidencia mejor,
+  > observada en ejecución: el journal escribe `Sleep inhibition enabled -
+  > inhibiting until the wayland session gets locked` al arrancar y
+  > `Releasing the sleep inhibitor!` al bloquearse — la semántica del modo 2
+  > descrita por el propio binario. El aviso de que el modo 3 rompe
+  > `on_lock_cmd`/`on_unlock_cmd` sigue presente en 0.1.8.
 - **El estado del servicio vive fuera de los dotfiles.** El `enable` crea
   `~/.config/systemd/user/graphical-session.target.wants/hypridle.service`,
   que no está versionado; solo queda constancia en
