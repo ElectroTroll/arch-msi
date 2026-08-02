@@ -220,12 +220,40 @@
 
     // --- Menú de apagado --------------------------------------------------
     // Módulo `custom` sin `exec`: solo pinta `format` y actúa de botón.
-    // wlogout 1.2.2 (AUR) instalado el 2026-08-01. Su configuración propia
-    // (layout + estilo) se versiona aparte en el paso 3; hasta entonces usa
-    // la de /etc/wlogout/.
+    // wlogout 1.2.2 (AUR). Su layout y su estilo se versionan en el paquete
+    // Stow `wlogout` (dotfiles/wlogout/), enlazado a ~/.config/wlogout/.
+    //
+    // Los flags van aquí y no en el paquete porque wlogout NO los lee de
+    // ningún archivo de configuración: solo existen como argumentos de línea
+    // de comandos (ver `wlogout --help`).
+    //
+    // LOS MÁRGENES SON LO QUE FIJA EL TAMAÑO DE LOS BOTONES. wlogout los monta
+    // en una rejilla GTK que los estira hasta llenar el hueco disponible, y
+    // desde CSS no hay forma de impedirlo. Recortando el área con márgenes, los
+    // botones encogen.
+    //
+    // VAN EN PÍXELES, NO EN PORCENTAJE. `wlogout --help` los declara como
+    // <0-x>: un número. Pasarle "27%" no da error pero se interpreta como 27
+    // píxeles, así que el menú sigue ocupando toda la pantalla y parece que la
+    // opción no hace nada. Comprobado el 2026-08-02.
+    //
+    // Cálculo para que salgan CUADRADOS (son cuatro en fila, así que el hueco
+    // debe ser cuatro veces más ancho que alto):
+    //
+    //   pantalla lógica  1600 x 1000  (2560x1600 a escala 1.60)
+    //   400 por lado  →  útil 800 x 200
+    //   cada celda    →  800/4 = 200 de ancho por 200 de alto
+    //   menos el margin de 10 px del CSS  →  botón de 180 x 180
+    //
+    // Un único número controla el tamaño: subirlo encoge los botones. Si
+    // cambia la resolución o la escala de la pantalla, hay que rehacerlo.
+    //
+    //   -b 4   los cuatro en una sola fila
+    //   -s     muestra la tecla de cada botón (b/s/r/a); sin esto, los atajos
+    //          quedan como conocimiento oculto
     "custom/power": {
         "format": "⏻",
-        "on-click": "wlogout",
+        "on-click": "wlogout -b 4 -m 400 -s",
         "tooltip": false
     }
 }
