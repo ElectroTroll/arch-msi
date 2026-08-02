@@ -140,10 +140,27 @@ tooltip label {
     color: @fg;
 }
 
-/* Uso de Claude. En el paso 1 muestra "—"; el estilo del dato obsoleto
- * (clase propia) se añade en el paso 2, cuando exista el dato. */
-#custom-claude {
+/* --- Uso de Claude -------------------------------------------------------
+ * Tres estados que vienen del script en el campo `class`. La distinción entre
+ * `fresco` y `viejo` es lo importante: un porcentaje de hace tres horas se ve
+ * exactamente igual que uno de hace tres segundos si no se marca. */
+
+/* Sin dato: no hay sesión de Claude Code desde el último arranque. */
+#custom-claude.sin-dato {
     color: @muted;
+}
+
+/* Dato al día: hay una sesión abierta refrescándolo. */
+#custom-claude.fresco {
+    color: @fg;
+}
+
+/* Dato caducado: la cifra sigue ahí porque es la última conocida, pero en
+ * ámbar y a media opacidad para que no se confunda con información actual.
+ * El tooltip dice cuántas horas tiene. */
+#custom-claude.viejo {
+    color: @warn;
+    opacity: 0.65;
 }
 
 #wireplumber.muted {

@@ -86,16 +86,25 @@
     },
 
     // --- Uso de Claude ----------------------------------------------------
-    // MARCADOR DE POSICIÓN (paso 1). Muestra "—" a propósito.
-    // El dato real (% de la ventana de 5 h y de la semanal) solo existe dentro
-    // de una sesión de Claude Code, vía el hook `statusLine`. El puente que lo
-    // vuelca a un archivo para que Waybar lo lea se monta en el paso 2; hasta
-    // entonces este módulo solo reserva el hueco y valida el estilo.
+    // Lee el archivo que deja el hook `statusLine` de Claude Code. El rodeo es
+    // obligado: los porcentajes de las ventanas de 5 h y 7 días NO se pueden
+    // consultar desde fuera —no hay subcomando del CLI ni archivo en ~/.claude
+    // que los exponga—, solo llegan en el JSON que Claude Code pasa a su hook.
+    // Ver dotfiles/waybar/.config/waybar/claude-usage.sh y
+    // scripts/claude-statusline.sh.
+    //
+    // `return-type: json` para poder fijar además una clase CSS: el script
+    // distingue dato fresco de dato viejo, y la barra lo pinta distinto. Sin
+    // eso mostraría un porcentaje de hace horas como si fuera actual.
+    //
+    // 30 s es suficiente: leer un archivo de tmpfs no cuesta nada, y con una
+    // sesión abierta el hook lo reescribe muchísimo más a menudo.
     "custom/claude": {
-        "exec": "echo '—'",
-        "interval": 60,
+        "exec": "$HOME/.config/waybar/claude-usage.sh",
+        "return-type": "json",
+        "interval": 30,
         "format": "󰚩 {}",
-        "tooltip": false
+        "tooltip": true
     },
 
     // --- Sonido -----------------------------------------------------------

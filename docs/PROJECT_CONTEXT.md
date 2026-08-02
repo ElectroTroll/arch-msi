@@ -360,9 +360,16 @@ Tarea 2.3 completada (commits `887cfb3`, `03f4bc5`, `0d8a364`, `b99f62d`,
   - **hyprlock + hypridle** → `dotfiles/hypr/` (`hyprlock.conf`,
     `hypridle.conf`; commits `887cfb3`, `03f4bc5`, `0d8a364`, `b99f62d`,
     `c36e5c5`). Detalle en §9.
-  - **Waybar** → `dotfiles/waybar/` (`config.jsonc`, `style.css`). Tarea 2.1,
-    paso 1 de 4. **Aún no arranca sola**: el autoarranque con `waybar.service`
-    es el paso 4. Hasta entonces hay que lanzarla a mano con `waybar`.
+  - **Waybar** → `dotfiles/waybar/` (`config.jsonc`, `style.css`,
+    `claude-usage.sh`). Tarea 2.1, pasos 1 y 2 de 4. **Aún no arranca sola**:
+    el autoarranque con `waybar.service` es el paso 4. Hasta entonces hay que
+    lanzarla a mano con `waybar`.
+  - **Claude Code (hook de línea de estado)** → `dotfiles/claude/`
+    (`claude-statusline.sh`), enlazado a `~/.claude/claude-statusline.sh`.
+    Alimenta el módulo de uso de Claude de Waybar. **El paquete debe contener
+    solo ese script**: `~/.claude` guarda credenciales e historial. El
+    `.gitignore` lo garantiza con una excepción de tres líneas sobre la regla
+    `**/.claude/`, verificada con archivos señuelo.
 - Sin config todavía: `kitty`, `rofi`, `yazi`, `dunst`. Se difieren hasta que
   existan (o se cree una config mínima como tarea propia).
 
@@ -370,14 +377,23 @@ Tarea 2.3 completada (commits `887cfb3`, `03f4bc5`, `0d8a364`, `b99f62d`,
 
 Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
 
-- Configurar Waybar.
 - Configurar Dunst.
 - Crear configs propias para Kitty, Rofi y yazi, y migrarlas a Stow.
 - Limpiar la variable `menu = "hyprlauncher"` sobrante en `hyprland.lua` (no
   se usa en ningún bind).
-- Decidir cómo versionar el **estado de habilitación de servicios de usuario**.
-  Hoy `hypridle.service` solo deja rastro en `packages/services-enabled.txt`;
-  una restauración desde el repo no lo rehabilita sola (ver §9).
+- **Estado que vive fuera del repositorio y que una restauración NO recupera.**
+  Son tres agujeros del mismo tipo: los archivos vuelven a su sitio, pero nada
+  los activa, y el fallo es **silencioso** — nada avisa de que falta el paso.
+  - `hypridle.service`: el `enable` solo deja rastro en
+    `packages/services-enabled.txt`. Sin rehabilitarlo, la sesión no se
+    bloquea sola nunca (ver §9).
+  - `waybar.service`: mismo caso, pendiente del paso 4 de la tarea 2.1.
+  - `~/.claude/settings.json` → `statusLine.command`. El script está
+    versionado y se enlaza con Stow, pero quien lo invoca es este archivo, que
+    **no** se versiona porque contiene credenciales y estado de sesión. Sin él,
+    el módulo de uso de Claude en Waybar se queda en `—` para siempre.
+  Decidir cómo cubrirlos: encaja con `install/services.sh` de la fase 6 (ver
+  roadmap 6.1, marcado como requisito bloqueante).
 
 ## 15. Información sin verificar
 

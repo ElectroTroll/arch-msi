@@ -17,6 +17,25 @@
 **/.claude/
 .codex/
 **/.codex/
+
+# EXCEPCIÓN ESTRECHA a la regla de arriba. `**/.claude/` existe para que no se
+# versionen jamás credenciales ni estado de sesión, y sigue vigente: lo único
+# que se rescata es este script, nombrado uno a uno.
+#
+# Son TRES líneas y las tres hacen falta, en este orden:
+#   1. `!.../.claude/`  re-incluye el directorio. Git no puede desexcluir un
+#      archivo mientras su directorio siga excluido.
+#   2. `.../.claude/*`   vuelve a excluir TODO lo que haya dentro. Sin esta
+#      línea, re-incluir el directorio dejaría sin protección cualquier cosa
+#      que cayera ahí — comprobado: un `.credentials.json` en esa carpeta se
+#      habría versionado.
+#   3. `!.../claude-statusline.sh`  rescata únicamente este archivo.
+#
+# NO CONVERTIR LA TERCERA EN UN COMODÍN. Si algún día se añade otro archivo al
+# paquete, se añade su propia línea, y se mira qué es antes de añadirla.
+!dotfiles/claude/.claude/
+dotfiles/claude/.claude/*
+!dotfiles/claude/.claude/claude-statusline.sh
 .config/Code/User/globalStorage/
 .config/Code/**/secrets*
 .config/Code/**/*.vscdb
