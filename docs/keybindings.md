@@ -93,7 +93,7 @@ la sesión bloqueada.
 
 `Super + L` va por dbus y **no** invoca `hyprlock` directamente: así hypridle
 recibe el evento y ejecuta su `lock_cmd`, el mismo camino que usan el bloqueo
-por inactividad (300 s) y `before_sleep_cmd`. No lleva `locked = true`: con la
+por inactividad (600 s) y `before_sleep_cmd`. No lleva `locked = true`: con la
 sesión ya bloqueada no debe hacer nada. Detalle en
 `docs/PROJECT_CONTEXT.md` §9 (Red y seguridad) → «Bloqueo de pantalla e
 inactividad».

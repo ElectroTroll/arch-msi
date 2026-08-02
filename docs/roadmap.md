@@ -35,8 +35,8 @@ aplicaciones no se muestran. Configuración corta; buen candidato para
 homogeneizar colores con Waybar y Kitty.
 
 **2.3 hypridle + hyprlock.** **[OK] Completada (2026-07-27).** hyprlock con
-desbloqueo por contraseña vía PAM e hypridle con tres listeners (240 s atenuar
-el brillo, 300 s bloquear, 900 s suspender **solo con batería**), más
+desbloqueo por contraseña vía PAM e hypridle con tres listeners (480 s atenuar
+el brillo, 600 s bloquear, 900 s suspender **solo con batería**), más
 `before_sleep_cmd` e `inhibit_sleep = 2`; `hypridle.service` habilitado y
 verificado tras reinicio, y atajo manual **`Super + L`**. Ver detalle en
 `docs/PROJECT_CONTEXT.md` §9 (Red y seguridad) → «Bloqueo de pantalla e

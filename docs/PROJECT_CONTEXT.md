@@ -203,7 +203,7 @@ Tarea 2.3 completada (commits `887cfb3`, `03f4bc5`, `0d8a364`, `b99f62d`,
 - **hyprlock** (`hyprlock.conf`): pantalla de bloqueo, desbloqueo por contraseña
   vía PAM. **No se invoca nunca directamente**: siempre por dbus
   (`loginctl lock-session`), que hace que hypridle ejecute su `lock_cmd`.
-  Tres caminos llegan a él: el atajo **`Super + L`**, el listener de 300 s y
+  Tres caminos llegan a él: el atajo **`Super + L`**, el listener de 600 s y
   `before_sleep_cmd`. Ver `docs/keybindings.md` §Sesión.
 - **hypridle** (`hypridle.conf`): bloque `general` + 3 listeners.
   - `lock_cmd = pidof hyprlock || hyprlock` (el `pidof` evita apilar
@@ -216,8 +216,8 @@ Tarea 2.3 completada (commits `887cfb3`, `03f4bc5`, `0d8a364`, `b99f62d`,
     de ninguna versión. **No subir a 3**: rompe `on_lock_cmd` /
     `on_unlock_cmd`.
   - **Sin `after_sleep_cmd`** — ver la trampa del DPMS más abajo.
-  - Listeners: **240 s** atenuar el brillo al 10%
-    (`brightnessctl -s set 10%` / `on-resume: brightnessctl -r`), **300 s**
+  - Listeners: **480 s** atenuar el brillo al 10%
+    (`brightnessctl -s set 10%` / `on-resume: brightnessctl -r`), **600 s**
     bloquear (`loginctl lock-session`), **900 s** suspender **solo con
     batería** (`grep -qx 0 /sys/class/power_supply/ADP1/online &&
     systemctl suspend`).
