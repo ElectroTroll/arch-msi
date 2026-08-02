@@ -19,16 +19,27 @@ nota y lo más inmediato.
 
 | # | Tarea | Esfuerzo | Riesgo |
 |---|-------|----------|--------|
-| 2.1 | **Waybar** — barra de estado | Medio | Bajo |
+| 2.1 | ~~**Waybar** — barra de estado~~ **[OK] Completada** | Medio | Bajo |
 | 2.2 | **Dunst** — notificaciones | Bajo | Bajo |
 | 2.3 | ~~**hypridle + hyprlock** — bloqueo automático~~ **[OK] Completada** | Medio | **Medio** |
 | 2.4 | **hyprpaper** — fondo de pantalla | Bajo | Bajo |
 | 2.5 | Limpieza: variable `menu` sobrante en `hyprland.lua` | Trivial | Nulo |
 
-**2.1 Waybar.** Instalada pero sin configurar (`~/.config/waybar` vacío).
-Módulos a considerar: workspaces de Hyprland, reloj, batería (ya funciona
-`upower`), red, volumen, brillo, temperatura y estado de la dGPU. Requiere
-`config` (JSON) + `style.css`. Migrar a Stow como cuarto paquete.
+**2.1 Waybar.** **[OK] Completada (2026-08-02).** Barra superior de 34 px con
+ocho módulos: workspaces (los 10, distinguiendo activo / con ventanas /
+vacío), reloj, uso de Claude, volumen, Bluetooth, red, batería, perfil de
+energía y menú de apagado. Cuarto paquete Stow (`dotfiles/waybar/`), más un
+quinto para wlogout y un sexto para el hook de Claude Code.
+`waybar.service` habilitado. Ver detalle en `docs/PROJECT_CONTEXT.md` §13.
+
+> **El módulo de uso de Claude no consulta nada, lee lo que le dejan.** Los
+> porcentajes de las ventanas de 5 h y 7 días no son accesibles desde fuera:
+> ni subcomando del CLI, ni archivo en `~/.claude`, ni endpoint local. Solo
+> aparecen en el JSON que Claude Code entrega a su hook `statusLine`. Por eso
+> el hook los vuelca a `$XDG_RUNTIME_DIR` y Waybar lee ese archivo.
+> Consecuencia: **el dato solo se refresca con una sesión de Claude Code
+> abierta**; sin ella envejece, y el módulo lo marca en ámbar en vez de
+> mostrar una cifra caducada como si fuera actual.
 
 **2.2 Dunst.** Instalado pero sin configurar. Sin él, las notificaciones de
 aplicaciones no se muestran. Configuración corta; buen candidato para
@@ -182,9 +193,11 @@ herramientas para 7.1; qué se quiere automatizar y con qué límites para 7.2.
 
 ## Orden recomendado
 
-(Ya completadas: **5.1** cortafuegos y **2.3 / 5.4** bloqueo de sesión.)
+(Ya completadas: **5.1** cortafuegos, **2.3 / 5.4** bloqueo de sesión y
+**2.1** Waybar.)
 
-1. **2.1 + 2.2 + 2.4** — el escritorio pasa a sentirse completo.
+1. **2.2 + 2.4** — Dunst y fondo de pantalla; con eso el escritorio queda
+   completo.
 2. **5.3 (probar snapshots)** — validar la red de seguridad antes de seguir
    cambiando cosas.
 3. **Fase 3** — pulido estético, sin riesgo, buen trabajo de relleno.

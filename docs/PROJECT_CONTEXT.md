@@ -361,9 +361,12 @@ Tarea 2.3 completada (commits `887cfb3`, `03f4bc5`, `0d8a364`, `b99f62d`,
     `hypridle.conf`; commits `887cfb3`, `03f4bc5`, `0d8a364`, `b99f62d`,
     `c36e5c5`). Detalle en §9.
   - **Waybar** → `dotfiles/waybar/` (`config.jsonc`, `style.css`,
-    `claude-usage.sh`). Tarea 2.1, pasos 1 y 2 de 4. **Aún no arranca sola**:
-    el autoarranque con `waybar.service` es el paso 4. Hasta entonces hay que
-    lanzarla a mano con `waybar`.
+    `claude-usage.sh`). Tarea 2.1 completada. `waybar.service` habilitado, así
+    que arranca sola con la sesión gráfica.
+  - **wlogout** → `dotfiles/wlogout/` (`layout`, `style.css`). Menú de apagado
+    del botón de la barra. Sin botón de hibernar: este equipo no puede (ver
+    §5). Los flags de disposición no están en el paquete porque wlogout solo
+    los acepta por línea de comandos; viven en el `on-click` de Waybar.
   - **Claude Code (hook de línea de estado)** → `dotfiles/claude/`
     (`claude-statusline.sh`), enlazado a `~/.claude/claude-statusline.sh`.
     Alimenta el módulo de uso de Claude de Waybar. **El paquete debe contener
@@ -387,7 +390,8 @@ Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
   - `hypridle.service`: el `enable` solo deja rastro en
     `packages/services-enabled.txt`. Sin rehabilitarlo, la sesión no se
     bloquea sola nunca (ver §9).
-  - `waybar.service`: mismo caso, pendiente del paso 4 de la tarea 2.1.
+  - `waybar.service`: habilitado el 2026-08-02. Sin rehabilitarlo tras una
+    restauración, no hay barra: los archivos están, pero nadie los lanza.
   - `~/.claude/settings.json` → `statusLine.command`. El script está
     versionado y se enlaza con Stow, pero quien lo invoca es este archivo, que
     **no** se versiona porque contiene credenciales y estado de sesión. Sin él,
