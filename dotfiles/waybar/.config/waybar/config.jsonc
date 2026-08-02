@@ -50,7 +50,28 @@
     // "non-active, non-special EMPTY persistent workspaces" y `persistent` es
     // "NON-EMPTY persistent workspaces".
     //
-    // Clic sobre un número = cambiar a ese workspace (nativo, sin on-click).
+    // ⚠️ EL CLIC NO CAMBIA DE WORKSPACE, Y NO TIENE ARREGLO DESDE AQUÍ.
+    // Verificado el 2026-08-02. Waybar 0.15 envía por IPC la sintaxis clásica
+    // `dispatch workspace N`; Hyprland 0.56 con configuración Lua la envuelve
+    // en `hl.dispatch(workspace N)` y falla al parsearla. Waybar no comprueba
+    // la respuesta, así que el clic no hace nada y NO se registra ningún error
+    // en el journal: parece que el botón esté muerto.
+    //
+    // No se puede corregir: el módulo no expone opción para cambiar lo que
+    // envía (revisadas las 15 de waybar-hyprland-workspaces(5)), Hyprland no
+    // tiene modo de compatibilidad, y `workspace N` no es una llamada Lua
+    // válida bajo ninguna definición que se pusiera en hyprland.lua.
+    //
+    // La sintaxis que SÍ vale es la de los binds Super+N de hyprland.lua:
+    //   hyprctl dispatch 'hl.dsp.focus({ workspace = 2 })'   → ok
+    //
+    // DECISIÓN (2026-08-02): se asume. La alternativa era sustituir este
+    // módulo por diez `custom`, uno por workspace, con su propio on-click; eso
+    // costaba perder la actualización por eventos (este módulo no sondea nada)
+    // y añadir un proceso residente escuchando el socket de Hyprland. No
+    // compensa por un clic: se navega con Super+N.
+    //
+    // Contexto general del problema en PROJECT_CONTEXT §7.
     "hyprland/workspaces": {
         "format": "{id}",
 

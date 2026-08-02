@@ -133,6 +133,33 @@ Ver hardware completo en [`hardware.md`](hardware.md) y la cronología en
   `dunst`, `rofi`, `kitty`, `yazi`, `dolphin`, `firefox` (Wayland),
   `xdg-desktop-portal-hyprland`. **[OK]**
 
+> ⚠️ **Los dispatchers clásicos NO funcionan por IPC con configuración Lua.**
+> **[OK]** verificado 2026-08-02. Hyprland envuelve lo que reciba en
+> `hl.dispatch(...)` y lo evalúa como Lua, así que la sintaxis de toda la vida
+> falla con un error de sintaxis:
+>
+> ```
+> $ hyprctl dispatch workspace 2
+> error: [string "return hl.dispatch(workspace 2)"]:1: ')' expected near '2'
+> ```
+>
+> La forma válida es la del propio `hyprland.lua`:
+> `hyprctl dispatch 'hl.dsp.focus({ workspace = 2 })'` → `ok`.
+>
+> **Afecta a cualquier herramienta externa que hable por IPC**, no solo a las
+> nuestras, y el fallo es **silencioso** para quien no comprueba la respuesta.
+> Dos casos ya encontrados:
+> - **DPMS** en hypridle (tarea 2.3, ver §9): además de fallar, el equivalente
+>   Lua apagó la pantalla de forma irrecuperable. No usar dispatchers DPMS.
+> - **Clic en los workspaces de Waybar** (tarea 2.1): Waybar 0.15 envía
+>   `dispatch workspace N`, Hyprland lo rechaza y Waybar no mira la respuesta,
+>   así que el clic no hace nada y no se registra ningún error. Waybar no
+>   expone opción para cambiar lo que envía. **Se asume**: se navega con
+>   `Super + N`, que sí usa la sintaxis Lua correcta.
+>
+> Al añadir cualquier integración con Hyprland, comprobar primero a mano que
+> el dispatcher responde `ok`.
+
 > **Realidad de configuración:** tienen config propia y versionada **Hyprland**
 > (`hyprland.lua`), **hyprlock** (`hyprlock.conf`) e **hypridle**
 > (`hypridle.conf`) en `dotfiles/hypr/`, y **Waybar** (`config.jsonc` +
