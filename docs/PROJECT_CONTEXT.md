@@ -135,9 +135,10 @@ Ver hardware completo en [`hardware.md`](hardware.md) y la cronología en
 
 > **Realidad de configuración:** tienen config propia y versionada **Hyprland**
 > (`hyprland.lua`), **hyprlock** (`hyprlock.conf`) e **hypridle**
-> (`hypridle.conf`), los tres en `dotfiles/hypr/`. Las carpetas de `kitty`,
-> `rofi`, `yazi`, `waybar` y `dunst` siguen **vacías o inexistentes** (usan
-> defaults). Ver §13 (Dotfiles y estado del repositorio).
+> (`hypridle.conf`) en `dotfiles/hypr/`, y **Waybar** (`config.jsonc` +
+> `style.css`) en `dotfiles/waybar/`. Las carpetas de `kitty`, `rofi`, `yazi`
+> y `dunst` siguen **vacías o inexistentes** (usan defaults).
+> Ver §13 (Dotfiles y estado del repositorio).
 
 ## 8. Audio, Bluetooth y sesión  **[OK]**
 
@@ -359,8 +360,11 @@ Tarea 2.3 completada (commits `887cfb3`, `03f4bc5`, `0d8a364`, `b99f62d`,
   - **hyprlock + hypridle** → `dotfiles/hypr/` (`hyprlock.conf`,
     `hypridle.conf`; commits `887cfb3`, `03f4bc5`, `0d8a364`, `b99f62d`,
     `c36e5c5`). Detalle en §9.
-- Sin config todavía: `kitty`, `rofi`, `yazi`, `waybar`, `dunst`. Se difieren
-  hasta que existan (o se cree una config mínima como tarea propia).
+  - **Waybar** → `dotfiles/waybar/` (`config.jsonc`, `style.css`). Tarea 2.1,
+    paso 1 de 4. **Aún no arranca sola**: el autoarranque con `waybar.service`
+    es el paso 4. Hasta entonces hay que lanzarla a mano con `waybar`.
+- Sin config todavía: `kitty`, `rofi`, `yazi`, `dunst`. Se difieren hasta que
+  existan (o se cree una config mínima como tarea propia).
 
 ## 14. Tareas pendientes (fases futuras)
 

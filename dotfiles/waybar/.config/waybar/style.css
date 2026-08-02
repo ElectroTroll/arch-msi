@@ -1,0 +1,193 @@
+/* style.css — Waybar · MSI Summit E16 AI Studio (arch-msi)
+ * Fecha: 2026-08-01 · Tarea 2.1, paso 1/4.
+ *
+ * Clases y selectores verificados contra las páginas de manual de waybar
+ * 0.15.0-2 (ver la lista Style de waybar-hyprland-workspaces(5)).
+ *
+ * HiDPI: escala 1.60. Todo aquí está en píxeles LÓGICOS, igual que la altura
+ * de config.jsonc. 13px de fuente son ≈21px físicos: es el tamaño cómodo en
+ * esta pantalla, no un descuido.
+ *
+ * PALETA: es la primera decisión estética versionada del proyecto. Kitty,
+ * Rofi y Dunst siguen con sus valores por defecto, así que estos colores son
+ * la semilla para el tema unificado de la tarea 3.5, no un tema ya cerrado.
+ */
+
+@define-color bg        #16181d;
+@define-color fg        #c8ccd4;
+@define-color muted     #6b7280;
+@define-color accent    #7aa2f7;
+@define-color ok        #9ece6a;
+@define-color warn      #e0af68;
+@define-color crit      #f7768e;
+
+/* Reset. `all: unset` evita heredar el tema GTK del sistema, que cambiaría el
+ * aspecto de la barra al tocar nwg-look en la tarea 3.5. */
+* {
+    all: unset;
+    font-family: "JetBrainsMono Nerd Font", monospace;
+    font-size: 13px;
+    /* Sin transiciones: la barra debe repintar sin animaciones a 165 Hz. */
+    min-height: 0;
+}
+
+window#waybar {
+    background: @bg;
+    color: @fg;
+    /* Línea inferior sutil para separar la barra del contenido sin marco. */
+    border-bottom: 1px solid rgba(200, 204, 212, 0.08);
+}
+
+/* --- Tooltips ------------------------------------------------------------
+ * OBLIGATORIO, no decorativo: el `all: unset` de arriba borra también el
+ * estilo que GTK da por defecto a los tooltips, incluido su FONDO. Sin estas
+ * reglas los tooltips salen como texto blanco flotando sobre lo que haya
+ * detrás — ilegible, y así se vio en la primera prueba con el calendario.
+ * Si algún día se quita el reset, esto puede revisarse; mientras esté, no. */
+
+tooltip {
+    background: @bg;
+    border: 1px solid rgba(200, 204, 212, 0.18);
+    border-radius: 6px;
+}
+
+tooltip label {
+    color: @fg;
+    padding: 8px 10px;
+}
+
+/* --- Workspaces --------------------------------------------------------- */
+
+#workspaces {
+    margin-left: 4px;
+}
+
+/* Los diez workspaces están siempre presentes, así que lo que comunica el
+ * estado es el CONTRASTE entre ellos. De menos a más peso visual:
+ *   vacío  <  con ventanas  <  en uso
+ * El orden de estas reglas importa: .active va al final para ganar siempre,
+ * porque el workspace activo también lleva .persistent o .empty. */
+
+/* OJO CON EL ORDEN DE ESTAS REGLAS. Un workspace vacío lleva a la vez las
+ * clases .persistent (por estar declarado en persistent-workspaces) y .empty
+ * (por no tener ventanas). Con la misma especificidad gana la que aparezca
+ * DESPUÉS, así que estilar `.persistent` detrás de `.empty` hacía que todos
+ * los botones se vieran idénticos — exactamente el fallo de la primera
+ * versión. Por eso aquí NO se estila `.persistent`: el estado "con ventanas"
+ * es el ESTILO BASE del botón, y `.empty` lo rebaja después. Así la cascada
+ * funciona sin depender de qué clases acumule cada botón. */
+
+/* 1. BASE = CON VENTANAS. Texto a plena legibilidad y un punto de acento
+ * debajo: se localizan de un vistazo sin competir con el activo. */
+#workspaces button {
+    padding: 0 8px;
+    color: @fg;
+    border-bottom: 2px solid rgba(122, 162, 247, 0.35);
+}
+
+/* 2. VACÍO — rebaja la base: apagado y sin subrayado. La franja se mantiene
+ * transparente en vez de eliminarse para que el número no se desplace un
+ * píxel al abrirse o cerrarse la última ventana del workspace. */
+#workspaces button.empty {
+    color: @muted;
+    border-bottom: 2px solid transparent;
+}
+
+#workspaces button:hover {
+    color: @fg;
+    background: rgba(200, 204, 212, 0.08);
+}
+
+#workspaces button.urgent {
+    color: @crit;
+    border-bottom: 2px solid @crit;
+}
+
+/* 3. EN USO — acento pleno, negrita, fondo propio y subrayado sólido. Es el
+ * único elemento de toda la barra que lleva fondo, para que salte a la vista
+ * incluso de reojo. */
+#workspaces button.active {
+    color: @accent;
+    font-weight: bold;
+    background: rgba(122, 162, 247, 0.15);
+    border-bottom: 2px solid @accent;
+}
+
+/* --- Módulos ------------------------------------------------------------ */
+
+#clock,
+#custom-claude,
+#wireplumber,
+#bluetooth,
+#network,
+#battery,
+#power-profiles-daemon,
+#custom-power {
+    padding: 0 10px;
+}
+
+/* Perfil de energía: en gris. Es información de contexto, no un estado que
+ * debas vigilar; el acento se reserva para el workspace activo. */
+#power-profiles-daemon {
+    color: @muted;
+}
+
+#power-profiles-daemon:hover {
+    color: @fg;
+}
+
+#clock {
+    color: @fg;
+}
+
+/* Uso de Claude. En el paso 1 muestra "—"; el estilo del dato obsoleto
+ * (clase propia) se añade en el paso 2, cuando exista el dato. */
+#custom-claude {
+    color: @muted;
+}
+
+#wireplumber.muted {
+    color: @muted;
+}
+
+#bluetooth.off,
+#bluetooth.disabled {
+    color: @muted;
+}
+
+#bluetooth.connected {
+    color: @accent;
+}
+
+#network.disconnected {
+    color: @crit;
+}
+
+/* --- Batería ------------------------------------------------------------ */
+
+#battery.charging,
+#battery.plugged {
+    color: @ok;
+}
+
+/* Umbrales definidos en config.jsonc → states (30% y 15%). */
+#battery.warning:not(.charging) {
+    color: @warn;
+}
+
+#battery.critical:not(.charging) {
+    color: @crit;
+}
+
+/* --- Botón de apagado --------------------------------------------------- */
+
+/* Rojo solo al pasar por encima: en reposo no debe llamar la atención, pero
+ * al apuntarlo tiene que quedar claro que es destructivo. */
+#custom-power {
+    color: @muted;
+    padding-right: 12px;
+}
+
+#custom-power:hover {
+    color: @crit;
+}
