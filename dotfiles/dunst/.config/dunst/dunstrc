@@ -1,0 +1,230 @@
+# dunstrc — MSI Summit E16 AI Studio (arch-msi)
+# Origen: /etc/dunst/dunstrc (dunst 1.13.2-1), reducido a lo que se cambia.
+# Fecha: 2026-08-04 · Tarea 2.2.
+#
+# ALCANCE: [global] + las tres secciones de urgencia. Todo lo que no aparezca
+# aquí se queda con el default compilado de dunst, a propósito.
+#
+# CÓMO SE VALIDA ESTE ARCHIVO SIN AFECTAR A LA SESIÓN:
+#   dunst --config <ruta>
+# ejecutado CON dunst ya corriendo. Parsea el archivo y escribe una línea
+#   "WARNING: Setting <clave> in section <sec> doesn't exist"
+# por cada clave que no reconozca; acto seguido aborta con
+#   "CRITICAL: Cannot acquire 'org.freedesktop.Notifications'"
+# porque el nombre D-Bus ya es del daemon en marcha. Ese fallo es la garantía:
+# NO puede sustituir a la instancia viva (verificado — PID intacto tras la
+# prueba). Los avisos se emiten ANTES del intento de D-Bus, así que sirven.
+#
+# Hace falta porque dunst NO falla al arrancar con una clave desconocida: la
+# ignora y sigue. Una errata como `widht = 420` no daría ningún error en el
+# journal, solo una notificación con el ancho equivocado.
+#
+# (Ojo: `--print` NO imprime la configuración. Imprime las notificaciones que
+# van llegando, que es otra cosa.)
+#
+# OJO — /etc/dunst/dunstrc NO SE LEE. Existe (lo instala el paquete) pero no
+# está en la ruta de búsqueda de esta versión: con el directorio de usuario
+# vacío, el journal registraba "No configuration file found, using defaults"
+# TENIENDO ese archivo presente. Es una plantilla de referencia, nada más.
+# La ruta que sí se lee es la de este archivo: ~/.config/dunst/dunstrc.
+
+[global]
+
+    # --- Monitor ------------------------------------------------------------
+    # `follow = mouse` a propósito, en vez de `monitor = 0`: así no se fija
+    # NINGÚN identificador de pantalla. Con un solo monitor (eDP-1) el
+    # comportamiento es idéntico, y el día que se enchufe uno externo las
+    # notificaciones aparecen donde está el puntero sin tocar nada.
+    # Evita la clase de trampa que ya tienen `BAT1`/`ADP1` en otras configs.
+    follow = mouse
+
+    # --- Geometría ----------------------------------------------------------
+    # PÍXELES LÓGICOS, igual que Waybar. La pantalla es 2560x1600 a escala
+    # 1.60 → 1600x1000 lógicos. `scale = 0` deja que dunst tome el factor del
+    # propio Wayland, así que 420 lógicos son 672 físicos.
+    scale = 0
+
+    # 420 de ancho sobre 1600 lógicos ≈ un cuarto de pantalla. El default de
+    # 300 se queda corto: parte los títulos de casi cualquier aplicación.
+    width = 420
+
+    # (mínimo, máximo). 0 de mínimo = la notificación es tan alta como su
+    # contenido; 300 evita que un cuerpo largo ocupe media pantalla.
+    height = (0, 300)
+
+    origin = top-right
+
+    # (horizontal, vertical). El vertical se cuenta DESDE EL BORDE DE LA ZONA
+    # EXCLUSIVA de Waybar, no desde el borde físico de la pantalla: Hyprland
+    # reserva 34 px arriba y dunst los respeta (verificado — con el offset
+    # por defecto de 50 la capa caía en y=84 = 34+50). Por eso 12 aquí deja
+    # 12 px de aire bajo la barra, no la tapa.
+    offset = (12, 12)
+
+    # Separación entre notificaciones apiladas.
+    gap_size = 6
+
+    # El default es 20: apiladas llenarían la pantalla de arriba abajo. Con 6
+    # e `indicate_hidden` se ven las seis últimas y una línea "(N more)" con
+    # el resto, en vez de una columna infinita.
+    notification_limit = 6
+    indicate_hidden = yes
+
+    # --- Marco y relleno ----------------------------------------------------
+    # 6 px de radio = el mismo que los tooltips de Waybar (style.css).
+    corner_radius = 6
+
+    # 2 px para que el color del marco (lo que distingue la urgencia, ver
+    # abajo) se lea de reojo. El default de 3 con un gris #aaaaaa era el
+    # elemento más llamativo de la notificación, que es justo al revés.
+    frame_width = 2
+
+    padding = 12
+    horizontal_padding = 14
+    text_icon_padding = 10
+    separator_height = 2
+    separator_color = frame
+
+    # Fondo opaco, como la barra. Sin transparencia: sobre una terminal
+    # oscura el texto quedaría a un contraste peor sin ganar nada.
+    transparency = 0
+
+    # --- Texto --------------------------------------------------------------
+    # Pango mide en PUNTOS, no en píxeles: 10 pt a 96 dpi = 13,3 px lógicos,
+    # que es el `font-size: 13px` de Waybar. No es casualidad ni un número
+    # redondo cualquiera — es el tamaño que iguala la barra.
+    # El nombre de familia es el exacto de `fc-list` (hay variantes "NF",
+    # "NFM", "NL" que NO son esta).
+    font = JetBrainsMono Nerd Font 10
+
+    line_height = 0
+    markup = full
+
+    # %s = summary (título), %b = body. El default; se deja explícito porque
+    # es lo primero que se querría tocar.
+    format = "<b>%s</b>\n%b"
+
+    alignment = left
+    vertical_alignment = center
+    ellipsize = middle
+    ignore_newline = no
+
+    # Añade "(hace N minutos)" a lo que lleve más de 60 s en pantalla. Solo
+    # tiene efecto real en las críticas, que no expiran.
+    show_age_threshold = 60
+
+    # Agrupa repetidas de la misma app mostrando un contador, en vez de
+    # apilar quince copias.
+    stack_duplicates = true
+    hide_duplicate_count = false
+    show_indicators = yes
+
+    # --- Iconos -------------------------------------------------------------
+    # El default `icon_path` del sample apunta a /usr/share/icons/gnome/...,
+    # que NO EXISTE en este sistema (solo hay Adwaita, breeze, Papirus e
+    # hicolor). Con la búsqueda recursiva `icon_path` sobra: basta el tema.
+    enable_recursive_icon_lookup = true
+
+    # Papirus-Dark primero (es el tema instalado a propósito y va con fondo
+    # oscuro), Adwaita como red de seguridad por si a Papirus le falta algún
+    # icono suelto. La lista se recorre de izquierda a derecha.
+    icon_theme = "Papirus-Dark, Adwaita"
+
+    icon_position = left
+
+    # 48 de máximo, no los 128 del default: un icono de 128 lógicos sería más
+    # alto que la propia notificación con 420 de ancho.
+    min_icon_size = 24
+    max_icon_size = 48
+
+    # --- Barra de progreso --------------------------------------------------
+    # La usan los avisos de volumen y brillo de algunas herramientas.
+    progress_bar = true
+    progress_bar_height = 10
+    progress_bar_frame_width = 1
+    progress_bar_min_width = 150
+    progress_bar_max_width = 396
+
+    # Color de relleno de la barra: el acento de Waybar.
+    highlight = "#7aa2f7"
+
+    # --- Historial ----------------------------------------------------------
+    # 20 notificaciones. VIVE EN MEMORIA DEL PROCESO: si dunst se reinicia o
+    # se cierra la sesión, el historial se pierde entero. No es un registro
+    # persistente y no hay opción para que lo sea.
+    history_length = 20
+
+    # Una notificación recuperada del historial se queda fija hasta cerrarla,
+    # en vez de volver a expirar en 5 o 10 segundos — que es lo útil cuando la
+    # recuperas justo porque no te dio tiempo a leerla.
+    sticky_history = yes
+
+    # --- Programas externos -------------------------------------------------
+    # AVISO: el default es `/usr/bin/dmenu -p dunst:` y DMENU NO ESTÁ
+    # INSTALADO en este equipo (verificado). Con el default, `dunstctl
+    # context` no hace nada y no informa de por qué. Se apunta a rofi, que sí
+    # está y ya es el lanzador del sistema (Super + R).
+    dmenu = /usr/bin/rofi -dmenu -p "dunst:"
+
+    browser = /usr/bin/xdg-open
+
+    # --- Ratón --------------------------------------------------------------
+    # Son los defaults, explícitos por ser el comportamiento que se toca al
+    # usar las notificaciones a diario.
+    mouse_left_click = close_current
+    mouse_middle_click = do_action, close_current
+    mouse_right_click = close_all
+
+    # --- Wayland ------------------------------------------------------------
+    # Explícito, y NO es decorativo en este equipo: con la escala 1.60,
+    # cualquier cliente que caiga en XWayland se ve borroso (§7 de
+    # PROJECT_CONTEXT, caso Spotify). En `false` dunst dibuja como capa
+    # wlr-layer-shell nativa y renderiza a 1.60x directamente.
+    # Verificado: `hyprctl layers` → namespace `notifications` en el nivel
+    # overlay, y NO aparece en `hyprctl clients`.
+    force_xwayland = false
+
+
+# =============================================================================
+# URGENCIAS
+#
+# PALETA: la de dotfiles/waybar/.config/waybar/style.css, que es la primera
+# decisión estética versionada del proyecto (bg #16181d, fg #c8ccd4,
+# muted #6b7280, accent #7aa2f7, crit #f7768e).
+#
+# CRITERIO: el fondo es SIEMPRE el de la barra. Lo que codifica la urgencia es
+# el color del MARCO, no un fondo distinto por nivel. Así las notificaciones
+# se leen como parte del mismo sistema que Waybar en vez de como tres cajas de
+# colores, y sigue el mismo patrón que la barra, donde el acento aparece en el
+# subrayado del workspace activo y el rojo solo al apuntar el botón de apagado.
+# =============================================================================
+
+[urgency_low]
+    # Discreta: texto en gris apagado y marco casi invisible. Es el nivel de
+    # "esto ha terminado", no de "mira esto".
+    background = "#16181d"
+    foreground = "#6b7280"
+    frame_color = "#2a2e37"
+    timeout = 5
+    default_icon = dialog-information
+
+[urgency_normal]
+    # Marco en el acento azul. El caso corriente.
+    #
+    # 10 s, el doble que la baja. Subido desde los 8 s con los que se cerró la
+    # tarea el 2026-08-04, a petición del usuario tras probarlo en uso real.
+    background = "#16181d"
+    foreground = "#c8ccd4"
+    frame_color = "#7aa2f7"
+    timeout = 10
+    default_icon = dialog-information
+
+[urgency_critical]
+    # Marco en rojo y `timeout = 0`: NO EXPIRA NUNCA, hay que cerrarla a mano
+    # (clic izquierdo, o Super + Shift + N para todas). Es deliberado: una
+    # crítica que desaparece sola es una crítica perdida.
+    background = "#16181d"
+    foreground = "#c8ccd4"
+    frame_color = "#f7768e"
+    timeout = 0
+    default_icon = dialog-warning

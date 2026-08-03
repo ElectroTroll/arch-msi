@@ -1,9 +1,9 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-08-03 (Spotify y escalado bajo XWayland, §7). Antes:
-2026-08-02, cierre de la tarea 2.1 (Waybar). Auditoría no destructiva completa:
-2026-07-23.
+Última actualización: 2026-08-04 (cierre de la tarea 2.2, Dunst — §16). Antes:
+2026-08-03 (Spotify y escalado bajo XWayland, §7) y 2026-08-02 (cierre de la
+tarea 2.1, Waybar). Auditoría no destructiva completa: 2026-07-23.
 
 Convención de estado: **[OK]** verificado en la máquina · **[PEND]** pendiente ·
 **[VER]** afirmado pero sin verificar.
@@ -163,10 +163,10 @@ Ver hardware completo en [`hardware.md`](hardware.md) y la cronología en
 
 > **Realidad de configuración:** tienen config propia y versionada **Hyprland**
 > (`hyprland.lua`), **hyprlock** (`hyprlock.conf`) e **hypridle**
-> (`hypridle.conf`) en `dotfiles/hypr/`, y **Waybar** (`config.jsonc` +
-> `style.css` + `claude-usage.sh`) en `dotfiles/waybar/`. Las carpetas de
-> `kitty`, `rofi`, `yazi` y `dunst` siguen **vacías o inexistentes** (usan
-> defaults).
+> (`hypridle.conf`) en `dotfiles/hypr/`, **Waybar** (`config.jsonc` +
+> `style.css` + `claude-usage.sh`) en `dotfiles/waybar/` y **dunst**
+> (`dunstrc`) en `dotfiles/dunst/` (tarea 2.2, ver §16). Las carpetas de
+> `kitty`, `rofi` y `yazi` siguen **vacías o inexistentes** (usan defaults).
 > Ver §13 (Dotfiles y estado del repositorio).
 
 ### Aplicaciones bajo XWayland y escalado fraccional
@@ -446,14 +446,19 @@ Tarea 2.3 completada (commits `887cfb3`, `03f4bc5`, `0d8a364`, `b99f62d`,
     solo ese script**: `~/.claude` guarda credenciales e historial. El
     `.gitignore` lo garantiza con una excepción de tres líneas sobre la regla
     `**/.claude/`, verificada con archivos señuelo.
-- Sin config todavía: `kitty`, `rofi`, `yazi`, `dunst`. Se difieren hasta que
-  existan (o se cree una config mínima como tarea propia).
+  - **dunst** → `dotfiles/dunst/` (`dunstrc`). Tarea 2.2 completada. Detalle
+    en §16. **A diferencia de Waybar e hypridle, NO añade ningún requisito a
+    `install/services.sh`**: dunst arranca por activación D-Bus con un archivo
+    que instala el propio paquete, y su unidad es `static` (no admite
+    `enable`). Es el primer componente del proyecto cuyo autoarranque se
+    restaura solo.
+- Sin config todavía: `kitty`, `rofi`, `yazi`. Se difieren hasta que existan
+  (o se cree una config mínima como tarea propia).
 
 ## 14. Tareas pendientes (fases futuras)
 
 Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
 
-- Configurar Dunst.
 - Crear configs propias para Kitty, Rofi y yazi, y migrarlas a Stow.
 - Limpiar la variable `menu = "hyprlauncher"` sobrante en `hyprland.lua` (no
   se usa en ningún bind).
@@ -484,3 +489,134 @@ Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
   `animations { enabled = false }` en `hyprlock.conf`. Cosmético: no se ha
   observado efecto sobre el bloqueo ni sobre el desbloqueo. Sin resolver
   (2026-07-27).
+
+## 16. Notificaciones (dunst)  **[OK]**
+
+Tarea 2.2 completada (2026-08-04). `dunst` 1.13.2-1. Configuración en
+`dotfiles/dunst/`, enlazada con Stow.
+
+### El autoarranque NO es un hueco aquí — al contrario que en waybar e hypridle
+
+Es la diferencia importante con las tareas 2.1 y 2.3, y conviene que conste
+para **no** añadir dunst por inercia a `install/services.sh` (roadmap 6.1):
+
+- El paquete instala `/usr/share/dbus-1/services/org.knopwob.dunst.service`,
+  que declara `Name=org.freedesktop.Notifications`, `Exec=/usr/bin/dunst` y
+  `SystemdService=dunst.service`. **Lo reinstala pacman**, así que sobrevive a
+  una reinstalación sin ningún paso manual.
+- `dunst.service` es **`static`**: no tiene sección `[Install]` y por tanto
+  **no admite `enable`**. Es `Type=dbus` con
+  `BusName=org.freedesktop.Notifications`.
+- Quien lo arranca es la **activación D-Bus**, no un `enable` ni un
+  `exec-once`. Verificado en el arranque del 2026-08-04: cgroup
+  `user@1000.service/session.slice/dunst.service`, padre `systemd --user`.
+- **Consecuencia práctica:** dunst arranca **bajo demanda**, con la primera
+  notificación de la sesión. Un `pgrep dunst` vacío recién iniciada la sesión
+  **no significa que esté roto**.
+- **Sin daemon competidor:** el único `.service` de D-Bus que reclama
+  `org.freedesktop.Notifications` en todo el sistema es el de dunst.
+  `knotifications` (KF6) es una librería, no registra el nombre. Propietario
+  comprobado en vivo: `GetServerInformation` → `"dunst" "knopwob" "1.13.2"`.
+
+### `/etc/dunst/dunstrc` existe pero NO se lee
+
+El paquete instala esa plantilla de 514 líneas, y **no está en la ruta de
+búsqueda de esta versión**: con `~/.config/dunst/` vacío, el journal registraba
+`No configuration file found, using defaults` *teniendo ese archivo presente*.
+Es documentación de los defaults, nada más. La ruta que sí se lee es
+`~/.config/dunst/dunstrc`.
+
+### Cómo validar la config sin tocar la sesión
+
+`dunst --config <ruta>` **con dunst ya corriendo**: parsea, escribe
+`WARNING: Setting <clave> ... doesn't exist` por cada clave desconocida y
+aborta con `CRITICAL: Cannot acquire 'org.freedesktop.Notifications'`. Ese
+fallo es la garantía de que no puede sustituir a la instancia viva (verificado:
+PID intacto tras la prueba). Hace falta porque **dunst no falla al arrancar con
+una clave desconocida: la ignora y sigue**, así que una errata como
+`widht = 420` no dejaría rastro en ningún journal.
+
+> ⚠️ `dunstctl reload` **sin argumentos recarga los archivos anteriores**. Si
+> dunst arrancó sin config (como aquí), «los anteriores» son *ninguno* y la
+> recarga no carga nada — el journal lo dice con un engañoso
+> `Reloading settings (with the old files)`. Tras enlazar por primera vez hay
+> que reiniciar el servicio o pasar la ruta explícita.
+
+### Decisiones de configuración
+
+- **Wayland nativo, sin la trampa de XWayland.** `hyprctl layers` →
+  `namespace: notifications` en el nivel **overlay**; no aparece en
+  `hyprctl clients`. Es un cliente `wlr-layer-shell`, así que **no le afecta el
+  borrón por escala 1.60** que sufrió Spotify (§7). `force_xwayland = false`
+  se fija explícitamente por ser justo esa la trampa del equipo.
+- **Respeta la zona exclusiva de Waybar.** El offset vertical se cuenta desde
+  el borde de la zona reservada (34 px), no desde el borde físico. Con
+  `offset = (12, 12)` la capa queda en `xywh: 1162 46 426 204` — 12 px de aire
+  bajo la barra. Verificado contra `hyprctl layers`.
+- **Paleta heredada de Waybar** (`style.css`): fondo `#16181d` siempre; lo que
+  codifica la urgencia es el **color del marco**, no un fondo distinto por
+  nivel — gris `#2a2e37` (baja), acento `#7aa2f7` (normal), rojo `#f7768e`
+  (crítica). Radio de 6 px, el mismo que los tooltips de la barra.
+- **Fuente:** `JetBrainsMono Nerd Font 10`. Pango mide en **puntos**: 10 pt a
+  96 dpi = 13,3 px lógicos, que es el `font-size: 13px` de Waybar. El nombre de
+  familia es el exacto de `fc-list` (existen variantes `NF`, `NFM`, `NL` que
+  **no** son esta).
+- **Tiempos:** baja 5 s, normal 10 s, **crítica `timeout = 0` (no expira
+  nunca)**. Verificado: la crítica sigue en pantalla pasados 20 s.
+  La normal se cerró con 8 s el 2026-08-04 y se subió a 10 s el mismo día,
+  tras probarla en uso real.
+- **`follow = mouse` en lugar de `monitor = 0`**, a propósito: así no se fija
+  ningún identificador de pantalla. Con un solo monitor el comportamiento es
+  idéntico y evita la clase de trampa de `BAT1`/`ADP1` (§9, §13).
+- **Historial de 20**, `sticky_history = yes`. **Vive en la memoria del
+  proceso**: se pierde entero si dunst se reinicia o se cierra la sesión. No
+  hay opción para hacerlo persistente.
+- **Atajos:** `Super + N` (`history-pop`) y `Super + Shift + N` (`close-all`).
+  Sin `locked = true` en ninguno: con la sesión bloqueada dunst está pausado a
+  propósito. Ver `docs/keybindings.md`.
+
+### Dos defaults rotos que se corrigen aquí
+
+Ambos fallaban **en silencio** con la configuración por defecto:
+
+- **`dmenu` no está instalado** en este equipo, y es lo que dunst invoca por
+  defecto (`/usr/bin/dmenu -p dunst:`) para el menú contextual
+  (`dunstctl context`). Tal cual, esa función no hacía nada y no informaba de
+  por qué. Se apunta a `rofi`, que sí está y ya es el lanzador del sistema.
+- **El `icon_path` por defecto apunta a `/usr/share/icons/gnome/…`, que no
+  existe aquí.** No era teórico: el journal del arranque del 2026-08-03 tenía
+  `WARNING: Icon 'nm-no-connection' not found in icon_path` y
+  `'nm-signal-100'` — las notificaciones de NetworkManager salían sin icono.
+  Con `enable_recursive_icon_lookup` e
+  `icon_theme = "Papirus-Dark, Adwaita"` los tres iconos resuelven y el aviso
+  desaparece del journal. **Verificado 2026-08-04.**
+
+### Notificaciones con la sesión bloqueada
+
+`hypridle.conf` gana `on_lock_cmd = dunstctl set-paused true` y
+`on_unlock_cmd = dunstctl set-paused false` (existen en hypridle 0.1.8:
+cadenas `general:on_lock_cmd` / `general:on_unlock_cmd` en el binario).
+
+- **`set-paused true` encola, no descarta.** Verificado sin bloquear la sesión:
+  con la pausa activa, dos notificaciones nuevas dieron `Waiting: 2 /
+  Currently displayed: 0`; al despausar, `Waiting: 0 / Currently displayed: 2`.
+  **No se pierde ninguna.**
+- **Motivo:** dunst dibuja en la capa `overlay` y hyprlock usa
+  `ext-session-lock`. **[VER] No se ha comprobado** si Hyprland 0.56 pinta la
+  superficie de bloqueo por encima de esa capa; probarlo exige bloquear la
+  sesión. La pausa cierra el hueco de privacidad **sin depender** de esa
+  respuesta.
+- **Refuerza el aviso de `inhibit_sleep`:** hasta ahora, subirlo a 3 solo
+  rompía algo hipotético, porque no se usaba ninguna de las dos directivas.
+  Desde el 2026-08-04 **sí** dependen de él. Sigue fijado en **2**.
+- ⚠️ **TRAMPA:** el estado de pausa vive en el proceso de **dunst**, no en
+  hypridle. Si hypridle muriera o se reiniciara con la sesión ya bloqueada, el
+  `on_unlock_cmd` nunca llegaría y **dunst se quedaría pausado para siempre,
+  sin avisar**: ni notificaciones ni error en ningún journal. Se diagnostica
+  con `dunstctl is-paused` (→ `true`) y se arregla con
+  `dunstctl set-paused false`. En el otro sentido falla hacia el lado seguro:
+  la pausa no sobrevive a un reinicio de dunst ni al cierre de sesión.
+- **[OK] Validado de extremo a extremo (2026-08-04)**: bloqueo real con
+  `Super + L` y desbloqueo por contraseña. hypridle dispara `on_lock_cmd` al
+  bloquear y `on_unlock_cmd` al desbloquear; `dunstctl is-paused` vuelve a
+  `false` tras el desbloqueo. No queda ningún paso sin observar en este camino.

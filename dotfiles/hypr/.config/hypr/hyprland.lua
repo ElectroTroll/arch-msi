@@ -281,6 +281,17 @@ hl.bind(mainMod .. " + R", hl.dsp.exec_cmd("rofi -show drun"))
 hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
 hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"))    -- dwindle only
 
+-- Notificaciones (dunst, tarea 2.2).
+-- `history-pop` recupera la última notificación cerrada; con
+-- `sticky_history = yes` en dunstrc se queda fija hasta cerrarla, en vez de
+-- volver a expirar en 5-10 s. El historial guarda 20 y VIVE EN MEMORIA: se
+-- pierde entero si dunst se reinicia o se cierra la sesión.
+-- Sin `locked = true` en ninguno de los dos: con la sesión bloqueada dunst
+-- está pausado a propósito (ver on_lock_cmd en hypridle.conf), así que sacar
+-- notificaciones del historial sobre hyprlock sería justo lo contrario.
+hl.bind(mainMod .. " + N",           hl.dsp.exec_cmd("dunstctl history-pop"))
+hl.bind(mainMod .. " + SHIFT + N",   hl.dsp.exec_cmd("dunstctl close-all"))
+
 -- Move focus with mainMod + arrow keys
 hl.bind(mainMod .. " + left",  hl.dsp.focus({ direction = "left" }))
 hl.bind(mainMod .. " + right", hl.dsp.focus({ direction = "right" }))

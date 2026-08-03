@@ -20,7 +20,7 @@ nota y lo más inmediato.
 | # | Tarea | Esfuerzo | Riesgo |
 |---|-------|----------|--------|
 | 2.1 | ~~**Waybar** — barra de estado~~ **[OK] Completada** | Medio | Bajo |
-| 2.2 | **Dunst** — notificaciones | Bajo | Bajo |
+| 2.2 | ~~**Dunst** — notificaciones~~ **[OK] Completada** | Bajo | Bajo |
 | 2.3 | ~~**hypridle + hyprlock** — bloqueo automático~~ **[OK] Completada** | Medio | **Medio** |
 | 2.4 | **hyprpaper** — fondo de pantalla | Bajo | Bajo |
 | 2.5 | Limpieza: variable `menu` sobrante en `hyprland.lua` | Trivial | Nulo |
@@ -41,9 +41,29 @@ quinto para wlogout y un sexto para el hook de Claude Code.
 > abierta**; sin ella envejece, y el módulo lo marca en ámbar en vez de
 > mostrar una cifra caducada como si fuera actual.
 
-**2.2 Dunst.** Instalado pero sin configurar. Sin él, las notificaciones de
-aplicaciones no se muestran. Configuración corta; buen candidato para
-homogeneizar colores con Waybar y Kitty.
+**2.2 Dunst.** **[OK] Completada (2026-08-04).** `dunstrc` propio como
+**séptimo** paquete Stow (`dotfiles/dunst/`), con la paleta de Waybar: fondo
+`#16181d` siempre y la urgencia codificada en el **color del marco**. Arriba a
+la derecha bajo la barra (420 px lógicos), 5 s / 10 s / crítica sin expirar,
+historial de 20 con `Super + N` y `Super + Shift + N`, y pausa automática
+mientras la sesión está bloqueada (`on_lock_cmd` en `hypridle.conf`).
+Ver detalle en `docs/PROJECT_CONTEXT.md` §16.
+
+> **Corrige el supuesto de partida: dunst SÍ estaba corriendo.** La tarea se
+> planteó por si «puede que ni siquiera se lance», y la auditoría demostró lo
+> contrario: llevaba desde el arranque atendiendo notificaciones reales de
+> Firefox, con los valores por defecto. El problema no era la ausencia de
+> notificaciones, sino su aspecto y dos defaults rotos en silencio (`dmenu`
+> sin instalar e `icon_path` apuntando a un tema inexistente, con avisos ya
+> presentes en el journal).
+>
+> **Y el autoarranque no era un hueco.** Al revés que en 2.1 y 2.3, dunst
+> **no añade nada a `install/services.sh`** (ver 6.1): arranca por activación
+> D-Bus mediante un archivo que instala el propio paquete, y su unidad es
+> `static` — no admite `enable`. Es el primer componente cuyo autoarranque se
+> restaura solo. Lo que sí conviene saber: arranca **bajo demanda**, con la
+> primera notificación, así que un `pgrep dunst` vacío no significa que esté
+> roto.
 
 **2.3 hypridle + hyprlock.** **[OK] Completada (2026-07-27).** hyprlock con
 desbloqueo por contraseña vía PAM e hypridle con tres listeners (480 s atenuar
@@ -95,9 +115,10 @@ solo lo relevante (`dolphinrc`, atajos), nunca el directorio completo.
 nativo: en XWayland la app se veía borrosa por la escala 1.60 del panel (detalle
 en `docs/PROJECT_CONTEXT.md` §7). Ese archivo **no está versionado**, así que
 una restauración deja el problema otra vez sin avisar. Es el mismo tipo de
-agujero silencioso que la 6.1, pero aquí basta con un séptimo paquete Stow
+agujero silencioso que la 6.1, pero aquí basta con un **octavo** paquete Stow
 (`dotfiles/spotify/`), no con `install/services.sh`. Corregir el síntoma ya está
 hecho; falta solo meterlo en el repo.
+(Era el «séptimo» hasta que la tarea 2.2 ocupó ese número con `dotfiles/dunst/`.)
 
 ---
 
@@ -217,11 +238,10 @@ herramientas para 7.1; qué se quiere automatizar y con qué límites para 7.2.
 
 ## Orden recomendado
 
-(Ya completadas: **5.1** cortafuegos, **2.3 / 5.4** bloqueo de sesión y
-**2.1** Waybar.)
+(Ya completadas: **5.1** cortafuegos, **2.3 / 5.4** bloqueo de sesión,
+**2.1** Waybar y **2.2** Dunst.)
 
-1. **2.2 + 2.4** — Dunst y fondo de pantalla; con eso el escritorio queda
-   completo.
+1. **2.4** — fondo de pantalla; con eso el escritorio queda completo.
 2. **5.3 (probar snapshots)** — validar la red de seguridad antes de seguir
    cambiando cosas.
 3. **Fase 3** — pulido estético, sin riesgo, buen trabajo de relleno.

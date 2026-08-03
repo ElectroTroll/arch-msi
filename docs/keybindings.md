@@ -3,8 +3,9 @@
 > Este archivo se genera a partir de
 > [`dotfiles/hypr/.config/hypr/hyprland.lua`](../dotfiles/hypr/.config/hypr/hyprland.lua)
 > y debe actualizarse cada vez que cambien los binds de esa config. Contrastado
-> con `hyprctl binds` el 2026-07-22 y de nuevo el 2026-08-01 (53 binds): todos
-> los atajos documentados coinciden con los cargados en la sesión actual.
+> con `hyprctl binds` el 2026-07-22, el 2026-08-01 (53 binds) y el 2026-08-04
+> (**55 binds**, tras los dos de dunst): todos los atajos documentados coinciden
+> con los cargados en la sesión actual.
 
 `Super` es la tecla `mainMod` de la config (`SUPER`, la tecla "Windows").
 
@@ -83,6 +84,27 @@ la sesión bloqueada.
 | XF86AudioPause             | Pausar/reanudar reproducción (`playerctl`)          |
 | XF86AudioPlay              | Pausar/reanudar reproducción (`playerctl`)          |
 | XF86AudioPrev              | Pista anterior (`playerctl`)                        |
+
+## Notificaciones (dunst)
+
+| Atajo             | Acción                                                                          |
+|--------------------|------------------------------------------------------------------------------------|
+| Super + N          | Recuperar la última notificación cerrada (`dunstctl history-pop`).                  |
+| Super + Shift + N  | Cerrar todas las notificaciones en pantalla (`dunstctl close-all`).                 |
+
+Una notificación recuperada con `Super + N` se queda **fija** hasta cerrarla
+(`sticky_history = yes`), en vez de volver a expirar a los 5–10 segundos. El
+historial guarda **20** y **vive en la memoria del proceso**: se pierde entero
+si dunst se reinicia o se cierra la sesión.
+
+Ninguno de los dos lleva `locked = true`: con la sesión bloqueada dunst está
+**pausado a propósito** (ver `on_lock_cmd` en `hypridle.conf`), así que sacar
+notificaciones del historial sobre hyprlock sería justo lo contrario de lo que
+se busca. Detalle en `docs/PROJECT_CONTEXT.md` §16.
+
+Con el ratón: **clic izquierdo** cierra la notificación bajo el puntero, **clic
+derecho** las cierra todas y **clic central** ejecuta su acción por defecto (por
+ejemplo, abrir el mensaje en la aplicación que lo envió).
 
 ## Sesión
 
