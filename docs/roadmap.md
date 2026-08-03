@@ -26,7 +26,7 @@ nota y lo más inmediato.
 | 2.5 | Limpieza: variable `menu` sobrante en `hyprland.lua` | Trivial | Nulo |
 
 **2.1 Waybar.** **[OK] Completada (2026-08-02).** Barra superior de 34 px con
-ocho módulos: workspaces (los 10, distinguiendo activo / con ventanas /
+nueve módulos: workspaces (los 10, distinguiendo activo / con ventanas /
 vacío), reloj, uso de Claude, volumen, Bluetooth, red, batería, perfil de
 energía y menú de apagado. Cuarto paquete Stow (`dotfiles/waybar/`), más un
 quinto para wlogout y un sexto para el hook de Claude Code.
@@ -156,17 +156,30 @@ Cerrar el objetivo original: poder reinstalar y recuperar el sistema.
 | 6.5 | **Prueba real de restauración en una VM** | Alto | Nulo |
 
 **6.1** ⚠️ **Requisito bloqueante, no una nota menor: `install/services.sh`
-tiene que rehabilitar `hypridle.service`.** El `enable` de un servicio de
-usuario **no vive en los dotfiles**: crea
-`~/.config/systemd/user/graphical-session.target.wants/hypridle.service`, que no
-está versionado, y de él solo queda rastro en `packages/services-enabled.txt`.
-Consecuencia: **una restauración desde el repositorio deja el bloqueo de sesión
-sin funcionar y no avisa de nada.** Los archivos estarían todos en su sitio,
-`hyprlock` y `Super + L` seguirían funcionando a mano, y el equipo simplemente
-no se bloquearía solo nunca — el mismo hueco de seguridad que cerró la tarea
-2.3, reabierto en silencio. La fase 6 **no puede darse por completada** sin
-esto, y la prueba de restauración en VM (6.5) debe verificarlo explícitamente.
-Ver `docs/PROJECT_CONTEXT.md` §9 (Red y seguridad) y §14.
+tiene que reactivar TRES cosas que no viven en los dotfiles.** El `enable` de un
+servicio de usuario crea un enlace en
+`~/.config/systemd/user/graphical-session.target.wants/`, que **no** está
+versionado; de él solo queda rastro en `packages/services-enabled.txt`. Los tres
+huecos son del mismo tipo y fallan **en silencio**: los archivos vuelven a su
+sitio, pero nada los activa y nada avisa de que falta el paso.
+
+- **`hypridle.service`** — sin rehabilitarlo, la sesión no se bloquea sola
+  nunca. Los archivos estarían todos en su sitio, `hyprlock` y `Super + L`
+  seguirían funcionando a mano, y el equipo simplemente no se bloquearía solo
+  — el mismo hueco de seguridad que cerró la tarea 2.3, reabierto en silencio.
+- **`waybar.service`** — sin rehabilitarlo no hay barra: `config.jsonc`,
+  `style.css` y `claude-usage.sh` quedan enlazados por Stow, pero nadie lanza
+  Waybar (tarea 2.1). No hay `exec-once` en `hyprland.lua` que sirva de
+  respaldo: el servicio es la única vía de arranque.
+- **`~/.claude/settings.json` → `statusLine.command`** — el script está
+  versionado en `dotfiles/claude/` y se enlaza con Stow, pero quien lo invoca
+  es este archivo, que **no** se versiona porque contiene credenciales y estado
+  de sesión. Sin él, el módulo de uso de Claude se queda en `—` para siempre.
+
+La fase 6 **no puede darse por completada** sin los tres, y la prueba de
+restauración en VM (6.5) debe verificarlos explícitamente.
+Ver `docs/PROJECT_CONTEXT.md` §9 (Red y seguridad), §13 (Dotfiles y estado del
+repositorio) y §14 (Tareas pendientes).
 
 **6.3** debe recoger los detalles no obvios: VMD activo en BIOS, ESP compartida
 con Windows, layout de subvolúmenes, orden de instalación.

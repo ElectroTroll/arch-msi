@@ -230,9 +230,16 @@
     // barra; si molesta, se cambia el formato a solo "{icon}".
     //
     // No se fija `format-icons` a propósito: se usan los iconos por defecto
-    // del módulo (Font Awesome, instalado vía woff2-font-awesome). Elegir
-    // glifos a mano aquí arriesgaría cuadraditos vacíos si el codepoint no
-    // existe en JetBrainsMono Nerd Font.
+    // del módulo, que son codepoints de Font Awesome (U+F0E7 performance,
+    // U+F24E balanced, U+F06C power-saver). Elegir glifos a mano aquí
+    // arriesgaría cuadraditos vacíos si el codepoint no existiera.
+    //
+    // Quien los PINTA es JetBrainsMono Nerd Font, no el paquete
+    // woff2-font-awesome: los tres codepoints están dentro del rango Font
+    // Awesome que Nerd Fonts parchea en la fuente, y JetBrainsMono Nerd Font
+    // es la PRIMERA familia de `font-family` en style.css, así que es la que
+    // Pango resuelve. Comprobado el 2026-08-02 con `fc-list :charset=...`.
+    // No dar por hecho que quitar woff2-font-awesome rompería estos iconos.
     "power-profiles-daemon": {
         "format": "{icon} {profile}",
         "tooltip-format": "Perfil de energía: {profile}\nControlador: {driver}",

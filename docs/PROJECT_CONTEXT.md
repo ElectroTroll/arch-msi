@@ -163,8 +163,9 @@ Ver hardware completo en [`hardware.md`](hardware.md) y la cronología en
 > **Realidad de configuración:** tienen config propia y versionada **Hyprland**
 > (`hyprland.lua`), **hyprlock** (`hyprlock.conf`) e **hypridle**
 > (`hypridle.conf`) en `dotfiles/hypr/`, y **Waybar** (`config.jsonc` +
-> `style.css`) en `dotfiles/waybar/`. Las carpetas de `kitty`, `rofi`, `yazi`
-> y `dunst` siguen **vacías o inexistentes** (usan defaults).
+> `style.css` + `claude-usage.sh`) en `dotfiles/waybar/`. Las carpetas de
+> `kitty`, `rofi`, `yazi` y `dunst` siguen **vacías o inexistentes** (usan
+> defaults).
 > Ver §13 (Dotfiles y estado del repositorio).
 
 ## 8. Audio, Bluetooth y sesión  **[OK]**
@@ -426,6 +427,15 @@ Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
   Decidir cómo cubrirlos: encaja con `install/services.sh` de la fase 6 (ver
   roadmap 6.1, marcado como requisito bloqueante).
 
+    ⚠️ **Dos valores dependen de este hardware y fallan sin dar error.** El
+    módulo de batería fija `bat: BAT1` y `adapter: ADP1`, y el `on-click` del
+    botón de apagado pasa a wlogout un margen de `400` px calculado a mano para
+    1600x1000 lógicos (2560x1600 a escala 1.60). Si tras una reinstalación
+    cambia la enumeración de `/sys/class/power_supply/`, el módulo de batería se
+    queda **mudo sin registrar nada en el journal**; si cambia la resolución o
+    la escala, el menú de apagado se deforma. Mismo patrón que el `ADP1` de
+    `hypridle.conf` (§9). El módulo de red evita a propósito esta trampa: no
+    fija `interface`, así que sigue a la ruta por defecto.
 ## 15. Información sin verificar
 
 - Estado de autenticación de Claude Code (no comprobado; no exponer credenciales).

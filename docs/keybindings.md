@@ -97,3 +97,42 @@ por inactividad (600 s) y `before_sleep_cmd`. No lleva `locked = true`: con la
 sesión ya bloqueada no debe hacer nada. Detalle en
 `docs/PROJECT_CONTEXT.md` §9 (Red y seguridad) → «Bloqueo de pantalla e
 inactividad».
+
+## Acciones de ratón (Waybar)
+
+> Este documento es de atajos de **teclado**, así que esta sección es una
+> excepción deliberada. Se incluye aquí porque **no hay ningún otro sitio
+> consultable donde consten**: las acciones viven repartidas por las claves
+> `on-click` de
+> [`dotfiles/waybar/.config/waybar/config.jsonc`](../dotfiles/waybar/.config/waybar/config.jsonc),
+> y sin esto la única forma de saber qué hace cada módulo es leerse la config.
+> Verificadas contra `config.jsonc` el 2026-08-02.
+
+| Módulo | Acción | Efecto |
+|---|---|---|
+| Reloj | Clic izquierdo | Alterna entre `HH:MM` y la vista larga con día y fecha (`format-alt`). El tooltip muestra el calendario del mes. |
+| Volumen | Clic izquierdo | Abre **pavucontrol**. |
+| Volumen | Clic derecho | Silencia / desilencia la salida (`wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle`). |
+| Red | Clic izquierdo | Abre **nmtui** en una ventana de kitty (`kitty -e nmtui`). |
+| Perfil de energía | Clic izquierdo | **Rota** entre `performance`, `balanced` y `power-saver`. Es comportamiento nativo del módulo por D-Bus; no hay `on-click` definido. |
+| ⏻ Apagado | Clic izquierdo | Abre **wlogout** (`wlogout -b 4 -m 400 -s`): bloquear, salir, reiniciar, apagar. Sin hibernar — este equipo no puede (`PROJECT_CONTEXT.md` §5). |
+| Bluetooth | Clic izquierdo | Abre **blueman-manager**. |
+
+**Rueda sobre el volumen** — sube y baja en pasos del **1 %**, con tope al
+100 %. El paso es de 1 y no de 5 a propósito: el touchpad emite muchísimos más
+eventos que la rueda para el mismo gesto y con 5 el volumen se disparaba.
+
+> ⚠️ **Con el touchpad, la dirección va invertida.** No es un fallo: Hyprland
+> tiene `natural_scroll` desactivado para la rueda y activado para el touchpad,
+> así que ambos envían direcciones **opuestas**. Waybar solo recibe «arriba» o
+> «abajo» y no puede distinguir el origen, de modo que cualquier elección deja
+> uno de los dos al revés. Se conserva el comportamiento por defecto: **la
+> rueda queda correcta**. Corregir el touchpad rompería la rueda, y tocar el
+> natural scrolling no es opción (invariante del proyecto, `CLAUDE.md`).
+
+> ⚠️ **El clic en los workspaces NO cambia de workspace.** Es el único control
+> de la barra que no responde, y falla **en silencio**: no pasa nada y no se
+> registra ningún error. Waybar 0.15 envía por IPC la sintaxis clásica
+> `dispatch workspace N`, que Hyprland 0.56 con configuración Lua rechaza.
+> No tiene arreglo desde la configuración y **está asumido**: se navega con
+> `Super + N`. Detalle en `docs/PROJECT_CONTEXT.md` §7 (Entorno gráfico).
