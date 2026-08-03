@@ -71,8 +71,9 @@ imágenes (¿versionar en el repo o mantener fuera por tamaño?).
 
 ## Fase 3 — Configuración de aplicaciones
 
-Ninguna tiene configuración propia todavía: usan los valores por defecto. Cada
-una que se configure se migra a Stow con el patrón ya validado.
+Kitty, Rofi, yazi y Dolphin no tienen configuración propia todavía: usan los
+valores por defecto. Cada una que se configure se migra a Stow con el patrón ya
+validado.
 
 | # | Tarea | Esfuerzo | Riesgo |
 |---|-------|----------|--------|
@@ -81,12 +82,22 @@ una que se configure se migra a Stow con el patrón ya validado.
 | 3.3 | **yazi** — atajos, previsualizaciones | Bajo | Nulo |
 | 3.4 | **Dolphin** — solo archivos versionables | Medio | Bajo |
 | 3.5 | **Theming GTK/Qt coherente** con `nwg-look` | Medio | Bajo |
+| 3.6 | **Spotify** — versionar `spotify-flags.conf` como paquete Stow | Trivial | Nulo |
 
 Ya está instalada la fuente `ttf-jetbrains-mono-nerd` y el tema de iconos
 `papirus-icon-theme`, así que hay base para una estética unificada.
 
 En 3.4, cuidado: Dolphin genera muchos archivos de estado y cachés. Versionar
 solo lo relevante (`dolphinrc`, atajos), nunca el directorio completo.
+
+**3.6 Spotify.** Instalado desde AUR (`paru -S spotify`) el 2026-08-02. El
+2026-08-03 se creó a mano `~/.config/spotify-flags.conf` para forzar Wayland
+nativo: en XWayland la app se veía borrosa por la escala 1.60 del panel (detalle
+en `docs/PROJECT_CONTEXT.md` §7). Ese archivo **no está versionado**, así que
+una restauración deja el problema otra vez sin avisar. Es el mismo tipo de
+agujero silencioso que la 6.1, pero aquí basta con un séptimo paquete Stow
+(`dotfiles/spotify/`), no con `install/services.sh`. Corregir el síntoma ya está
+hecho; falta solo meterlo en el repo.
 
 ---
 

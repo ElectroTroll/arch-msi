@@ -1,8 +1,9 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-07-27, tras cerrar la tarea 2.3 (bloqueo de
-pantalla e inactividad). Auditoría no destructiva completa: 2026-07-23.
+Última actualización: 2026-08-03 (Spotify y escalado bajo XWayland, §7). Antes:
+2026-08-02, cierre de la tarea 2.1 (Waybar). Auditoría no destructiva completa:
+2026-07-23.
 
 Convención de estado: **[OK]** verificado en la máquina · **[PEND]** pendiente ·
 **[VER]** afirmado pero sin verificar.
@@ -167,6 +168,41 @@ Ver hardware completo en [`hardware.md`](hardware.md) y la cronología en
 > `kitty`, `rofi`, `yazi` y `dunst` siguen **vacías o inexistentes** (usan
 > defaults).
 > Ver §13 (Dotfiles y estado del repositorio).
+
+### Aplicaciones bajo XWayland y escalado fraccional
+
+> ⚠️ **Con el monitor a escala 1.60, toda app que arranque en XWayland se ve
+> borrosa.** XWayland renderiza a 1x y Hyprland estira el resultado. No es un
+> fallo de la app, y **nada lo señala**: simplemente se ve mal. Primer caso
+> encontrado y corregido: **Spotify** (2026-08-03).
+
+- **Spotify** — instalado desde **AUR con `paru`** (paquete `spotify`,
+  `1:1.2.92.147`, propietario). Binario en `/opt/spotify/spotify`, lanzado por
+  el wrapper `/usr/bin/spotify`. Motor Chromium 146. **[OK]**
+- Síntoma: ventana borrosa/pixelada. Causa verificada con
+  `hyprctl clients` → `xwayland: True`. **[OK]**
+- Corrección aplicada: forzar **Wayland nativo**, donde Chromium usa el
+  protocolo `wp-fractional-scale` y renderiza directo a 1.60x. El wrapper
+  `/usr/bin/spotify` pasa al binario lo que encuentre en
+  `~/.config/spotify-flags.conf`, así que no hace falta tocar el `.desktop` ni
+  nada del sistema:
+
+  ```
+  --ozone-platform=wayland
+  --enable-features=UseOzonePlatform,WaylandWindowDecorations
+  ```
+
+- Verificado tras reiniciar la app: `hyprctl clients` → `xwayland: False`.
+  **[OK]** · Nitidez a ojo: **[VER]** (pendiente de confirmación visual).
+- **La clase de ventana cambia con el backend:** `Spotify` en X11 →
+  `spotify` en Wayland. Ninguna `windowrule` de `hyprland.lua` ni módulo de
+  Waybar la usaba, pero cualquier regla futura debe escribirse en minúscula.
+- Alternativa **descartada**: `xwayland:force_zero_scaling = true` (global,
+  hoy en `false`) más `--force-device-scale-factor` por app. Afectaría a todas
+  las apps X11 y obligaría a escalar cada una a mano.
+- ⚠️ **`~/.config/spotify-flags.conf` no está versionado** (no es paquete
+  Stow todavía). Tras una restauración, Spotify vuelve a verse borroso. Ver
+  §14.
 
 ## 8. Audio, Bluetooth y sesión  **[OK]**
 
@@ -391,6 +427,15 @@ Tarea 2.3 completada (commits `887cfb3`, `03f4bc5`, `0d8a364`, `b99f62d`,
   - **Waybar** → `dotfiles/waybar/` (`config.jsonc`, `style.css`,
     `claude-usage.sh`). Tarea 2.1 completada. `waybar.service` habilitado, así
     que arranca sola con la sesión gráfica.
+    ⚠️ **Dos valores dependen de este hardware y fallan sin dar error.** El
+    módulo de batería fija `bat: BAT1` y `adapter: ADP1`, y el `on-click` del
+    botón de apagado pasa a wlogout un margen de `400` px calculado a mano para
+    1600x1000 lógicos (2560x1600 a escala 1.60). Si tras una reinstalación
+    cambia la enumeración de `/sys/class/power_supply/`, el módulo de batería se
+    queda **mudo sin registrar nada en el journal**; si cambia la resolución o
+    la escala, el menú de apagado se deforma. Mismo patrón que el `ADP1` de
+    `hypridle.conf` (§9). El módulo de red evita a propósito esta trampa: no
+    fija `interface`, así que sigue a la ruta por defecto.
   - **wlogout** → `dotfiles/wlogout/` (`layout`, `style.css`). Menú de apagado
     del botón de la barra. Sin botón de hibernar: este equipo no puede (ver
     §5). Los flags de disposición no están en el paquete porque wlogout solo
@@ -413,8 +458,9 @@ Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
 - Limpiar la variable `menu = "hyprlauncher"` sobrante en `hyprland.lua` (no
   se usa en ningún bind).
 - **Estado que vive fuera del repositorio y que una restauración NO recupera.**
-  Son tres agujeros del mismo tipo: los archivos vuelven a su sitio, pero nada
-  los activa, y el fallo es **silencioso** — nada avisa de que falta el paso.
+  Cuatro agujeros con el mismo final: el fallo es **silencioso**, nada avisa de
+  que falta el paso. En los tres primeros los archivos vuelven a su sitio pero
+  nada los activa; en el cuarto el archivo ni siquiera vuelve.
   - `hypridle.service`: el `enable` solo deja rastro en
     `packages/services-enabled.txt`. Sin rehabilitarlo, la sesión no se
     bloquea sola nunca (ver §9).
@@ -424,18 +470,13 @@ Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
     versionado y se enlaza con Stow, pero quien lo invoca es este archivo, que
     **no** se versiona porque contiene credenciales y estado de sesión. Sin él,
     el módulo de uso de Claude en Waybar se queda en `—` para siempre.
+  - `~/.config/spotify-flags.conf`: creado a mano el 2026-08-03 y **no
+    versionado**. Sin él, Spotify arranca en XWayland y se ve borroso otra vez
+    (ver §7). Se arregla haciéndolo paquete Stow (`dotfiles/spotify/`), no con
+    `install/services.sh`.
   Decidir cómo cubrirlos: encaja con `install/services.sh` de la fase 6 (ver
   roadmap 6.1, marcado como requisito bloqueante).
 
-    ⚠️ **Dos valores dependen de este hardware y fallan sin dar error.** El
-    módulo de batería fija `bat: BAT1` y `adapter: ADP1`, y el `on-click` del
-    botón de apagado pasa a wlogout un margen de `400` px calculado a mano para
-    1600x1000 lógicos (2560x1600 a escala 1.60). Si tras una reinstalación
-    cambia la enumeración de `/sys/class/power_supply/`, el módulo de batería se
-    queda **mudo sin registrar nada en el journal**; si cambia la resolución o
-    la escala, el menú de apagado se deforma. Mismo patrón que el `ADP1` de
-    `hypridle.conf` (§9). El módulo de red evita a propósito esta trampa: no
-    fija `interface`, así que sigue a la ruta por defecto.
 ## 15. Información sin verificar
 
 - Estado de autenticación de Claude Code (no comprobado; no exponer credenciales).
