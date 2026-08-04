@@ -47,7 +47,7 @@ quinto para wlogout y un sexto para el hook de Claude Code.
 la derecha bajo la barra (420 px lógicos), 5 s / 10 s / crítica sin expirar,
 historial de 20 con `Super + N` y `Super + Shift + N`, y pausa automática
 mientras la sesión está bloqueada (`on_lock_cmd` en `hypridle.conf`).
-Ver detalle en `docs/PROJECT_CONTEXT.md` §16.
+Ver detalle en `docs/PROJECT_CONTEXT.md` §16 (Notificaciones).
 
 > **Corrige el supuesto de partida: dunst SÍ estaba corriendo.** La tarea se
 > planteó por si «puede que ni siquiera se lance», y la auditoría demostró lo
@@ -199,6 +199,17 @@ sitio, pero nada los activa y nada avisa de que falta el paso.
   nunca. Los archivos estarían todos en su sitio, `hyprlock` y `Super + L`
   seguirían funcionando a mano, y el equipo simplemente no se bloquearía solo
   — el mismo hueco de seguridad que cerró la tarea 2.3, reabierto en silencio.
+  **Desde la tarea 2.2 este servicio gobierna también la PRIVACIDAD de las
+  notificaciones**: su `on_lock_cmd` es quien pausa dunst al bloquear. Sin el
+  servicio no hay pausa, y las notificaciones podrían mostrarse sobre
+  hyprlock — con remitente y asunto legibles. Un mismo `enable` olvidado
+  reabre ahora **dos** agujeros, no uno.
+  > **Dunst NO añade un cuarto requisito propio a esta lista.** Su
+  > autoarranque no depende de nada fuera de los dotfiles: lo activa D-Bus
+  > mediante `/usr/share/dbus-1/services/org.knopwob.dunst.service`, que
+  > instala el propio paquete, y `dunst.service` es `static` (no admite
+  > `enable`). Es el único componente del proyecto que se restaura solo. Ver
+  > `docs/PROJECT_CONTEXT.md` §16 (Notificaciones).
 - **`waybar.service`** — sin rehabilitarlo no hay barra: `config.jsonc`,
   `style.css` y `claude-usage.sh` quedan enlazados por Stow, pero nadie lanza
   Waybar (tarea 2.1). No hay `exec-once` en `hyprland.lua` que sirva de

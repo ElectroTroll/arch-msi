@@ -100,7 +100,7 @@ si dunst se reinicia o se cierra la sesión.
 Ninguno de los dos lleva `locked = true`: con la sesión bloqueada dunst está
 **pausado a propósito** (ver `on_lock_cmd` en `hypridle.conf`), así que sacar
 notificaciones del historial sobre hyprlock sería justo lo contrario de lo que
-se busca. Detalle en `docs/PROJECT_CONTEXT.md` §16.
+se busca. Detalle en `docs/PROJECT_CONTEXT.md` §16 (Notificaciones).
 
 Con el ratón: **clic izquierdo** cierra la notificación bajo el puntero, **clic
 derecho** las cierra todas y **clic central** ejecuta su acción por defecto (por

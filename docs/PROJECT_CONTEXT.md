@@ -1,9 +1,10 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-08-04 (cierre de la tarea 2.2, Dunst — §16). Antes:
-2026-08-03 (Spotify y escalado bajo XWayland, §7) y 2026-08-02 (cierre de la
-tarea 2.1, Waybar). Auditoría no destructiva completa: 2026-07-23.
+Última actualización: 2026-08-04 (cierre de la tarea 2.2, Dunst — §16
+(Notificaciones)). Antes: 2026-08-03 (Spotify y escalado bajo XWayland, §7
+(Entorno gráfico)) y 2026-08-02 (cierre de la tarea 2.1, Waybar). Auditoría no
+destructiva completa: 2026-07-23.
 
 Convención de estado: **[OK]** verificado en la máquina · **[PEND]** pendiente ·
 **[VER]** afirmado pero sin verificar.
@@ -165,8 +166,9 @@ Ver hardware completo en [`hardware.md`](hardware.md) y la cronología en
 > (`hyprland.lua`), **hyprlock** (`hyprlock.conf`) e **hypridle**
 > (`hypridle.conf`) en `dotfiles/hypr/`, **Waybar** (`config.jsonc` +
 > `style.css` + `claude-usage.sh`) en `dotfiles/waybar/` y **dunst**
-> (`dunstrc`) en `dotfiles/dunst/` (tarea 2.2, ver §16). Las carpetas de
-> `kitty`, `rofi` y `yazi` siguen **vacías o inexistentes** (usan defaults).
+> (`dunstrc`) en `dotfiles/dunst/` (tarea 2.2, ver §16 (Notificaciones)). Las
+> carpetas de `kitty`, `rofi` y `yazi` siguen **vacías o inexistentes** (usan
+> defaults).
 > Ver §13 (Dotfiles y estado del repositorio).
 
 ### Aplicaciones bajo XWayland y escalado fraccional
@@ -447,11 +449,11 @@ Tarea 2.3 completada (commits `887cfb3`, `03f4bc5`, `0d8a364`, `b99f62d`,
     `.gitignore` lo garantiza con una excepción de tres líneas sobre la regla
     `**/.claude/`, verificada con archivos señuelo.
   - **dunst** → `dotfiles/dunst/` (`dunstrc`). Tarea 2.2 completada. Detalle
-    en §16. **A diferencia de Waybar e hypridle, NO añade ningún requisito a
-    `install/services.sh`**: dunst arranca por activación D-Bus con un archivo
-    que instala el propio paquete, y su unidad es `static` (no admite
-    `enable`). Es el primer componente del proyecto cuyo autoarranque se
-    restaura solo.
+    en §16 (Notificaciones). **A diferencia de Waybar e hypridle, NO añade
+    ningún requisito a `install/services.sh`**: dunst arranca por activación
+    D-Bus con un archivo que instala el propio paquete, y su unidad es
+    `static` (no admite `enable`). Es el primer componente del proyecto cuyo
+    autoarranque se restaura solo.
 - Sin config todavía: `kitty`, `rofi`, `yazi`. Se difieren hasta que existan
   (o se cree una config mínima como tarea propia).
 
@@ -518,6 +520,57 @@ para **no** añadir dunst por inercia a `install/services.sh` (roadmap 6.1):
   `knotifications` (KF6) es una librería, no registra el nombre. Propietario
   comprobado en vivo: `GetServerInformation` → `"dunst" "knopwob" "1.13.2"`.
 
+> **[PEND] El arranque automático CON esta configuración no se ha observado
+> todavía.** Es la única afirmación sin validar de la tarea 2.2.
+>
+> **Qué falta exactamente.** Los dos hechos están probados por separado, nunca
+> juntos. En el arranque del 2026-08-04 dunst se activó solo por D-Bus, pero
+> con **defaults** — el `dunstrc` aún no existía, y el journal lo dice:
+> `MESSAGE: No configuration file found, using defaults`. El proceso que sí
+> carga la config del repo vino después de un `systemctl --user restart`
+> **manual**. Falta ver ambas cosas en el mismo arranque.
+>
+> **Cómo cerrarlo. Reiniciar y ejecutar esto como usuario normal (sin sudo):**
+>
+> ```bash
+> # 1. ¿Se activó solo y cargó la config del repo?
+> journalctl --user -u dunst.service -b --no-pager
+> ```
+>
+> Tiene que aparecer un único par `Starting Dunst notification daemon...` /
+> `Started Dunst notification daemon.` y, sobre todo, **NO** puede aparecer
+> `MESSAGE: No configuration file found, using defaults`. Esa ausencia es la
+> prueba de que leyó `~/.config/dunst/dunstrc`: dunst solo escribe esa línea
+> cuando no encuentra ninguna configuración.
+>
+> ```bash
+> # 2. ¿El proceso viene del arranque y NO de un reinicio manual?
+> PID=$(pgrep -x dunst)
+> cat /proc/$PID/cgroup                       # …/session.slice/dunst.service
+> ps -o lstart= -p $PID                       # hora de arranque del proceso
+> who -b                                      # hora de arranque del sistema
+> systemctl --user show dunst.service -p NRestarts
+> ```
+>
+> Las tres señales que deben darse a la vez: el cgroup termina en
+> `dunst.service` (lo lanzó systemd, no una terminal), la hora del proceso está
+> **a pocos minutos** de la del sistema, y `NRestarts=0`. Además, en el journal
+> del punto 1 **no debe haber ninguna línea `Stopping`/`Stopped` anterior** al
+> `Started` vigente: si la hay, ese proceso es fruto de un reinicio y la prueba
+> no vale.
+>
+> ```bash
+> # 3. Prueba positiva: que la config cargada es la del repo, no los defaults
+> notify-send "prueba" "config del repo"
+> hyprctl layers | grep -A2 'namespace: notifications'
+> ```
+>
+> Debe dar un ancho de **426** y **y=46**. Con los defaults daría ~300 de ancho
+> e y=84 (offset 50 sobre los 34 px reservados por Waybar). Es la comprobación
+> que no depende de interpretar un mensaje ausente.
+>
+> Con los tres puntos, sustituir este bloque por **[OK]** y la fecha.
+
 ### `/etc/dunst/dunstrc` existe pero NO se lee
 
 El paquete instala esa plantilla de 514 líneas, y **no está en la ruta de
@@ -557,6 +610,13 @@ una clave desconocida: la ignora y sigue**, así que una errata como
   codifica la urgencia es el **color del marco**, no un fondo distinto por
   nivel — gris `#2a2e37` (baja), acento `#7aa2f7` (normal), rojo `#f7768e`
   (crítica). Radio de 6 px, el mismo que los tooltips de la barra.
+  > **`#2a2e37` es el único color que NO sale de `style.css`.** Los demás son
+  > literales de la paleta (`bg`, `accent`, `crit`, `fg`, `muted`). Este es un
+  > **derivado**: el equivalente opaco del `rgba(200, 204, 212, 0.08)` que
+  > Waybar usa para sus bordes sutiles, resuelto sobre el fondo `#16181d`.
+  > dunst no admite alfa en `frame_color`, de ahí el valor plano. Al retocar
+  > la paleta en la tarea 3.5 hay que recalcularlo a mano: **no cambiará solo**
+  > al cambiar `bg` ni `fg`.
 - **Fuente:** `JetBrainsMono Nerd Font 10`. Pango mide en **puntos**: 10 pt a
   96 dpi = 13,3 px lógicos, que es el `font-size: 13px` de Waybar. El nombre de
   familia es el exacto de `fc-list` (existen variantes `NF`, `NFM`, `NL` que
@@ -597,10 +657,15 @@ Ambos fallaban **en silencio** con la configuración por defecto:
 `on_unlock_cmd = dunstctl set-paused false` (existen en hypridle 0.1.8:
 cadenas `general:on_lock_cmd` / `general:on_unlock_cmd` en el binario).
 
-- **`set-paused true` encola, no descarta.** Verificado sin bloquear la sesión:
-  con la pausa activa, dos notificaciones nuevas dieron `Waiting: 2 /
-  Currently displayed: 0`; al despausar, `Waiting: 0 / Currently displayed: 2`.
-  **No se pierde ninguna.**
+- **`set-paused true` encola, no descarta, y RETIRA lo que ya estaba visible.**
+  Dos comprobaciones distintas, ambas sin bloquear la sesión:
+  - *Notificaciones nuevas* — con la pausa activa, dos dieron `Waiting: 2 /
+    Currently displayed: 0`; al despausar, `Waiting: 0 /
+    Currently displayed: 2`. **No se pierde ninguna.**
+  - *Notificación ya en pantalla* — una crítica visible pasó a `Waiting: 1 /
+    Currently displayed: 0` al pausar, y **la capa desapareció por completo**
+    de `hyprctl layers`. Cubre el caso peor: una crítica (que no expira nunca)
+    presente en el instante exacto del bloqueo. Verificado 2026-08-04.
 - **Motivo:** dunst dibuja en la capa `overlay` y hyprlock usa
   `ext-session-lock`. **[VER] No se ha comprobado** si Hyprland 0.56 pinta la
   superficie de bloqueo por encima de esa capa; probarlo exige bloquear la
