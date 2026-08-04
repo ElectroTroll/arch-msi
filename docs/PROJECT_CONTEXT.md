@@ -520,17 +520,43 @@ para **no** añadir dunst por inercia a `install/services.sh` (roadmap 6.1):
   `knotifications` (KF6) es una librería, no registra el nombre. Propietario
   comprobado en vivo: `GetServerInformation` → `"dunst" "knopwob" "1.13.2"`.
 
-> **[PEND] El arranque automático CON esta configuración no se ha observado
-> todavía.** Es la única afirmación sin validar de la tarea 2.2.
+> **[OK] El arranque automático CON esta configuración quedó observado el
+> 2026-08-04** (arranque de las 02:09), en el mismo arranque y sin ninguna
+> intervención manual. Era la última afirmación sin validar de la tarea 2.2.
 >
-> **Qué falta exactamente.** Los dos hechos están probados por separado, nunca
-> juntos. En el arranque del 2026-08-04 dunst se activó solo por D-Bus, pero
-> con **defaults** — el `dunstrc` aún no existía, y el journal lo dice:
-> `MESSAGE: No configuration file found, using defaults`. El proceso que sí
-> carga la config del repo vino después de un `systemctl --user restart`
-> **manual**. Falta ver ambas cosas en el mismo arranque.
+> **Qué faltaba y por qué.** Los dos hechos estaban probados por separado,
+> nunca juntos. En el primer arranque del 2026-08-04 dunst se activó solo por
+> D-Bus, pero con **defaults** — el `dunstrc` aún no existía, y el journal lo
+> decía: `MESSAGE: No configuration file found, using defaults`. El proceso que
+> sí cargaba la config del repo vino después de un `systemctl --user restart`
+> **manual**. Faltaba ver ambas cosas en el mismo arranque.
 >
-> **Cómo cerrarlo. Reiniciar y ejecutar esto como usuario normal (sin sudo):**
+> **Evidencia observada (2026-08-04, arranque `7632da49`):**
+>
+> - **Journal del punto 1**, íntegro y sin nada más: un único par
+>   `02:10:31 Starting Dunst notification daemon...` /
+>   `02:10:32 Started Dunst notification daemon.`. Ni una línea
+>   `Stopping`/`Stopped` previa, y **ninguna** `No configuration file found,
+>   using defaults`.
+> - **Punto 2, las tres señales a la vez:** PID 1322, cgroup
+>   `…/user@1000.service/session.slice/dunst.service`; proceso arrancado a las
+>   `02:10:31` frente a `02:09:07` del sistema (**84 s** después);
+>   `NRestarts=0`, `Type=dbus`, `UnitFileState=static`.
+> - **Punto 3, geometría real:** `hyprctl layers` →
+>   `xywh: 1162 46 426 64 … namespace: notifications, pid: 1322`. Ancho **426**
+>   e **y=46**, los de la config del repo; los defaults habrían dado ~300 y
+>   y=84. El `pid` de la capa **es el mismo proceso del arranque**, así que la
+>   geometría no viene de una instancia posterior.
+> - **Sin errores ni avisos nuevos.** `journalctl --user -b _COMM=dunst` →
+>   *No entries* (en particular, ninguno de los `WARNING: Icon … not found in
+>   icon_path` del 2026-08-03). El único mensaje que menciona a dunst en todo
+>   el arranque es un aviso de convención de nombres de `dbus-broker-launch`
+>   sobre `org.knopwob.dunst.service`, **preexistente** (mismo recuento en los
+>   arranques `-1` y `-2`) y análogo al que emite para
+>   `org.kde.dolphin.FileManager1.service`. No es de dunst ni es nuevo.
+>
+> **Cómo repetirlo si hace falta. Reiniciar y ejecutar esto como usuario normal
+> (sin sudo):**
 >
 > ```bash
 > # 1. ¿Se activó solo y cargó la config del repo?
@@ -569,7 +595,9 @@ para **no** añadir dunst por inercia a `install/services.sh` (roadmap 6.1):
 > e y=84 (offset 50 sobre los 34 px reservados por Waybar). Es la comprobación
 > que no depende de interpretar un mensaje ausente.
 >
-> Con los tres puntos, sustituir este bloque por **[OK]** y la fecha.
+> Los tres puntos se dieron el 2026-08-04 y por eso este bloque ya es **[OK]**.
+> Las instrucciones se conservan para reproducir la comprobación tras un cambio
+> en `dunstrc`, una reinstalación o una actualización de dunst.
 
 ### `/etc/dunst/dunstrc` existe pero NO se lee
 
