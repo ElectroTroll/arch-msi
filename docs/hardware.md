@@ -54,10 +54,23 @@ equipo real. Salvo donde se indica, todos los datos provienen de `hostnamectl`,
 | nvme0n1p2    | —       | —        | Microsoft Reserved (MSR)    |
 | nvme0n1p3    | ntfs    | Windows  | Windows                     |
 | nvme0n1p4    | ntfs    | —        | NTFS (datos/recovery)       |
-| nvme0n1p5    | ntfs    | BIOS_RVY | Recovery MSI                |
-| nvme0n1p6    | btrfs   | —        | Linux (raíz + home)         |
+| nvme0n1p5    | btrfs   | —        | Linux (raíz + home)         |
+| nvme0n1p6    | ntfs    | BIOS_RVY | Recovery MSI                |
 
-> ⚠️ Las particiones p1–p5 pertenecen a Windows / MSI. **No tocar.**
+> ⚠️ Las particiones p1–p4 y p6 pertenecen a Windows / MSI. **No tocar.**
+
+> **Ojo con la numeración.** Hasta el 2026-08-24 esta tabla era la inversa en
+> sus dos últimas filas: Linux en `p6` y la recovery de MSI en `p5`. Una
+> actualización de Windows las renumeró, y eso dejó el sistema sin arrancar
+> porque el núcleo de GRUB tenía grabada la posición antigua. Si encuentras
+> documentación que diga «Linux está en p6», es anterior a esa fecha: la buena
+> es esta. El detalle completo, en
+> [`history/2026-08-24-incidente-arranque-grub.md`](history/2026-08-24-incidente-arranque-grub.md).
+>
+> Lo que **no** cambió es el UUID del sistema de archivos
+> (`27a7d1f2-e0a7-4444-aba7-95611f71b5aa`). Por eso `/etc/fstab`, que monta por
+> UUID, siguió siendo correcto sin tocar una línea. Comprueba siempre con
+> `lsblk -o NAME,FSTYPE,LABEL,UUID`, nunca de memoria.
 
 ## Red
 

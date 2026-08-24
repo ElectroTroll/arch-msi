@@ -1,10 +1,13 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-08-04 (cierre de la tarea 2.2, Dunst — §16
-(Notificaciones)). Antes: 2026-08-03 (Spotify y escalado bajo XWayland, §7
-(Entorno gráfico)) y 2026-08-02 (cierre de la tarea 2.1, Waybar). Auditoría no
-destructiva completa: 2026-07-23.
+Última actualización: 2026-08-24 (incidente de arranque por renumeración de
+particiones y actualización completa posterior — §2 (Almacenamiento), §3
+(Bootloader), §4 (Kernel) y §15 (Sin verificar)). Antes: 2026-08-04 (cierre de
+la tarea 2.2, Dunst — §16 (Notificaciones)), 2026-08-03 (Spotify y escalado bajo
+XWayland, §7 (Entorno gráfico)) y 2026-08-02 (cierre de la tarea 2.1, Waybar).
+Auditoría no destructiva completa: 2026-07-23. Verificación post-incidente
+completa (particiones, arranque, servicios, Stow, journal, RTD3): 2026-08-24.
 
 Convención de estado: **[OK]** verificado en la máquina · **[PEND]** pendiente ·
 **[VER]** afirmado pero sin verificar.
@@ -25,7 +28,8 @@ Ver hardware completo en [`hardware.md`](hardware.md) y la cronología en
 
 ## 2. Almacenamiento y Btrfs  **[OK]**
 
-- Partición Linux: `/dev/nvme0n1p6`, UUID `27a7d1f2-…-95611f71b5aa`.
+- Partición Linux: **`/dev/nvme0n1p5`**, UUID `27a7d1f2-…-95611f71b5aa`
+  (verificado 2026-08-24 con `findmnt` y `lsblk`).
 - Opciones de montaje: `rw,noatime,compress=zstd:3,ssd,discard=async,space_cache=v2`.
 - Subvolúmenes:
   - `@` (ID 256) → `/`
@@ -38,6 +42,22 @@ Ver hardware completo en [`hardware.md`](hardware.md) y la cronología en
 > **Corrección histórica:** no existe un subvolumen `@snapshots` de nivel
 > superior (como se creía). Snapper usa el layout estándar con `.snapshots`
 > anidado. Los snapshots funcionan correctamente.
+
+> **La partición era `p6` hasta el 2026-08-24.** Una actualización de Windows
+> renumeró el disco y la Btrfs de Linux pasó de `p6` a `p5` (la recovery de MSI
+> hizo el camino inverso). **El UUID no cambió**, y ahí está la lección: como
+> `/etc/fstab` monta por UUID y no por nombre de dispositivo, no necesitó ni un
+> retoque — el sistema montó `/` y `/home` correctamente en cuanto GRUB
+> consiguió cargar el kernel. El que sí se rompió fue el bootloader (ver §3).
+>
+> Verificado tras el incidente (2026-08-24): los subvolúmenes siguen intactos
+> con los mismos IDs (`@` 256, `@home` 257, `.snapshots` 261 anidado), y
+> `btrfs device stats /dev/nvme0n1p5` da los cinco contadores de error a **0**
+> (`write`, `read`, `flush`, `corruption`, `generation`). No se lanzó un
+> `scrub`: queda pendiente para una sesión dedicada, por ser 24 GB de E/S.
+>
+> Cronología completa en
+> [`history/2026-08-24-incidente-arranque-grub.md`](history/2026-08-24-incidente-arranque-grub.md).
 
 ### Snapshots
 
@@ -61,13 +81,62 @@ Ver hardware completo en [`hardware.md`](hardware.md) y la cronología en
   en la ESP).
 - `os-prober` para detectar Windows · `grub-btrfs` para arrancar snapshots.
 - ESP FAT32 en `/dev/nvme0n1p1` → `/boot/efi` (~300 MB, ~12 % usada).
+- Entradas EFI (`efibootmgr`): `Boot0001* GRUB` y `Boot0000* Windows Boot
+  Manager`, ambas en la ESP, con `BootOrder 0001,0000` — GRUB primero.
+
+### El incidente del 2026-08-24 y por qué no se repetirá
+
+`grub-install` graba dentro del núcleo de GRUB la ubicación de `/boot/grub`
+como **`(hd0,gptN)`**: una referencia **posicional**, no un UUID. Cuando Windows
+renumeró las particiones, el `(hd0,gpt6)` que tenía grabado dejó de apuntar a la
+raíz Btrfs y pasó a señalar la NTFS de recovery de MSI. Resultado:
+`unknown filesystem` y caída a `grub rescue>`. **El sistema de archivos estaba
+perfectamente; lo único roto era la referencia del bootloader.**
+
+Se reparó desde un USB de Arch con `grub-install` + `grub-mkconfig` en chroot.
+
+Comprobado el 2026-08-24, después de reparar **y** después de actualizar:
+
+- `grep -c "hd0,gpt" /boot/grub/grub.cfg` → **0**. No queda ni una referencia
+  posicional en el menú.
+- `grep -c "search --no-floppy --fs-uuid" /boot/grub/grub.cfg` → **5**. Todo se
+  resuelve por UUID.
+- La entrada de Windows es `osprober-efi-DEFF-2D9C`, es decir, identificada por
+  el **UUID de la ESP** y no por número de partición.
+
+Es decir: ni la entrada de Linux ni la de Windows dependen ya de la numeración.
+Si Windows vuelve a renumerar el disco, el menú seguirá funcionando.
+
+> **Comprobación recomendada tras cada actualización grande de Windows:**
+> `sudo grep -c "hd0,gpt" /boot/grub/grub.cfg` debe devolver **0**. Si devuelve
+> otra cosa, el arranque es frágil y conviene regenerar antes de reiniciar.
+
+`grub-mkconfig` reescribe **solo** el menú: no toca `grubx64.efi` ni la NVRAM
+EFI. Por eso regenerar `grub.cfg` tras actualizar el kernel es seguro y no puede
+deshacer una reparación previa (verificado: la NVRAM salió byte a byte idéntica
+antes y después de la actualización de 221 paquetes).
+
+**Ningún hook de pacman regenera `grub.cfg` en Arch.** Los hooks de `linux` y
+`linux-lts` solo llaman a `mkinitcpio`. Hay que lanzarlo a mano:
+`sudo grub-mkconfig -o /boot/grub/grub.cfg`.
 
 ## 4. Kernel y arranque  **[OK]**
 
-- Arrancando `linux-lts` (**6.18.41-1-lts**, verificado 2026-08-01). También
-  instalado `linux` (mainline, 7.1.5.arch1-2). La versión concreta del kernel
+- Arrancando `linux-lts` (**6.18.46-1-lts**, verificado 2026-08-24). También
+  instalado `linux` (mainline, **7.1.9.arch1-2**). La versión concreta del kernel
   deriva con cada actualización; lo estable aquí es **que se arranca la LTS**.
-- `intel-ucode` presente. DKMS reconstruye `nvidia-open` para ambos kernels.
+- Que arranque la LTS no es casualidad: con `GRUB_DEFAULT=0`, `grub-mkconfig`
+  encuentra `vmlinuz-linux-lts` antes que `vmlinuz-linux`, así que la entrada
+  por defecto del menú es la LTS.
+- `intel-ucode` presente. DKMS reconstruye `nvidia-open` para ambos kernels
+  (**610.57.04-1** para `6.18.46-1-lts` y `7.1.9-arch1-2`, verificado
+  2026-08-24 con `dkms status` y los cinco `.ko.zst` en cada
+  `/usr/lib/modules/*/updates/dkms/`).
+- El orden de los hooks de pacman importa y sale bien solo: `Install DKMS
+  modules` (14/24) se ejecuta **antes** que `Updating linux initcpios` (16/24),
+  así que los initramfs se construyen con los módulos NVIDIA ya compilados. Con
+  `MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)` en `mkinitcpio.conf`,
+  el orden inverso dejaría el arranque sin driver.
 - **Tras actualizar el kernel hay que reiniciar antes de seguir trabajando.**
   Pacman borra `/usr/lib/modules/<versión-vieja>`, así que el kernel en
   ejecución se queda sin árbol de módulos: lo ya cargado sigue funcionando,
@@ -82,8 +151,9 @@ Ver hardware completo en [`hardware.md`](hardware.md) y la cronología en
 
 ## 6. Gráficos y energía
 
-- `nvidia-open-dkms` 610.43.03 · `nvidia-utils` / `nvidia-settings` /
-  `nvidia-prime` · `mesa` 26.1.5 · loader Vulkan 1.4. **[OK]**
+- `nvidia-open-dkms` **610.57.04** · `nvidia-utils` / `nvidia-settings` /
+  `nvidia-prime` · `mesa` **26.2.1** · loader Vulkan 1.4. **[OK]**
+  (versiones al 2026-08-24; antes 610.43.03 y mesa 26.1.5)
 - Híbrido PRIME offload: Intel Arc (`i915`) como GPU primaria; NVIDIA bajo
   demanda (`prime-run`). Sin variables de entorno NVIDIA/GBM/LIBVA/WLR forzadas
   (setup limpio). **[OK]**
@@ -93,10 +163,13 @@ Ver hardware completo en [`hardware.md`](hardware.md) y la cronología en
 - **[OK] Drop-in de NVIDIA para la suspensión** (verificado 2026-07-27):
   `/usr/lib/systemd/system/systemd-suspend.service.d/10-nvidia-no-freeze-session.conf`
   fija `Environment="SYSTEMD_SLEEP_FREEZE_USER_SESSIONS=false"`. Es propiedad
-  del paquete `nvidia-utils` 610.43.03-3 (`pacman -Qo`), **no** una
-  personalización local. Al vivir en `/usr/lib`, una actualización del paquete
-  puede modificarlo o retirarlo sin aviso: si la suspensión empieza a fallar
-  tras actualizar, comprobar este archivo primero.
+  del paquete `nvidia-utils` (`pacman -Qo`), **no** una personalización local.
+  Al vivir en `/usr/lib`, una actualización del paquete puede modificarlo o
+  retirarlo sin aviso: si la suspensión empieza a fallar tras actualizar,
+  comprobar este archivo primero.
+  **Revisado el 2026-08-24 tras subir a `nvidia-utils` 610.57.04-1:** el archivo
+  sigue presente, con el mismo contenido, y `pacman -Qo` lo asigna a la versión
+  nueva. La actualización no se lo llevó por delante.
 
 > **[OK] Runtime PM verificado (2026-07-22, solo sysfs, sin `nvidia-smi`):**
 > `runtime_status = suspended`, `control = auto` en ambas funciones PCI
@@ -491,6 +564,23 @@ Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
   `animations { enabled = false }` en `hyprlock.conf`. Cosmético: no se ha
   observado efecto sobre el bloqueo ni sobre el desbloqueo. Sin resolver
   (2026-07-27).
+- **[VER] Bluetooth: el kernel falla al cargar el firmware, pero el
+  controlador responde.** En cada arranque aparece
+  `Bluetooth: hci0: FW download error recovery failed (-19)` (más
+  `sending frame failed` y `Failed to read MSFT supported features`), y sigue
+  apareciendo igual tras actualizar `linux-firmware` a 20260810. Aun así,
+  `bluetoothctl show` devuelve el controlador `90:09:DF:FF:DC:AE`.
+  **No se comprobó `bluetoothctl` antes de actualizar, así que se desconoce si
+  esto es una mejora o si ya era así.** Pendiente: emparejar un dispositivo real
+  para saber si el Bluetooth funciona de verdad o solo lo parece (2026-08-24).
+
+> **Falso positivo descartado — el wifi está bien.** En el journal aparece
+> `iwlwifi: Direct firmware load for iwlwifi-gl-c0-fm-c0-c99.ucode failed with
+> error -2`, seguido de `loaded firmware version 101.6ef20b19.0
+> gl-c0-fm-c0-101.ucode`. Es el sondeo normal del driver, que prueba versiones
+> de API de mayor a menor hasta dar con la instalada. **No es un fallo y no hay
+> nada que arreglar**; sigue apareciendo tras actualizar `linux-firmware`
+> porque es el comportamiento esperado. Anotado para no volver a perseguirlo.
 
 ## 16. Notificaciones (dunst)  **[OK]**
 
