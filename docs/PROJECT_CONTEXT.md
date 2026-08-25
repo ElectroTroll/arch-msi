@@ -598,6 +598,16 @@ un único listener es justamente lo que permite garantizar el orden.
     D-Bus con un archivo que instala el propio paquete, y su unidad es
     `static` (no admite `enable`). Es el primer componente del proyecto cuyo
     autoarranque se restaura solo.
+  - **hyprpaper** → `dotfiles/hypr/` (`hyprpaper.conf`) **+ paquete nuevo
+    `dotfiles/wallpapers/`** (las imágenes). Tarea 2.4 completada. Detalle en
+    §17. **Es el primer componente que versiona binarios**: decisión razonada
+    en §17, no descuido. Añade el **cuarto** requisito a `install/services.sh`
+    — `hyprpaper.service` —, porque no hay `exec-once` de respaldo.
+    ⚠️ **Su config NO sigue la sintaxis de la wiki**, que en hyprpaper 0.8.x se
+    ignora en silencio. Leer §17 antes de tocarla.
+    ⚠️ **`~/Wallpapers` debe quedar como UN enlace de directorio**, no como un
+    directorio real con enlaces dentro. Al restaurar, no crearlo a mano: solo
+    así las imágenes nuevas caen dentro del repo. Ver §17.
 - Sin config todavía: `kitty`, `rofi`, `yazi`. Se difieren hasta que existan
   (o se cree una config mínima como tarea propia).
 
@@ -876,3 +886,185 @@ cadenas `general:on_lock_cmd` / `general:on_unlock_cmd` en el binario).
   `Super + L` y desbloqueo por contraseña. hypridle dispara `on_lock_cmd` al
   bloquear y `on_unlock_cmd` al desbloquear; `dunstctl is-paused` vuelve a
   `false` tras el desbloqueo. No queda ningún paso sin observar en este camino.
+
+## 17. Fondo de pantalla (hyprpaper)  **[OK]**
+
+Tarea 2.4 completada (2026-08-25). Toca **dos** paquetes Stow: la config va en
+`hypr/` (que ya existía) y las imágenes en un paquete nuevo, `wallpapers/`.
+
+- **hyprpaper 0.8.4-6** sobre Hyprland 0.56.2.
+- Config: `dotfiles/hypr/.config/hypr/hyprpaper.conf`.
+- Imágenes: `dotfiles/wallpapers/Wallpapers/`, **versionadas en el repo**.
+- Arranque: `hyprpaper.service`, unidad del paquete.
+- Comportamiento: **una imagen aleatoria de la carpeta en cada arranque**, sin
+  rotación mientras la sesión está viva.
+
+### ⚠️ La sintaxis de la wiki no funciona, y falla en silencio
+
+**Es lo más importante de esta sección.** hyprpaper 0.8.x se reescribió sobre
+`hyprtoolkit` y cambió el esquema de configuración. El que documenta la wiki de
+Hyprland, y prácticamente todo tutorial que se encuentre, es el clásico:
+
+```
+preload   = /ruta/imagen.png          <- IGNORADO en 0.8.4
+wallpaper = eDP-1,/ruta/imagen.png    <- IGNORADO en 0.8.4
+```
+
+**Verificado (2026-08-25):** con esa configuración el resultado es idéntico al
+de un archivo **vacío**. El log dice solo
+
+```
+Monitor eDP-1 has no target: no wp will be created
+```
+
+y **ningún error**. El fallo es perfecto en su silencio: proceso vivo, servicio
+activo, cero mensajes, cero fondo. Quien copie la wiki buscará la avería donde
+no está.
+
+La causa es una asimetría de hyprlang, también verificada: una clave
+desconocida **dentro de una categoría conocida** sí da error —
+`config option <wallpaper:image> does not exist` — pero una clave desconocida en
+el **nivel superior se acepta sin decir nada**. `preload` y `wallpaper = ...`
+caen en el segundo caso.
+
+El esquema real se dedujo de las cadenas del binario y se confirmó probando cada
+clave contra `hyprpaper -c` con una config de usar y tirar:
+
+```
+wallpaper {
+    monitor   =           # vacío = todas las salidas
+    path      = ~/...     # archivo O DIRECTORIO; admite ~ y $HOME
+    fit_mode  = cover     # cover | contain | tile
+    order     = default   # default | random | random-shuffle
+    recursive = false
+    timeout   = 0         # segundos; 0 = sin rotación
+}
+splash_offset  = 2        # ENTERO
+splash_opacity = 0
+```
+
+⚠️ **`splash_offset` es un entero.** Un `2.0` aborta **toda** la config con
+`cannot parse "2.0" as an int` y te deja sin fondo. Verificado.
+
+### `~/Wallpapers` es UN enlace de directorio, y eso es deliberado
+
+**El detalle que hay que respetar al restaurar.** Stow puede desplegar este
+paquete de dos formas muy distintas, y solo una da el flujo que se quería:
+
+| Estado previo de `~/Wallpapers` | Qué hace Stow | Consecuencia |
+|---|---|---|
+| **No existe** | `LINK: Wallpapers => .../dotfiles/wallpapers/Wallpapers` — **un solo enlace de directorio** | Toda imagen que se deje caer en `~/Wallpapers` **aterriza en el repo** y aparece en `git status`. Sin copiar nada a mano. |
+| Existe como directorio real | Enlaza **archivo por archivo** dentro de él | Las imágenes nuevas se quedan **fuera** del repo, en el directorio real. Se pierden en la siguiente reinstalación. |
+
+Por eso el directorio se eliminó (vacío, con `rmdir`) antes de enlazar.
+
+> ⚠️ **Al restaurar en una máquina nueva: NO crear `~/Wallpapers` a mano.**
+> Dejar que lo cree `stow -d dotfiles -t ~ wallpapers`. Crearlo antes rompe el
+> flujo en silencio: todo parece funcionar, el fondo se ve, y las imágenes que
+> añadas después simplemente no se versionan.
+
+### Cambio en cada arranque, no por tiempo
+
+Pedido explícitamente: como los fondos por defecto de Hyprland. Se consigue con
+`timeout = 0` (sin rotación en caliente) más `order = random` (elección inicial
+aleatoria).
+
+**Medido con `inotifywait` sobre el directorio**, porque hyprpaper no registra
+en el log qué imagen carga y la diferencia entre los dos modos aleatorios no
+está documentada en ninguna parte:
+
+- `order = random` → punto de partida **aleatorio** y después ciclo
+  **secuencial**: `img3 img4 img5 img1 img2 img3...`
+- `order = random-shuffle` → barajado real, admite repeticiones seguidas:
+  `img3 img5 img1 img4 img2 img1 img3...`
+
+Con `timeout = 0` solo cuenta la primera elección, así que ambos valdrían.
+
+**Verificado con 8 arranques consecutivos** (5 imágenes, `timeout = 0`,
+`order = random`): cada arranque abre **una sola** imagen y **varía** entre
+ejecuciones. La aleatoriedad es de calidad modesta —en esos 8 arranques
+aparecieron 3 de las 5 imágenes— pero varía, que es lo que se pedía.
+
+También quedó verificado que la rotación **por tiempo sí funciona** si algún día
+se quiere: con `timeout = 3` abría una imagen distinta cada 3 s.
+
+### Contenido de la carpeta
+
+**Archivos no-imagen: inofensivos.** Verificado que hyprpaper los abre para
+husmear el tipo con `libmagic` pero **no los selecciona**. Con un `.eps` y un
+`.txt` junto a imágenes válidas funciona sin un solo aviso. Solo falla si **no
+hay ninguna** imagen válida, y entonces lo dice claro:
+`Provided path(s) '...' does not contain a valid image`.
+
+**Proporción: no hay que preprocesar.** `fit_mode = cover` escala y recorta sin
+deformar, así que se puede dejar caer cualquier imagen. El panel es 16:10
+(2560×1600): una 16:9 pierde franjas laterales, una 2:1 pierde un 20% del ancho.
+
+**Peso: sí conviene preprocesar.** La carpeta está en un repo **público** y git
+guarda cada versión de cada binario entera y para siempre. Una imagen ajustada a
+2560×1600 pesa ~530 KB frente a ~3 MB del original de 6000×3000, y hyprpaper no
+nota la diferencia porque de todos modos recorta:
+
+```
+magick original.jpg -resize x1600 -gravity center -extent 2560x1600 \
+       -quality 92 ~/Wallpapers/nombre.jpg
+```
+
+**`scripts/add-wallpaper.sh` automatiza todo lo anterior.** Recibe una imagen de
+cualquier tamaño y proporción, la ajusta a 2560×1600 recortando desde el centro,
+la convierte a JPEG q92 y la deja en `~/Wallpapers`:
+
+```
+scripts/add-wallpaper.sh ~/Descargas/loquesea.png [nombre-destino]
+```
+
+Comprueba que `~/Wallpapers` existe y **avisa si no es un enlace simbólico**,
+porque ese es el fallo silencioso descrito arriba. Si la imagen de origen es
+demasiado pequeña y habría que ampliarla, avisa de que se verá borrosa y pide
+confirmación en vez de hacerlo sin más. **Verificado** el 2026-08-25: procesando
+el original de 6000×3000 produce un resultado con **RMSE 0** frente al recorte
+hecho a mano — píxel a píxel idéntico.
+
+**Formato.** Para la primera imagen se compararon alternativas mirando la zona
+de cielo oscuro ampliada al 300%, que es donde la compresión con pérdida se
+delata: JPEG q92 (533 KB) sin artefactos visibles; WebP q90 (199 KB) con
+**bloques visibles**; WebP sin pérdida (1,1 MB) y PNG (1,5 MB) irreprochables
+pero al triple de peso sin diferencia observable. Se usa **JPEG q92**.
+
+> **Un EPS vectorial NO es mejor que un JPG grande si el rasterizador falla.**
+> La primera imagen venía con un `.eps` de Adobe Illustrator además del JPG, y
+> lo lógico habría sido renderizarlo a resolución nativa exacta. **Se comparó y
+> se descartó:** ghostscript no resuelve bien sus degradados y produce azul
+> eléctrico sobresaturado con bandeado horizontal visible, muy lejos del índigo
+> del original. Los originales sin procesar viven en
+> `~/Descargas/wallpaper-originales/`, **fuera del repo**.
+
+### Autoarranque: **cuarto** requisito bloqueante de `install/services.sh`
+
+Como waybar e hypridle, y por el mismo motivo. En `hyprland.lua` **no hay
+ningún `exec-once`** — las líneas 55-61 son los ejemplos comentados de la
+plantilla —, así que `hyprpaper.service` es la **única** vía de arranque. Su
+`enable` crea un enlace en
+`~/.config/systemd/user/graphical-session.target.wants/`, que **no** está
+versionado.
+
+Es el más benigno de los cuatro huecos (te quedas sin fondo, no sin bloqueo de
+pantalla), pero igual de silencioso: los archivos vuelven a su sitio, Stow
+enlaza, y no arranca nadie. Ver roadmap 6.1.
+
+**[OK] Verificado tras reinicio real (2026-08-25, arranque de las 19:19).** No
+basta con `enabled` + `active` en caliente: se comprobó que el arranque es de
+systemd y no algo heredado de la sesión de configuración.
+
+```
+19:19:39  systemd[900]: Started Fast, IPC-controlled wallpaper utility for Hyprland.
+19:19:39  hyprpaper[1048]: Welcome to hyprpaper!
+19:19:39  hyprpaper[1048]: Found 1 output(s)
+```
+
+`MainPID=1048`, dentro de
+`/user.slice/user-1000.slice/user@1000.service/session.slice/hyprpaper.service`,
+y **cero** coincidencias de `Config has errors`, `no target`, `Failed to resolve`
+o `does not contain a valid image`. El enlace `~/Wallpapers` sobrevivió intacto.
+Los tres servicios del hueco 6.1 —`hypridle`, `waybar`, `hyprpaper`— quedaron
+`enabled` + `active` en el mismo arranque.

@@ -22,7 +22,7 @@ nota y lo más inmediato.
 | 2.1 | ~~**Waybar** — barra de estado~~ **[OK] Completada** | Medio | Bajo |
 | 2.2 | ~~**Dunst** — notificaciones~~ **[OK] Completada** | Bajo | Bajo |
 | 2.3 | ~~**hypridle + hyprlock** — bloqueo automático~~ **[OK] Completada** | Medio | **Medio** |
-| 2.4 | **hyprpaper** — fondo de pantalla | Bajo | Bajo |
+| 2.4 | ~~**hyprpaper** — fondo de pantalla~~ **[OK] Completada** | Bajo | Bajo |
 | 2.5 | Limpieza: variable `menu` sobrante en `hyprland.lua` | Trivial | Nulo |
 
 **2.1 Waybar.** **[OK] Completada (2026-08-02).** Barra superior de 34 px con
@@ -96,8 +96,38 @@ inactividad».
 > hyprlock y el login por TTY (por defecto `deny = 3`, `unlock_time = 600`):
 > tres fallos cerrarían también la vía de rescate durante 10 minutos.
 
-**2.4 hyprpaper.** Fondo de pantalla. Requiere decidir dónde se guardan las
-imágenes (¿versionar en el repo o mantener fuera por tamaño?).
+**2.4 hyprpaper.** **[OK] Completada (2026-08-25).** Fondo de pantalla con
+hyprpaper 0.8.4. Toca dos paquetes Stow: la config en `hypr/` (existente) y las
+imágenes en **`wallpapers/`**, nuevo, que despliega `~/Wallpapers`.
+`hyprpaper.service` habilitado. **Una imagen aleatoria de la carpeta en cada
+arranque**, como los fondos por defecto de Hyprland, sin rotación en caliente
+(`timeout = 0` + `order = random`). Config sin rutas frágiles: `monitor =`
+vacío en vez de `eDP-1`, y `path = ~/Wallpapers` en vez de una ruta absoluta;
+ambas formas verificadas, igual que el autoarranque **tras un reinicio real**
+(arranque de las 19:19: `systemd Started ...`, PID dentro del cgroup del
+servicio, sin errores). Detalle en `docs/PROJECT_CONTEXT.md` §17. **Con esto se
+cierra el bloque de escritorio (fase 2)** salvo la limpieza trivial de la 2.5.
+
+> ⚠️ **`~/Wallpapers` es UN enlace de directorio, no un directorio real.** Es
+> lo que hace que una imagen dejada ahí aterrice en el repositorio sin copiar
+> nada a mano. Si al restaurar se crea el directorio ANTES de invocar a Stow,
+> Stow enlaza archivo por archivo y las imágenes nuevas dejan de versionarse —
+> en silencio, con el fondo funcionando igual. Ver §17.
+
+> ⚠️ **La sintaxis de la wiki no funciona y falla en silencio.** hyprpaper
+> 0.8.x se reescribió sobre hyprtoolkit y cambió el esquema. Con el clásico
+> `preload` / `wallpaper = eDP-1,...` el resultado es **idéntico al de una
+> config vacía**: proceso vivo, servicio activo, cero errores y cero fondo. La
+> causa, verificada: hyprlang avisa de una clave desconocida dentro de una
+> categoría conocida, pero **acepta en silencio** una clave desconocida en el
+> nivel superior. El esquema real es un bloque `wallpaper { ... }`. Ver §17.
+
+> **La imagen se versiona en el repo** (533 KB, JPEG q92, 2560×1600). Es el
+> primer binario del repositorio y la decisión fue deliberada: una imagen no se
+> recupera con `pacman -S`, así que documentar cuál era falla justo en el
+> escenario para el que existe este proyecto. Contrapartida asumida: git guarda
+> cada versión entera y para siempre, así que **cambiar de fondo a menudo sale
+> caro**. Razonamiento completo en §17.
 
 ---
 
@@ -200,12 +230,12 @@ Cerrar el objetivo original: poder reinstalar y recuperar el sistema.
 | 6.5 | **Prueba real de restauración en una VM** | Alto | Nulo |
 
 **6.1** ⚠️ **Requisito bloqueante, no una nota menor: `install/services.sh`
-tiene que reactivar TRES cosas que no viven en los dotfiles.** El `enable` de un
+tiene que reactivar CUATRO cosas que no viven en los dotfiles.** El `enable` de un
 servicio de usuario crea un enlace en
 `~/.config/systemd/user/graphical-session.target.wants/`, que **no** está
-versionado; de él solo queda rastro en `packages/services-enabled.txt`. Los tres
-huecos son del mismo tipo y fallan **en silencio**: los archivos vuelven a su
-sitio, pero nada los activa y nada avisa de que falta el paso.
+versionado; de él solo queda rastro en `packages/services-enabled.txt`. Los
+cuatro huecos son del mismo tipo y fallan **en silencio**: los archivos vuelven
+a su sitio, pero nada los activa y nada avisa de que falta el paso.
 
 - **`hypridle.service`** — sin rehabilitarlo, la sesión no se bloquea sola
   nunca. Los archivos estarían todos en su sitio, `hyprlock` y `Super + L`
@@ -226,12 +256,18 @@ sitio, pero nada los activa y nada avisa de que falta el paso.
   `style.css` y `claude-usage.sh` quedan enlazados por Stow, pero nadie lanza
   Waybar (tarea 2.1). No hay `exec-once` en `hyprland.lua` que sirva de
   respaldo: el servicio es la única vía de arranque.
+- **`hyprpaper.service`** — sin rehabilitarlo no hay fondo de pantalla: la
+  imagen y `hyprpaper.conf` quedan enlazados por Stow, pero nadie lanza
+  hyprpaper (tarea 2.4). Igual que con Waybar, **no hay `exec-once` en
+  `hyprland.lua` que sirva de respaldo**: el servicio es la única vía. Es el
+  más benigno de los cuatro —te quedas sin fondo, no sin bloqueo de pantalla—
+  pero igual de silencioso.
 - **`~/.claude/settings.json` → `statusLine.command`** — el script está
   versionado en `dotfiles/claude/` y se enlaza con Stow, pero quien lo invoca
   es este archivo, que **no** se versiona porque contiene credenciales y estado
   de sesión. Sin él, el módulo de uso de Claude se queda en `—` para siempre.
 
-La fase 6 **no puede darse por completada** sin los tres, y la prueba de
+La fase 6 **no puede darse por completada** sin los cuatro, y la prueba de
 restauración en VM (6.5) debe verificarlos explícitamente.
 Ver `docs/PROJECT_CONTEXT.md` §9 (Red y seguridad), §13 (Dotfiles y estado del
 repositorio) y §14 (Tareas pendientes).
@@ -264,7 +300,8 @@ herramientas para 7.1; qué se quiere automatizar y con qué límites para 7.2.
 (Ya completadas: **5.1** cortafuegos, **2.3 / 5.4** bloqueo de sesión,
 **2.1** Waybar y **2.2** Dunst.)
 
-1. **2.4** — fondo de pantalla; con eso el escritorio queda completo.
+1. ~~**2.4** — fondo de pantalla~~ **[OK] hecha el 2026-08-25**; el escritorio
+   queda completo salvo la limpieza trivial de la 2.5.
 2. **5.3 (probar snapshots)** — validar la red de seguridad antes de seguir
    cambiando cosas.
 3. **Fase 3** — pulido estético, sin riesgo, buen trabajo de relleno.

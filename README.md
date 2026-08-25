@@ -67,17 +67,33 @@ arch-msi/
 ├── .gitignore
 ├── docs/
 │   ├── PROJECT_CONTEXT.md
+│   ├── roadmap.md
 │   ├── hardware.md
 │   ├── keybindings.md
 │   └── history/chatgpt-arch-installation.md
+├── dotfiles/          # paquetes GNU Stow, uno por componente
+│   ├── claude/  dunst/  hypr/  shell/
+│   ├── swappy/  waybar/ wlogout/
+│   └── wallpapers/    # -> ~/Wallpapers (imágenes de fondo, ver PROJECT_CONTEXT §17)
 ├── packages/
 │   ├── pacman-explicit.txt
 │   ├── aur.txt
 │   ├── npm-global.txt
 │   └── services-enabled.txt
 └── scripts/
-    └── update-inventories.sh   # regenera los 4 archivos de packages/ con cabecera
+    ├── update-inventories.sh   # regenera los 4 archivos de packages/ con cabecera
+    └── add-wallpaper.sh        # ajusta una imagen a 2560x1600 y la añade a ~/Wallpapers
 ```
 
-El directorio `dotfiles/` se creará cuando se migre el primer componente, no
-antes (nada de carpetas vacías).
+Los dotfiles se despliegan desde la raíz del repo, un paquete cada vez:
+
+```
+stow -n -v -d dotfiles -t ~ <paquete>   # simular: revisar CONFLICT antes de nada
+stow    -v -d dotfiles -t ~ <paquete>   # enlazar
+```
+
+⚠️ **`wallpapers` tiene una particularidad**: despliega `~/Wallpapers` como **un
+único enlace de directorio**, y eso es deliberado — es lo que hace que una imagen
+dejada ahí aterrice en el repositorio. **No crear `~/Wallpapers` a mano antes de
+invocar a Stow**: si el directorio ya existe, Stow enlaza archivo por archivo y
+las imágenes nuevas dejan de versionarse, en silencio. Ver `PROJECT_CONTEXT` §17.
