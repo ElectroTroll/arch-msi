@@ -120,6 +120,7 @@ wget
 wireplumber
 wl-clipboard
 wlogout
+wlopm
 woff2-font-awesome
 xdg-desktop-portal
 xdg-desktop-portal-hyprland

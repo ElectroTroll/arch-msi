@@ -65,13 +65,25 @@ Ver detalle en `docs/PROJECT_CONTEXT.md` §16 (Notificaciones).
 > primera notificación, así que un `pgrep dunst` vacío no significa que esté
 > roto.
 
-**2.3 hypridle + hyprlock.** **[OK] Completada (2026-07-27).** hyprlock con
-desbloqueo por contraseña vía PAM e hypridle con tres listeners (480 s atenuar
-el brillo, 600 s bloquear, 900 s suspender **solo con batería**), más
-`before_sleep_cmd` e `inhibit_sleep = 2`; `hypridle.service` habilitado y
+**2.3 hypridle + hyprlock.** **[OK] Completada (2026-07-27), ampliada
+(2026-08-25).** hyprlock con desbloqueo por contraseña vía PAM e hypridle con
+tres listeners (480 s atenuar el brillo, 600 s bloquear, 900 s **apagar la
+pantalla** y suspender **solo con batería**), más `before_sleep_cmd`,
+`after_sleep_cmd` e `inhibit_sleep = 2`; `hypridle.service` habilitado y
 verificado tras reinicio, y atajo manual **`Super + L`**. Ver detalle en
 `docs/PROJECT_CONTEXT.md` §9 (Red y seguridad) → «Bloqueo de pantalla e
 inactividad».
+
+> **Ampliación del 2026-08-25 — la pantalla no se apagaba nunca.** Se detectó
+> al preguntar por qué la pantalla nunca llegaba a negro, ni enchufado ni con
+> batería. No era una avería: **no había ninguna regla que la apagase**. El
+> apagado se había descartado en su día tras el incidente del DPMS y nunca se
+> sustituyó, así que la secuencia terminaba en el bloqueo de los 600 s con la
+> retroiluminación encendida. Lo cubre ahora **`wlopm`** (nuevo paquete, repo
+> `extra`), cliente del protocolo `zwlr_output_power_manager_v1`, que **no**
+> pasa por el dispatcher de Hyprland ni por el parser Lua que provocó aquel
+> incidente. A los 900 s: pantalla apagada siempre, suspensión solo con
+> batería y **después** del apagado. Detalle y trampas en §9.
 
 > ⚠️ **Vía de rescate — corrección importante (verificado 2026-07-27).**
 > `Ctrl+Alt+F2` **no funciona** en este equipo: Hyprland captura la combinación

@@ -226,6 +226,9 @@ antes y después de la actualización de 221 paquetes).
 > Dos casos ya encontrados:
 > - **DPMS** en hypridle (tarea 2.3, ver §9): además de fallar, el equivalente
 >   Lua apagó la pantalla de forma irrecuperable. No usar dispatchers DPMS.
+>   **La necesidad quedó cubierta el 2026-08-25 con `wlopm`** (§9), que esquiva
+>   el IPC y el parser Lua por completo. La advertencia sobre los dispatchers
+>   sigue vigente: lo que cambió es que ya no hace falta usarlos.
 > - **Clic en los workspaces de Waybar** (tarea 2.1): Waybar 0.15 envía
 >   `dispatch workspace N`, Hyprland lo rechaza y Waybar no mira la respuesta,
 >   así que el clic no hace nada y no se registra ningún error. Waybar no
@@ -354,12 +357,17 @@ Tarea 2.3 completada (commits `887cfb3`, `03f4bc5`, `0d8a364`, `b99f62d`,
     bloqueo y suspensión. Se fija **explícitamente**, sin depender del default
     de ninguna versión. **No subir a 3**: rompe `on_lock_cmd` /
     `on_unlock_cmd`.
-  - **Sin `after_sleep_cmd`** — ver la trampa del DPMS más abajo.
+  - `after_sleep_cmd = wlopm --on '*'` — reenciende la pantalla al volver de
+    suspender. Es la segunda red bajo el `on-resume` del listener de 900 s;
+    ambas son idempotentes. Hasta el 2026-08-25 esta directiva **no existía**,
+    porque la única forma conocida de encender la pantalla era el dispatcher
+    DPMS de Hyprland, que aquí es inutilizable (ver la trampa más abajo).
   - Listeners: **480 s** atenuar el brillo al 10%
     (`brightnessctl -s set 10%` / `on-resume: brightnessctl -r`), **600 s**
-    bloquear (`loginctl lock-session`), **900 s** suspender **solo con
-    batería** (`grep -qx 0 /sys/class/power_supply/ADP1/online &&
-    systemctl suspend`).
+    bloquear (`loginctl lock-session`), **900 s** apagar la pantalla
+    **siempre** y suspender **solo con batería**
+    (`wlopm --off '*' ; grep -qx 0 /sys/class/power_supply/ADP1/online &&
+    systemctl suspend`, con `on-resume: wlopm --on '*'`).
 - **Brillo:** `intel_backlight` con `max_brightness = 192000`. Usar siempre
   **porcentaje** (`set 10%`); un `set 10` crudo sería 0,005% → pantalla negra.
   Este equipo **no tiene `kbd_backlight`**.
@@ -414,6 +422,65 @@ Tarea 2.3 completada (commits `887cfb3`, `03f4bc5`, `0d8a364`, `b99f62d`,
   rehabilitarlo a mano**, o el bloqueo automático quedará silenciosamente
   inactivo.
 
+#### Apagado de pantalla con `wlopm`  **[OK]** (2026-08-25)
+
+Hasta esta fecha **la pantalla no se apagaba nunca**, ni con batería ni
+enchufado: la secuencia terminaba en el bloqueo de los 600 s, con hyprlock
+dibujando un fondo casi negro pero **con la retroiluminación encendida**. No
+era una avería, era una funcionalidad que faltaba — se descartó al montar la
+tarea 2.3 tras el incidente del DPMS (ver «Vías de rescate y trampas
+conocidas», más abajo) y no se sustituyó por nada.
+
+Lo cubre **`wlopm`** (repo `extra`, 57 KiB instalado), cliente del protocolo
+**`zwlr_output_power_manager_v1`**. La clave es **por dónde no pasa**: habla
+con el compositor directamente por el protocolo estándar de Wayland, sin
+`hyprctl`, sin el IPC de Hyprland y **sin el parser Lua**, que es donde reventó
+el intento de 2026-07-27. Además `--on` y `--off` son rutas de código
+distintas, así que no puede repetirse aquel fallo de "pedí encender y apagó".
+
+Que Hyprland 0.56 anuncia el protocolo está verificado en el journal del propio
+hypridle: `[LOG]   | got iface: zwlr_output_power_manager_v1 v1`.
+
+**Comportamiento resultante a los 900 s:**
+
+| | Pantalla | Suspensión |
+|---|---|---|
+| Enchufado | se apaga | **no** (la guarda de `ADP1` corta el `&&`) |
+| Con batería | se apaga | sí, **después** de apagar la pantalla |
+
+**[OK] Los dos caminos verificados por observación (2026-08-25)**, con la
+config desechable que sustituye el `systemctl suspend` por un `echo`:
+
+- **Enchufado:** tres disparos consecutivos (`17:55:34`, `17:55:42`,
+  `17:56:01`) apagaron la pantalla y en ninguno se ejecutó la rama de
+  suspensión — la guarda de `ADP1` hizo su trabajo.
+- **Con batería:** un disparo (`18:05:14`) ejecutó **las dos** ramas en el
+  mismo segundo, en el orden escrito, y el `on-resume` devolvió la pantalla.
+
+⚠️ **Las comillas de `'*'` son obligatorias.** Verificado empíricamente con una
+instancia desechable de hypridle (`hypridle -c` contra una config de usar y
+tirar cuyo listener solo registraba sus argumentos): hyprlang **no** se come
+las comillas y el shell recibe un `*` literal, pero **sin** comillas el shell
+hace globbing contra el directorio de trabajo de hypridle y `wlopm --off`
+acabaría recibiendo nombres de fichero. La misma medición demostró que el `;`
+encadena y **respeta el orden escrito**, que es lo que garantiza "apaga la
+pantalla y *luego* suspende" — un segundo listener con el mismo `timeout` no
+daría esa garantía. El comodín `*` (todas las salidas) está documentado en
+`wlopm(1)`, sección OUTPUT NAMES; se usa en vez de `eDP-1` para que un monitor
+externo también se apague.
+
+⚠️ **Trampa, de la misma familia que la del par `-s`/`-r` del brillo:** el
+apagado vive en el **compositor**, no en hypridle. Si hypridle muriera o se
+reiniciara con la pantalla ya apagada, el `on-resume` no llegaría nunca y la
+pantalla se quedaría negra **sin error en ningún log**, con el equipo por lo
+demás vivo. Se arregla con `wlopm --on '*'` a ciegas, o reiniciando hypridle.
+**[NO VERIFICADO]** si un cambio de VT la recupera.
+
+**Nota para el futuro:** hypridle 0.1.8 expone un campo **`condition_cmd`** por
+listener (visible en el log de arranque), que sería una forma más limpia de
+expresar la guarda de batería que el `&&`. No se ha adoptado: el `&&` dentro de
+un único listener es justamente lo que permite garantizar el orden.
+
 > **Vías de rescate y trampas conocidas (2026-07-27).** Cada punto lleva su
 > propio estado: **[OK]** observado en la máquina · **[VER]** deducido de la
 > configuración, sin provocar.
@@ -455,6 +522,10 @@ Tarea 2.3 completada (commits `887cfb3`, `03f4bc5`, `0d8a364`, `b99f62d`,
 >   respuesta a teclado, ratón, tapa ni cambio de VT. Solo se recuperó con
 >   `systemctl reboot`. No hay sintaxis DPMS verificada para 0.56 + Lua.
 >   **No usar dispatchers DPMS en este equipo.**
+>   **[OK] Resuelto por otra vía el 2026-08-25:** el apagado de pantalla lo
+>   hace ahora `wlopm` por el protocolo `zwlr_output_power_manager_v1`, sin
+>   tocar el dispatcher (§9). Lo descartado sigue descartado; lo que se
+>   recupera es la funcionalidad, no el método.
 
 ## 10. Herramientas de IA  **[OK]**
 
@@ -559,6 +630,8 @@ Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
 
 ## 15. Información sin verificar
 
+- Si un cambio de VT recupera una pantalla apagada con `wlopm` cuando hypridle
+  ha muerto (ver la trampa en §9).
 - Estado de autenticación de Claude Code (no comprobado; no exponer credenciales).
 - **[VER]** hyprlock registra `Starting fade in` pese a tener
   `animations { enabled = false }` en `hyprlock.conf`. Cosmético: no se ha
