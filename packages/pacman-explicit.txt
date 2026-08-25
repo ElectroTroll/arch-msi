@@ -1,5 +1,5 @@
 # Paquetes instalados explícitamente (pacman -Qqe)
-# Fuente: auditoría 2026-08-03 en elok-archmsi
+# Fuente: auditoría 2026-08-25 en elok-archmsi
 # Regenerar con: pacman -Qqe > packages/pacman-explicit.txt
 # AVISO: al regenerar, esta cabecera se pierde. Debe volver a añadirse a mano
 # (o usar scripts/update-inventories.sh, que la conserva).
@@ -18,6 +18,7 @@ btop
 btrfs-progs
 claude-desktop
 cliphist
+discord
 dmidecode
 dolphin
 dosfstools
