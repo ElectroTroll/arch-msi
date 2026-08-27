@@ -1,0 +1,35 @@
+# config.toml — matugen · MSI Summit E16 AI Studio (arch-msi)
+# Fecha: 2026-08-27 · Tarea 3.0 (tema centralizado).
+# Verificado con matugen 4.2.0-1 (repositorio `extra`, NO el AUR).
+#
+# ESTE ARCHIVO NO SE EDITA PARA CAMBIAR EL ASPECTO. Aquí solo se declara QUÉ
+# plantilla va a QUÉ ruta. El esquema, el contraste, el tono del acento, la
+# fuente y las métricas viven en theme/tokens.toml, que es el único archivo que
+# se toca; `scripts/theme-apply.sh` los pasa como argumentos y como render data.
+#
+# ⚠️ REGLA DE ORO — `output_path` NUNCA puede apuntar a un archivo gestionado por
+# Stow. Los enlaces de ~/.config/{waybar,dunst,hypr} apuntan DENTRO del
+# repositorio: escribir sobre uno de ellos metería la salida generada en el repo
+# (o rompería el enlace). Toda salida usa nombres NUEVOS que no existen en el
+# repo, en directorios reales. Ver docs/PROJECT_CONTEXT.md.
+#
+# ⚠️ NO añadir aquí `[config.wallpaper]` con `set = true`: el fondo lo gobierna
+# hyprpaper (tarea 2.4) y matugen no debe tocarlo. Tampoco recargas de apps: las
+# hace theme-apply.sh, que sabe qué señal necesita cada una.
+
+[config]
+
+# Waybar: se genera la hoja ENTERA, no solo los colores. GTK CSS no tiene
+# variables numéricas, así que es la única forma de que la fuente y las métricas
+# salgan de theme/tokens.toml. Por eso `style.css` ya NO lo enlaza Stow: la
+# plantilla es lo versionado y la hoja es artefacto. Ver la cabecera de la
+# plantilla.
+[templates.waybar]
+input_path  = "~/.config/matugen/templates/waybar-style.css"
+output_path = "~/.config/waybar/style.css"
+
+# La config también, porque la altura de la barra y el margen del CSS son dos
+# mitades del mismo cálculo de la isla flotante.
+[templates.waybar-config]
+input_path  = "~/.config/matugen/templates/waybar-config.jsonc"
+output_path = "~/.config/waybar/config.jsonc"

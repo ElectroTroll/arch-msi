@@ -1,5 +1,18 @@
-/* style.css — Waybar · MSI Summit E16 AI Studio (arch-msi)
- * Fecha: 2026-08-01 · Tarea 2.1, paso 1/4.
+/* waybar-style.css — PLANTILLA de la hoja de estilo de Waybar (arch-msi)
+ * Fecha: 2026-08-01 (tarea 2.1) · convertida en plantilla el 2026-08-27 (3.0).
+ *
+ * Fuente:  dotfiles/matugen/.config/matugen/templates/waybar-style.css  (esto)
+ * Salida:  ~/.config/waybar/style.css                                  (artefacto)
+ *
+ * ⚠️ NO EDITAR ~/.config/waybar/style.css: lo reescribe matugen en cada arranque.
+ * Se edita ESTE archivo, o theme/tokens.toml para valores.
+ *
+ * POR QUÉ WAYBAR NO SIGUE EL PATRÓN DE LOS DEMÁS. dunst, hyprlock, Hyprland,
+ * kitty y rofi conservan su config enlazada por Stow y reciben el tema como un
+ * fragmento incluido, porque sus formatos admiten VARIABLES reutilizables. GTK
+ * CSS no: solo tiene `@define-color`, que sirve para colores y para nada más.
+ * Sin variables numéricas no hay forma de que el tamaño de fuente o el radio
+ * salgan de tokens.toml… salvo generando la hoja entera. De ahí la excepción.
  *
  * Clases y selectores verificados contra las páginas de manual de waybar
  * 0.15.0-2 (ver la lista Style de waybar-hyprland-workspaces(5)).
@@ -8,34 +21,58 @@
  * de config.jsonc. 13px de fuente son ≈21px físicos: es el tamaño cómodo en
  * esta pantalla, no un descuido.
  *
- * PALETA: es la primera decisión estética versionada del proyecto. Kitty,
- * Rofi y Dunst siguen con sus valores por defecto, así que estos colores son
- * la semilla para el tema unificado de la tarea 3.5, no un tema ya cerrado.
+ * Todos los valores vienen de theme/tokens.toml (fuente, métricas, opacidades y
+ * colores de estado) o de matugen (colores que siguen al fondo).
  */
 
-@define-color bg        #16181d;
-@define-color fg        #c8ccd4;
-@define-color muted     #6b7280;
-@define-color accent    #7aa2f7;
-@define-color ok        #9ece6a;
-@define-color warn      #e0af68;
-@define-color crit      #f7768e;
+/* --- Colores -------------------------------------------------------------
+ * Superficies y texto con ROLES del esquema (ahí Material garantiza el
+ * contraste). El acento con un TONO de paleta, que es lo que evita el pastel:
+ * ver `accent_tone` en theme/tokens.toml. */
+@define-color bg      {{colors.surface.default.hex}};
+@define-color bg_alt  {{colors.surface_container.default.hex}};
+@define-color fg      {{colors.on_surface.default.hex}};
+@define-color muted   {{colors.outline_variant.default.hex}};
+@define-color accent  {{accent}};
+
+/* Identidad azul/rosa/magenta, ya armonizada hacia el fondo. */
+@define-color ident_pink    {{ident_pink}};
+@define-color ident_magenta {{ident_magenta}};
+
+/* Estado: FIJOS, no pasan por matugen. Una batería crítica debe leerse igual
+ * con cualquier fondo. */
+@define-color ok    {{state_ok}};
+@define-color warn  {{state_warn}};
+@define-color crit  {{state_crit}};
 
 /* Reset. `all: unset` evita heredar el tema GTK del sistema, que cambiaría el
  * aspecto de la barra al tocar nwg-look en la tarea 3.5. */
 * {
     all: unset;
-    font-family: "JetBrainsMono Nerd Font", monospace;
-    font-size: 13px;
+    font-family: "{{font_family}}", {{font_fallback}};
+    font-size: {{font_size_base_px}}px;
     /* Sin transiciones: la barra debe repintar sin animaciones a 165 Hz. */
     min-height: 0;
 }
 
+/* La VENTANA es transparente: lo que se pinta es la isla de dentro. Sin esto,
+ * el margen dejaría ver un rectángulo de fondo en vez del wallpaper. */
 window#waybar {
-    background: @bg;
+    background: transparent;
     color: @fg;
-    /* Línea inferior sutil para separar la barra del contenido sin marco. */
-    border-bottom: 1px solid rgba(200, 204, 212, 0.08);
+}
+
+/* LA ISLA. Flota separada de los tres bordes de la pantalla, con las cuatro
+ * esquinas redondeadas y el fondo de pantalla visible alrededor.
+ *
+ * Ya no hay `border-bottom`: esa línea existía para separar una barra pegada al
+ * borde del contenido de debajo. Flotando no hace falta — el propio margen
+ * separa —, y encima cortaría la esquina redondeada. */
+window#waybar > box {
+    background: alpha(@bg, {{opacity_bar}});
+    border-radius: {{metrics_radius}}px;
+    margin: {{metrics_bar_margin}}px;
+    padding: 0 {{metrics_pad_xs}}px;
 }
 
 /* --- Tooltips ------------------------------------------------------------
@@ -47,24 +84,24 @@ window#waybar {
 
 tooltip {
     background: @bg;
-    border: 1px solid rgba(200, 204, 212, 0.18);
-    border-radius: 6px;
+    border: {{metrics_border_hairline}}px solid alpha(@fg, {{opacity_outline}});
+    border-radius: {{metrics_radius}}px;
 }
 
 tooltip label {
     color: @fg;
-    padding: 8px 10px;
+    padding: {{metrics_pad_sm}}px {{metrics_pad_md}}px;
 }
 
 /* --- Workspaces --------------------------------------------------------- */
 
 #workspaces {
-    margin-left: 4px;
+    margin-left: {{metrics_pad_xs}}px;
 }
 
 /* Los diez workspaces están siempre presentes, así que lo que comunica el
  * estado es el CONTRASTE entre ellos. De menos a más peso visual:
- *   vacío  <  con ventanas  <  en uso
+ *   vacío (sin contorno)  <  con ventanas (contorno tenue)  <  en uso (relleno)
  * El orden de estas reglas importa: .active va al final para ganar siempre,
  * porque el workspace activo también lleva .persistent o .empty. */
 
@@ -77,40 +114,52 @@ tooltip label {
  * es el ESTILO BASE del botón, y `.empty` lo rebaja después. Así la cascada
  * funciona sin depender de qué clases acumule cada botón. */
 
-/* 1. BASE = CON VENTANAS. Texto a plena legibilidad y un punto de acento
- * debajo: se localizan de un vistazo sin competir con el activo. */
+/* PÍLDORAS, no subrayados (2026-08-27). Cada número va dentro de su propia
+ * caja redondeada; el estado se comunica con el BORDE y el FONDO de esa caja,
+ * no con una línea inferior.
+ *
+ * ⚠️ TODOS los estados declaran `border` y `margin`, incluso cuando el borde es
+ * transparente. Si un estado no lo declarara, su caja mediría 2 px menos y los
+ * números BAILARÍAN al abrirse o cerrarse la última ventana de un workspace.
+ * Es el mismo motivo por el que antes la franja se dejaba transparente en vez
+ * de quitarla. */
+
+/* 1. BASE = CON VENTANAS. Contorno tenue de acento: se localizan de un vistazo
+ * sin competir con el activo. */
 #workspaces button {
-    padding: 0 8px;
+    padding: 0 {{metrics_pad_sm}}px;
+    margin: {{metrics_pad_xs}}px {{metrics_pad_2xs}}px;
     color: @fg;
-    border-bottom: 2px solid rgba(122, 162, 247, 0.35);
+    border: {{metrics_border}}px solid alpha(@accent, {{opacity_hint}});
+    border-radius: {{metrics_radius}}px;
 }
 
-/* 2. VACÍO — rebaja la base: apagado y sin subrayado. La franja se mantiene
- * transparente en vez de eliminarse para que el número no se desplace un
- * píxel al abrirse o cerrarse la última ventana del workspace. */
+/* 2. VACÍO — rebaja la base sin desaparecer: el contorno sigue ahí, pero en el
+ * MISMO gris del texto apagado y a baja opacidad. Lo justo para que la píldora
+ * se intuya y los diez workspaces formen una fila regular. */
 #workspaces button.empty {
     color: @muted;
-    border-bottom: 2px solid transparent;
+    border-color: alpha(@muted, {{opacity_faint}});
 }
 
 #workspaces button:hover {
     color: @fg;
-    background: rgba(200, 204, 212, 0.08);
+    background: alpha(@fg, {{opacity_separator}});
 }
 
 #workspaces button.urgent {
     color: @crit;
-    border-bottom: 2px solid @crit;
+    border-color: @crit;
 }
 
-/* 3. EN USO — acento pleno, negrita, fondo propio y subrayado sólido. Es el
+/* 3. EN USO — acento pleno, negrita, fondo propio y contorno sólido. Es el
  * único elemento de toda la barra que lleva fondo, para que salte a la vista
  * incluso de reojo. */
 #workspaces button.active {
     color: @accent;
     font-weight: bold;
-    background: rgba(122, 162, 247, 0.15);
-    border-bottom: 2px solid @accent;
+    background: alpha(@accent, {{opacity_active}});
+    border-color: @accent;
 }
 
 /* --- Módulos ------------------------------------------------------------ */
@@ -123,7 +172,7 @@ tooltip label {
 #battery,
 #power-profiles-daemon,
 #custom-power {
-    padding: 0 10px;
+    padding: 0 {{metrics_pad_md}}px;
 }
 
 /* Perfil de energía: en gris. Es información de contexto, no un estado que
@@ -202,7 +251,7 @@ tooltip label {
  * al apuntarlo tiene que quedar claro que es destructivo. */
 #custom-power {
     color: @muted;
-    padding-right: 12px;
+    padding-right: {{metrics_pad_lg}}px;
 }
 
 #custom-power:hover {

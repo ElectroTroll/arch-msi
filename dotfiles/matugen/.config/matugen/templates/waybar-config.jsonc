@@ -1,4 +1,17 @@
-// config.jsonc — Waybar · MSI Summit E16 AI Studio (arch-msi)
+// waybar-config.jsonc — PLANTILLA de la config de Waybar (arch-msi)
+//
+// Fuente:  dotfiles/matugen/.config/matugen/templates/waybar-config.jsonc (esto)
+// Salida:  ~/.config/waybar/config.jsonc                                  (artefacto)
+//
+// ⚠️ NO EDITAR ~/.config/waybar/config.jsonc: lo reescribe matugen. Se edita
+// este archivo, o theme/tokens.toml para los valores.
+//
+// Es plantilla desde el 2026-08-27 por un motivo concreto: la ALTURA de la barra
+// se define aquí, y con la barra flotante la altura y el margen del CSS son dos
+// mitades del mismo cálculo. Tenerlas en archivos distintos, uno versionado y
+// otro generado, era pedir que se desincronizaran.
+//
+// config.jsonc original — Waybar · MSI Summit E16 AI Studio (arch-msi)
 // Origen: escrito desde cero. /etc/xdg/waybar/config.jsonc (waybar 0.15.0-2)
 // se usó solo como referencia de sintaxis, no como base.
 // Fecha: 2026-08-01 · Tarea 2.1, paso 1/4.
@@ -18,7 +31,10 @@
 
     // Altura fija en lugar de automática: evita que la barra "salte" cuando un
     // módulo cambia de ancho o aparece un icono más alto.
-    "height": 34,
+    //
+    // Es la altura de la SUPERFICIE, no la de la isla visible: el margen del CSS
+    // se descuenta por dentro. Ver `bar_height` y `bar_margin` en tokens.toml.
+    "height": {{metrics_bar_height}},
 
     // Separación 0: el espaciado se hace con padding en CSS, no aquí, para
     // tenerlo todo en un sitio.

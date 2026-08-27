@@ -1,0 +1,233 @@
+# tokens.toml — tema del escritorio · MSI Summit E16 AI Studio (arch-msi)
+# Fecha: 2026-08-27 · Tarea 3.0 (tema centralizado).
+#
+# ESTE ES EL ÚNICO ARCHIVO QUE SE EDITA A MANO PARA CAMBIAR EL ASPECTO.
+#
+# Reparto de responsabilidades, que conviene tener claro antes de tocar nada:
+#
+#   matugen  → los colores que SIGUEN AL FONDO DE PANTALLA (fondo, texto, acento,
+#              superficies). Se regeneran en cada arranque; no se editan aquí ni
+#              en ninguna otra parte: son artefactos.
+#   ESTE     → todo lo demás: tipografía, métricas, colores de ESTADO, los
+#   ARCHIVO    colores de IDENTIDAD que matugen debe respetar, y CÓMO se genera
+#              (bloque `[matugen]` al final: esquema, contraste, tono del acento).
+#
+# Es decir: para cambiar el aspecto del escritorio no hay que abrir el
+# `config.toml` de matugen ni ninguna config de aplicación. Se toca esto.
+#
+# Nada de lo que hay aquí lo pisa matugen. Si un valor se repite en la config de
+# un componente, es un error: debe venir de aquí por plantilla.
+
+
+# --- Tipografía --------------------------------------------------------------
+#
+# UNA SOLA FAMILIA. Hasta ahora hyprlock usaba `Monospace` genérico, que resuelve
+# a lo que decida fontconfig y no tiene por qué ser esta. Era el único
+# componente fuera del redil.
+#
+# ⚠️ LAS UNIDADES NO SON LAS MISMAS Y NO ES UN DESCUIDO. Waybar y wlogout son
+# GTK y miden en PÍXELES LÓGICOS (la pantalla es 2560x1600 a escala 1.60, así
+# que 13 px lógicos ≈ 21 físicos). dunst mide en PUNTOS de Pango. A 96 dpi,
+# 10 pt = 13.33 px, así que los dos valores de abajo son el mismo tamaño visual
+# por caminos distintos. Si algún día cambia la escala del panel, hay que
+# revisar los dos a la vez.
+[font]
+family   = "JetBrainsMono Nerd Font"
+fallback = "monospace"
+
+size_base_px = 13   # Waybar (era 13) · barra y tooltips
+size_base_pt = 10   # dunst   (era 10) · equivalente a 13 px a 96 dpi
+size_lg_px   = 15   # wlogout (era 15) · botones grandes del menú de apagado
+
+
+# --- Métricas ----------------------------------------------------------------
+#
+# UNIFICACIÓN DEL 2026-08-27. Había CINCO radios distintos para lo mismo:
+#   6 (tooltip de Waybar) · 6 (dunst) · 10 (Hyprland) · 12 (wlogout) · 15 (hyprlock)
+# Se adopta 10, que es el de las ventanas de Hyprland: es el radio que más
+# superficie ocupa en pantalla, así que es el que fija el carácter visual del
+# escritorio. Todo lo demás se alinea con él.
+#
+# ESTO CAMBIA EL ASPECTO ACTUAL a propósito: los tooltips y las notificaciones
+# se redondean más que hoy, y la caja de contraseña de hyprlock menos.
+[metrics]
+radius = 10
+
+# El borde de 2 px ya era el valor mayoritario (marco de dunst, borde de ventana
+# de Hyprland y subrayado del workspace activo). hyprlock baja de 3 a 2.
+border = 2
+
+# CASO APARTE, no es el mismo concepto: la línea inferior de la barra y el borde
+# del tooltip son SEPARADORES, no marcos. A 2 px se convertirían en un elemento
+# gráfico con peso propio, que es justo lo contrario de lo que hacen.
+border_hairline = 1
+
+# Espaciado interno. Los valores de hoy ya eran coherentes entre sí; se nombran
+# para que dejen de ser números sueltos repartidos por cinco archivos.
+pad_2xs = 2   # separación entre las píldoras de workspace
+pad_xs = 4    # margen izquierdo del grupo · margen vertical de las píldoras
+pad_sm = 8    # padding horizontal de los botones de workspace
+pad_md = 10   # padding horizontal de los módulos de la barra
+pad_lg = 12   # padding interior de las notificaciones · botón de apagado
+gap    = 6    # separación entre notificaciones apiladas
+
+# --- Barra (Waybar) ---
+# La barra NO está pegada a los bordes: flota como una isla, con el fondo de
+# pantalla visible alrededor y las cuatro esquinas redondeadas (radius).
+#
+# ⚠️ LOS DOS VALORES VAN JUNTOS, y la cuenta es
+#       bar_height = contenido + 2 × bar_margin
+# `bar_height` es la altura de la SUPERFICIE que Waybar reserva; el margen del
+# CSS se descuenta POR DENTRO. Los módulos de esta barra necesitan 34 px, así
+# que con margen 6 hacen falta 46.
+#
+# Si te quedas corto, Waybar no falla: avisa en el journal
+#     Requested height: 40 is less than the minimum height: 42 required by the modules
+# y agranda la superficie por su cuenta, con lo que la isla deja de estar
+# centrada. Medido el 2026-08-27 al poner 40 aquí.
+bar_height = 46
+bar_margin = 6
+
+
+# --- Opacidades --------------------------------------------------------------
+#
+# Tenían una lógica interna que nunca estuvo escrita en ninguna parte, así que
+# en la práctica eran números al azar. Queda documentada:
+[opacity]
+# Fondo de la barra. NO es del todo opaca: deja ver el wallpaper por detrás,
+# que es de donde sale la propia paleta. Bajar de ~0.70 empieza a comprometer la
+# legibilidad del texto sobre fondos claros.
+bar       = 0.85
+
+faint     = 0.25   # contorno de los workspaces vacíos: presente, pero apenas
+separator = 0.08   # líneas divisorias y hover de los workspaces
+active    = 0.15   # fondo del elemento activo (workspace en uso)
+outline   = 0.18   # borde de los tooltips
+hint      = 0.35   # subrayado de los workspaces con ventanas
+overlay   = 0.88   # fondo del menú de apagado sobre el escritorio
+
+
+# --- Colores de ESTADO -------------------------------------------------------
+#
+# FIJOS Y FUERA DE MATUGEN, por decisión del 2026-08-27. No son decoración: son
+# información. Una batería al 10 %, una notificación crítica o la red caída
+# tienen que leerse igual con cualquier fondo de pantalla; si se armonizaran con
+# la paleta del wallpaper del día, un aviso urgente podría acabar en un azul
+# suave y dejar de comunicar urgencia.
+#
+# Son los valores que ya usaba Waybar, ahora en un solo sitio en vez de
+# repetidos a mano en waybar/style.css, dunstrc y wlogout/style.css.
+[colors.state]
+crit = "#f7768e"   # rosa/rojo · batería crítica, urgencia alta, red caída, apagar
+warn = "#e0af68"   # ámbar     · batería baja, dato de Claude caducado
+ok   = "#9ece6a"   # verde     · cargando, enchufado
+
+
+# --- Colores de IDENTIDAD ----------------------------------------------------
+#
+# La familia azul / rosa / magenta que el tema debe conservar aunque el fondo
+# tire hacia otro lado. Estos SÍ pasan por matugen, que los recibe como
+# `custom_colors` con `blend = true`: los ARMONIZA hacia la paleta extraída de la
+# imagen, así que se adaptan al fondo sin salirse de familia.
+#
+# Reparto con `[matugen].accent_tone`, que es fácil de confundir:
+#   · accent_tone → el acento PRINCIPAL, que sale del fondo (tono de paleta).
+#   · estos tres  → colores de apoyo con identidad propia, para cuando haga falta
+#                   más de un acento (p. ej. distinguir módulos de la barra) y
+#                   para que el rosa y el magenta no desaparezcan si el fondo es
+#                   monocromo.
+#
+# El azul es el acento histórico del proyecto (viene de Waybar); el rosa y el
+# magenta se añaden aquí para dar el rango que pediste.
+[colors.identity]
+blue    = "#7aa2f7"
+pink    = "#f7a8d8"
+magenta = "#c678dd"
+
+# SEMILLA DE RESERVA. Se usa con `theme-apply.sh --seed` cuando un fondo no tiene
+# nada que ver con la paleta y el resultado se va demasiado lejos: genera el tema
+# entero a partir de este color en vez de a partir de la imagen.
+seed_fallback = "#7aa2f7"
+
+
+# --- Generación (matugen) ----------------------------------------------------
+#
+# Cómo se genera la parte del tema que SÍ sigue al fondo. Está aquí y no suelto
+# en el `config.toml` de matugen para que este archivo siga siendo el único sitio
+# que se toca: `theme-apply.sh` lee estos valores y los pasa como argumentos.
+#
+# Todo lo de abajo está MEDIDO sobre el fondo actual con `--dry-run` el
+# 2026-08-27, no copiado de la documentación.
+[matugen]
+
+# scheme-content | scheme-expressive | scheme-fidelity | scheme-fruit-salad |
+# scheme-monochrome | scheme-neutral | scheme-rainbow | scheme-tonal-spot |
+# scheme-vibrant | scheme-smart          (los 10 de `matugen --help`, v4.2)
+#
+# `vibrant` mantiene la familia azul del fondo y es el más estable entre
+# imágenes. OJO con `expressive`: con el fondo actual saca un acento VERDE
+# (#9cd593), que se sale de la identidad azul/rosa/magenta.
+# El defecto de matugen (`tonal-spot`) es el más apagado de todos.
+type = "scheme-vibrant"
+
+# ⚠️ MÁS CONTRASTE = MENOS COLOR. Contraintuitivo, pero medido: pasar de 0.3 a
+# 0.5 baja la saturación del acento del 33% al 19%, porque para separar los
+# colores del fondo los ACLARA, y al aclararlos los lava. Subir esto NO hace el
+# tema más vivo: lo hace más pastel. La vibrancia se busca con `accent_tone`.
+# Rango admitido: -1.0 a 1.0.
+contrast = 0.3
+
+# DE DÓNDE SALE EL ACENTO. Es la palanca que de verdad decide si el tema se ve
+# vivo o lavado, y la razón está en cómo entrega matugen sus colores:
+#
+#   el rol `primary` en modo oscuro ES SIEMPRE EL TONO 80 de la paleta, que es
+#   claro y poco saturado. Ese es el "pastel de matugen" del que todo el mundo
+#   se queja.
+#
+# Pero la plantilla también recibe los TONOS CRUDOS (`palettes.primary.NN`), y
+# ahí está el color de verdad. Medido sobre el fondo actual:
+#
+#     tono 80 (el rol `primary`)  #8dcfff   sat 45%   <- el defecto
+#     tono 70                     #58b4ef   sat 63%   <- se usa este
+#     tono 60                     #3799d2   sat 74%
+#     tono 50                     #007eb6   sat 100%
+#     (referencia: el acento histórico #7aa2f7 tenía sat 51%, y el azul
+#      muestreado a mano en la base de las montañas, #165a97, sat 85%)
+#
+# Los valores de arriba son con `source_color_index = 1`. Con el candidato
+# dominante (0) toda la escala es más pálida: el tono 70 se quedaba en sat 49%.
+#
+# Con el tono 70 el tema queda tan vivo como la paleta que había antes, pero
+# SIGUE saliendo del fondo de pantalla. Sube a 60 si aún lo quieres más intenso.
+#
+# ⚠️ Esto vale para ACENTOS (bordes, workspace activo, marcos). Los fondos y los
+# textos siguen usando los roles del esquema (`surface`, `on_surface`), porque
+# ahí Material sí garantiza el contraste y elegir tonos a mano lo rompería.
+accent_tone = 70
+
+# light | dark | smart. El escritorio es oscuro.
+mode = "dark"
+
+# CUÁL DE LOS COLORES DE LA IMAGEN MANDA. matugen extrae varios candidatos por
+# dominancia (0 = el más dominante) y construye TODA la paleta alrededor del
+# elegido: no solo el acento, también el fondo y los grises.
+#
+# Se usa el 1 desde el 2026-08-27, a petición: con el fondo de las montañas
+# nocturnas, los candidatos son
+#     0  #4168ac   azul del cielo/montañas  (el dominante)
+#     1  #024e72   azul de la base de las montañas y el agua   <- este
+#     2  #5347b1   violeta
+#     3  #7bb7c8   cian claro
+# El 1 da un acento de hue 203°, a 5° del azul que se muestreó a mano en la base
+# de las montañas (#165a97, hue 208°), y bastante más saturado que el del
+# candidato dominante. Ver `matugen image <fondo> --show-source-colors`.
+#
+# ⚠️ ES DEPENDIENTE DE LA IMAGEN. El índice 1 de OTRO fondo no tiene por qué ser
+# un azul: si un día el escritorio sale de un color raro, esto es lo primero que
+# hay que mirar (y `--seed` es la salida de emergencia).
+#
+# ⚠️ NO DEJARLO SIN FIJAR. Sin este valor matugen abre un PROMPT INTERACTIVO para
+# que elijas entre los candidatos. Como el tema se regenera en cada arranque y
+# sin nadie mirando, eso dejaría el script colgado en silencio y el escritorio a
+# medio pintar.
+source_color_index = 1

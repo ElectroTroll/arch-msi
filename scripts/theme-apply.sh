@@ -1,0 +1,196 @@
+#!/usr/bin/env bash
+# theme-apply.sh — regenera el tema del escritorio · arch-msi (tarea 3.0)
+#
+# Único punto de entrada del tema. Lee theme/tokens.toml, saca los colores del
+# fondo de pantalla en uso con matugen y reescribe los artefactos de cada
+# componente.
+#
+#   theme-apply.sh                 → desde el fondo que hyprpaper tenga puesto
+#   theme-apply.sh --seed "#hex"   → desde un color fijo, ignorando el fondo
+#   theme-apply.sh --dry-run       → enseña qué haría, sin escribir ni recargar
+#
+# ⚠️ REGLA DE ORO: este script NUNCA escribe sobre una ruta gestionada por Stow.
+# Los enlaces de ~/.config/{waybar,dunst,hypr} apuntan DENTRO del repositorio;
+# escribir sobre uno metería la salida generada en el repo o rompería el enlace.
+# Las salidas van a nombres que NO existen en el repo. La prueba de que se
+# cumple es que `git status` queda limpio después de ejecutar esto.
+
+set -euo pipefail
+
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+TOKENS="$REPO/theme/tokens.toml"
+MATUGEN_CFG="$HOME/.config/matugen/config.toml"
+TEMPLATES="$HOME/.config/matugen/templates"
+
+SEED=""
+DRY=0
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --seed) SEED="${2:-}"; shift 2 ;;
+        --dry-run) DRY=1; shift ;;
+        -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
+        *) echo "opción desconocida: $1" >&2; exit 2 ;;
+    esac
+done
+
+die() { echo "theme-apply: $*" >&2; exit 1; }
+command -v matugen >/dev/null || die "matugen no está instalado (pacman -S matugen)"
+command -v jq >/dev/null      || die "jq no está instalado"
+[ -f "$TOKENS" ]              || die "no encuentro $TOKENS"
+[ -f "$MATUGEN_CFG" ]         || die "no encuentro $MATUGEN_CFG (¿falta 'stow matugen'?)"
+
+# --- 1. Tokens ---------------------------------------------------------------
+# El TOML se aplana a claves de un solo nivel (state_crit, font_family…). NO es
+# cosmético: matugen interpreta lo que sigue al último punto de una variable
+# como un FORMATO de color, así que una clave anidada aborta la plantilla con
+# "Parse Error: The format provided is not valid".
+TMP="$(mktemp -d)"
+trap 'rm -rf "$TMP"' EXIT
+
+python3 - "$TOKENS" "$TMP/tokens.json" <<'PY'
+import json, sys, tomllib
+d = tomllib.load(open(sys.argv[1], "rb"))
+flat = {}
+for sec, vals in d.items():
+    if sec == "matugen":
+        continue
+    if sec == "colors":
+        for sub, cols in vals.items():
+            for k, v in cols.items():
+                flat[f"{sub}_{k}"] = v
+    else:
+        for k, v in vals.items():
+            flat[f"{sec}_{k}"] = v
+json.dump(flat, open(sys.argv[2], "w"), ensure_ascii=False)
+PY
+
+read -r TYPE CONTRAST TONE IDX MODE BLUE PINK MAGENTA FALLBACK <<<"$(
+python3 - "$TOKENS" <<'PY'
+import sys, tomllib
+d = tomllib.load(open(sys.argv[1], "rb"))
+m, i = d["matugen"], d["colors"]["identity"]
+print(m["type"], m["contrast"], m["accent_tone"], m["source_color_index"],
+      m["mode"], i["blue"], i["pink"], i["magenta"], i["seed_fallback"])
+PY
+)"
+
+# --- 2. Origen del color -----------------------------------------------------
+# hyprpaper elige una imagen AL AZAR en cada arranque, así que hay que
+# preguntarle cuál puso: `listactive` la devuelve. (`listloaded` no existe en
+# 0.8.4: responde "invalid hyprpaper request".)
+if [ -n "$SEED" ]; then
+    SRC=(color hex "$SEED")
+    echo "theme-apply: semilla fija $SEED"
+else
+    WP=""
+    for _ in $(seq 1 20); do
+        WP="$(hyprctl hyprpaper listactive 2>/dev/null | head -1 | sed 's/^[^:]*: //')"
+        [ -n "$WP" ] && [ -f "$WP" ] && break
+        WP=""; sleep 0.25
+    done
+    if [ -z "$WP" ]; then
+        echo "theme-apply: hyprpaper no responde; uso la semilla de reserva $FALLBACK" >&2
+        SRC=(color hex "$FALLBACK")
+    else
+        SRC=(image "$WP")
+        echo "theme-apply: fondo $WP"
+    fi
+fi
+
+COMMON=(-t "$TYPE" --contrast "$CONTRAST" --source-color-index "$IDX" -m "$MODE"
+        --fallback-color "$FALLBACK")
+# `--source-color-index` es OBLIGATORIO: sin él matugen abre un prompt
+# interactivo cuando la imagen ofrece varios candidatos, y en el arranque eso
+# deja el script colgado sin que nadie lo vea.
+
+# --- 3. Pasada 1: resolver acento e identidades ------------------------------
+# Dos cosas que la plantilla NO puede hacer por sí sola:
+#   · `palettes.*` no está disponible en las plantillas (solo `colors.*`), y el
+#     acento sale de un TONO de paleta, no de un rol.
+#   · los filtros (`harmonize`) solo aceptan literales, no variables importadas.
+# Por eso se resuelven aquí y se pasan ya hechos como render data.
+cat > "$TMP/harmonize.tmpl" <<TPL
+{"ident_blue":"{{ "$BLUE" | to_color | harmonize: {{ colors.source_color.default.hex | to_color }} }}","ident_pink":"{{ "$PINK" | to_color | harmonize: {{ colors.source_color.default.hex | to_color }} }}","ident_magenta":"{{ "$MAGENTA" | to_color | harmonize: {{ colors.source_color.default.hex | to_color }} }}"}
+TPL
+cat > "$TMP/pass1.toml" <<CFG
+[config]
+[templates.h]
+input_path  = "$TMP/harmonize.tmpl"
+output_path = "$TMP/resolved.json"
+CFG
+
+PAL="$(matugen "${SRC[@]}" -c "$TMP/pass1.toml" "${COMMON[@]}" -j hex 2>/dev/null)" \
+    || die "matugen falló al resolver la paleta; no se toca nada"
+ACCENT="$(printf '%s' "$PAL" | jq -er ".palettes.primary.\"$TONE\".color")" \
+    || die "no hay tono $TONE en la paleta"
+jq --arg a "$ACCENT" '. + {accent:$a}' "$TMP/resolved.json" > "$TMP/render.json"
+
+# --- 4. Contraste ------------------------------------------------------------
+# Si la paleta sale ilegible se conserva la anterior. Vale más un tema viejo que
+# una barra que no se lee.
+BG="$(printf '%s' "$PAL" | jq -r '.colors.surface.dark.color')"
+FG="$(printf '%s' "$PAL" | jq -r '.colors.on_surface.dark.color')"
+# El umbral lo comprueba el propio python (sale con código 1 si no llega), para
+# no depender de `bc`, que no está instalado en este equipo.
+if ! RATIO="$(python3 - "$FG" "$BG" <<'PY'
+import sys
+def lum(h):
+    h = h.lstrip('#'); c = [int(h[i:i+2], 16)/255 for i in (0, 2, 4)]
+    c = [x/12.92 if x <= .03928 else ((x+.055)/1.055)**2.4 for x in c]
+    return .2126*c[0] + .7152*c[1] + .0722*c[2]
+a, b = lum(sys.argv[1]), lum(sys.argv[2])
+r = (max(a, b)+.05)/(min(a, b)+.05)
+print(round(r, 2))
+sys.exit(0 if r >= 4.5 else 1)
+PY
+)"; then
+    notify-send -u critical "Tema no aplicado" \
+        "Contraste insuficiente (${RATIO}:1). Se conserva la paleta anterior." 2>/dev/null || true
+    die "contraste texto/fondo ${RATIO}:1 < 4.5:1; no se aplica"
+fi
+echo "theme-apply: acento $ACCENT · contraste ${RATIO}:1"
+
+# --- 5. Pasada 2: render atómico ---------------------------------------------
+# `--prefix` manda toda la salida a un temporal. Solo si TODO sale bien se
+# mueven los archivos a su sitio: así un fallo a mitad no deja el escritorio a
+# medio pintar.
+if [ "$DRY" = "1" ]; then
+    echo "theme-apply: --dry-run, no se escribe nada"
+    matugen "${SRC[@]}" -c "$MATUGEN_CFG" "${COMMON[@]}" \
+        --import-json "$TMP/tokens.json" --import-json "$TMP/render.json" --dry-run
+    exit 0
+fi
+
+matugen "${SRC[@]}" -c "$MATUGEN_CFG" "${COMMON[@]}" \
+    --import-json "$TMP/tokens.json" --import-json "$TMP/render.json" \
+    --prefix "$TMP/out" >/dev/null 2>&1 || die "matugen falló al renderizar; no se toca nada"
+
+mapfile -t OUTPUTS < <(grep -oP '^output_path\s*=\s*"\K[^"]+' "$MATUGEN_CFG")
+for o in "${OUTPUTS[@]}"; do
+    dest="${o/#\~/$HOME}"
+    src="$TMP/out${dest}"
+    [ -f "$src" ] || die "matugen no generó $dest; no se aplica nada"
+    if [ -L "$dest" ]; then
+        die "$dest es un ENLACE de Stow: abortado para no escribir en el repo"
+    fi
+    mkdir -p "$(dirname "$dest")"
+    cp "$src" "$dest"
+    echo "theme-apply: escrito $dest"
+done
+
+# --- 6. Recargas -------------------------------------------------------------
+# Cada aplicación necesita un trato distinto.
+#
+# ⚠️ Waybar por `systemctl restart`, NO por SIGUSR2. La señal hace que Waybar se
+# RE-EJECUTE, systemd lo cuenta como muerte del proceso principal, salta
+# Restart=on-failure y a la tercera recarga se agota StartLimitBurst: la unidad
+# queda en `failed` y te quedas sin barra. Verificado el 2026-08-27.
+if systemctl --user is-active --quiet waybar.service; then
+    systemctl --user restart waybar.service && echo "theme-apply: waybar reiniciado"
+fi
+# dunst relee sin reiniciar; el historial vive en memoria y así no se pierde.
+command -v dunstctl >/dev/null && dunstctl reload 2>/dev/null && echo "theme-apply: dunst recargado"
+# Hyprland relee su config; hyprlock la lee al lanzarse, así que no necesita nada.
+command -v hyprctl >/dev/null && hyprctl reload >/dev/null 2>&1 && echo "theme-apply: hyprland recargado"
+
+echo "theme-apply: listo"
