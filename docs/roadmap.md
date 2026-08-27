@@ -99,8 +99,9 @@ inactividad».
 **2.4 hyprpaper.** **[OK] Completada (2026-08-25).** Fondo de pantalla con
 hyprpaper 0.8.4. Toca dos paquetes Stow: la config en `hypr/` (existente) y las
 imágenes en **`wallpapers/`**, nuevo, que despliega `~/Wallpapers`.
-`hyprpaper.service` habilitado. **Una imagen aleatoria de la carpeta en cada
-arranque**, como los fondos por defecto de Hyprland, sin rotación en caliente
+Arranque desde `hyprland.lua`, no por servicio (cambiado el 2026-08-27, ver
+6.1 y `docs/PROJECT_CONTEXT.md` §17). **Una imagen aleatoria de la carpeta en
+cada arranque**, como los fondos por defecto de Hyprland, sin rotación en caliente
 (`timeout = 0` + `order = random`). Config sin rutas frágiles: `monitor =`
 vacío en vez de `eDP-1`, y `path = ~/Wallpapers` en vez de una ruta absoluta;
 ambas formas verificadas, igual que el autoarranque **tras un reinicio real**
@@ -230,11 +231,11 @@ Cerrar el objetivo original: poder reinstalar y recuperar el sistema.
 | 6.5 | **Prueba real de restauración en una VM** | Alto | Nulo |
 
 **6.1** ⚠️ **Requisito bloqueante, no una nota menor: `install/services.sh`
-tiene que reactivar CUATRO cosas que no viven en los dotfiles.** El `enable` de un
+tiene que reactivar TRES cosas que no viven en los dotfiles.** El `enable` de un
 servicio de usuario crea un enlace en
 `~/.config/systemd/user/graphical-session.target.wants/`, que **no** está
 versionado; de él solo queda rastro en `packages/services-enabled.txt`. Los
-cuatro huecos son del mismo tipo y fallan **en silencio**: los archivos vuelven
+tres huecos son del mismo tipo y fallan **en silencio**: los archivos vuelven
 a su sitio, pero nada los activa y nada avisa de que falta el paso.
 
 - **`hypridle.service`** — sin rehabilitarlo, la sesión no se bloquea sola
@@ -246,7 +247,7 @@ a su sitio, pero nada los activa y nada avisa de que falta el paso.
   servicio no hay pausa, y las notificaciones podrían mostrarse sobre
   hyprlock — con remitente y asunto legibles. Un mismo `enable` olvidado
   reabre ahora **dos** agujeros, no uno.
-  > **Dunst NO añade un cuarto requisito propio a esta lista.** Su
+  > **Dunst NO añade un requisito propio a esta lista.** Su
   > autoarranque no depende de nada fuera de los dotfiles: lo activa D-Bus
   > mediante `/usr/share/dbus-1/services/org.knopwob.dunst.service`, que
   > instala el propio paquete, y `dunst.service` es `static` (no admite
@@ -256,18 +257,20 @@ a su sitio, pero nada los activa y nada avisa de que falta el paso.
   `style.css` y `claude-usage.sh` quedan enlazados por Stow, pero nadie lanza
   Waybar (tarea 2.1). No hay `exec-once` en `hyprland.lua` que sirva de
   respaldo: el servicio es la única vía de arranque.
-- **`hyprpaper.service`** — sin rehabilitarlo no hay fondo de pantalla: la
-  imagen y `hyprpaper.conf` quedan enlazados por Stow, pero nadie lanza
-  hyprpaper (tarea 2.4). Igual que con Waybar, **no hay `exec-once` en
-  `hyprland.lua` que sirva de respaldo**: el servicio es la única vía. Es el
-  más benigno de los cuatro —te quedas sin fondo, no sin bloqueo de pantalla—
-  pero igual de silencioso.
+  > **hyprpaper YA NO añade un requisito a esta lista** (cambio del
+  > 2026-08-27; hasta esa fecha era el cuarto). `hyprpaper.service` está
+  > **deshabilitado**: lo lanza `hyprland.lua` con
+  > `hl.on("hyprland.start", ...)`, y ese archivo **sí** se versiona y viaja
+  > con los dotfiles, así que el fondo se restaura solo. El cambio no se hizo
+  > por la restauración —eso fue un efecto colateral bienvenido— sino por
+  > latencia de arranque: pasando por systemd, el fondo tardaba medio segundo
+  > de más en aparecer. Ver `docs/PROJECT_CONTEXT.md` §17.
 - **`~/.claude/settings.json` → `statusLine.command`** — el script está
   versionado en `dotfiles/claude/` y se enlaza con Stow, pero quien lo invoca
   es este archivo, que **no** se versiona porque contiene credenciales y estado
   de sesión. Sin él, el módulo de uso de Claude se queda en `—` para siempre.
 
-La fase 6 **no puede darse por completada** sin los cuatro, y la prueba de
+La fase 6 **no puede darse por completada** sin los tres, y la prueba de
 restauración en VM (6.5) debe verificarlos explícitamente.
 Ver `docs/PROJECT_CONTEXT.md` §9 (Red y seguridad), §13 (Dotfiles y estado del
 repositorio) y §14 (Tareas pendientes).

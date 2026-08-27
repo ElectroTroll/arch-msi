@@ -601,8 +601,10 @@ un único listener es justamente lo que permite garantizar el orden.
   - **hyprpaper** → `dotfiles/hypr/` (`hyprpaper.conf`) **+ paquete nuevo
     `dotfiles/wallpapers/`** (las imágenes). Tarea 2.4 completada. Detalle en
     §17. **Es el primer componente que versiona binarios**: decisión razonada
-    en §17, no descuido. Añade el **cuarto** requisito a `install/services.sh`
-    — `hyprpaper.service` —, porque no hay `exec-once` de respaldo.
+    en §17, no descuido. **Desde el 2026-08-27 NO añade ningún requisito a
+    `install/services.sh`**: `hyprpaper.service` está deshabilitado y lo lanza
+    `hyprland.lua`, que sí se versiona. Antes de esa fecha era el cuarto
+    requisito. Ver §17.
     ⚠️ **Su config NO sigue la sintaxis de la wiki**, que en hyprpaper 0.8.x se
     ignora en silencio. Leer §17 antes de tocarla.
     ⚠️ **`~/Wallpapers` debe quedar como UN enlace de directorio**, no como un
@@ -895,7 +897,9 @@ Tarea 2.4 completada (2026-08-25). Toca **dos** paquetes Stow: la config va en
 - **hyprpaper 0.8.4-6** sobre Hyprland 0.56.2.
 - Config: `dotfiles/hypr/.config/hypr/hyprpaper.conf`.
 - Imágenes: `dotfiles/wallpapers/Wallpapers/`, **versionadas en el repo**.
-- Arranque: `hyprpaper.service`, unidad del paquete.
+- Arranque: `hyprland.lua`, `hl.on("hyprland.start", ...)`.
+  `hyprpaper.service` está **deshabilitado** desde el 2026-08-27 (antes era la
+  única vía). El porqué, medido, más abajo.
 - Comportamiento: **una imagen aleatoria de la carpeta en cada arranque**, sin
   rotación mientras la sesión está viva.
 
@@ -1039,21 +1043,68 @@ pero al triple de peso sin diferencia observable. Se usa **JPEG q92**.
 > del original. Los originales sin procesar viven en
 > `~/Descargas/wallpaper-originales/`, **fuera del repo**.
 
-### Autoarranque: **cuarto** requisito bloqueante de `install/services.sh`
+### Autoarranque: de `hyprpaper.service` a `hyprland.lua` (2026-08-27)
 
-Como waybar e hypridle, y por el mismo motivo. En `hyprland.lua` **no hay
-ningún `exec-once`** — las líneas 55-61 son los ejemplos comentados de la
-plantilla —, así que `hyprpaper.service` es la **única** vía de arranque. Su
-`enable` crea un enlace en
-`~/.config/systemd/user/graphical-session.target.wants/`, que **no** está
-versionado.
+Hasta el 2026-08-27 hyprpaper arrancaba con su unidad de systemd, y era el
+**cuarto** requisito bloqueante de `install/services.sh` (como waybar e
+hypridle): en `hyprland.lua` no había ningún `exec-once` de respaldo. Ahora el
+servicio está **deshabilitado** y lo lanza la config de Hyprland:
 
-Es el más benigno de los cuatro huecos (te quedas sin fondo, no sin bloqueo de
-pantalla), pero igual de silencioso: los archivos vuelven a su sitio, Stow
-enlaza, y no arranca nadie. Ver roadmap 6.1.
+```lua
+hl.on("hyprland.start", function ()
+    hl.exec_cmd("hyprpaper")
+end)
+```
 
-**[OK] Verificado tras reinicio real (2026-08-25, arranque de las 19:19).** No
-basta con `enabled` + `active` en caliente: se comprobó que el arranque es de
+**El motivo fue la latencia, no la restauración.** Al arrancar se veía durante
+un instante el fondo por defecto de Hyprland antes de que apareciera el propio.
+Eso tuvo dos causas independientes, y hicieron falta dos arreglos:
+
+1. `misc:force_default_wallpaper = -1` seguía con el valor de la plantilla, así
+   que Hyprland pintaba su mascota. Corregido a `0` + `disable_hyprland_logo =
+   true`. Eso cambia **qué** se ve en el hueco, no el hueco.
+2. El hueco en sí: hyprpaper llegaba tarde.
+
+Cronología **medida** en el arranque del 2026-08-27 (tiempo monotónico desde el
+boot, `systemctl --user show -p ...TimestampMonotonic` y el journal):
+
+| t (s) | Suceso |
+|-------|--------|
+| 23,185 | systemd lanza Hyprland (`wayland-wm@hyprland.desktop.service`) |
+| 25,084 | Hyprland avisa «listo» a systemd (`uwsm finalize`) · **+1,90 s** |
+| 25,537 | `graphical-session.target` activo · **+0,45 s** |
+| 25,598 | systemd lanza hyprpaper · **+0,06 s** |
+| 25,627 | «Welcome to hyprpaper!» |
+| 25,683 | hyprpaper ya ve la salida eDP-1 · **+0,09 s** |
+
+**Por qué no se podía arreglar dentro de systemd.** La sesión va por **uwsm**:
+`wayland-wm@hyprland.desktop.service` es `Type=notify` y no se da por activo
+hasta que el compositor hace `uwsm finalize`; solo entonces arranca
+`graphical-session.target` y con él hyprpaper. Y no vale adelantar la unidad con
+un drop-in, porque `hyprpaper.service` lleva
+`ConditionEnvironment=WAYLAND_DISPLAY` y esa variable **solo entra en el entorno
+de systemd en ese mismo `finalize`**. Por la vía de systemd, ese instante es el
+suelo: los 0,5 s de la tabla son irreducibles.
+
+`hyprland.start` se dispara antes de ese aviso, así que lanzarlo desde la config
+se salta el suelo entero.
+
+**Lo que esto NO arregla, y conviene no prometerlo.** El hueco no desaparece:
+Hyprland tiene que pintar su primer fotograma antes de que exista el socket al
+que hyprpaper se conecta, así que **siempre** hay unos instantes sin fondo. Lo
+que queda ahí es el color liso de `misc:background_color`, fijado a negro puro
+(`0xff000000`) por ser el color del que ya viene la pantalla al salir de SDDM.
+Hyprland no tiene fondo propio con imagen; no hay forma de que el primer
+fotograma sea ya el wallpaper.
+
+**Contrapartida:** se pierde el `Restart=on-failure` de la unidad. Si hyprpaper
+muere a mitad de sesión, no vuelve solo. Para revertir: comentar el bloque en
+`hyprland.lua` y `systemctl --user enable --now hyprpaper.service`.
+
+**[HISTÓRICO] Verificación del arranque por systemd (2026-08-25, arranque de
+las 19:19).** Describe el montaje anterior, sustituido el 2026-08-27; se
+conserva porque documenta cómo se comprobó, que sigue valiendo. Entonces no
+bastaba con `enabled` + `active` en caliente: se comprobó que el arranque era de
 systemd y no algo heredado de la sesión de configuración.
 
 ```

@@ -55,11 +55,37 @@ local menu        = "hyprlauncher"
 -- Autostart necessary processes (like notifications daemons, status bars, etc.)
 -- Or execute your favorite apps at launch like this:
 --
--- hl.on("hyprland.start", function () 
 --   hl.exec_cmd(terminal)
 --   hl.exec_cmd("nm-applet")
 --   hl.exec_cmd("waybar & hyprpaper & firefox")
--- end)
+
+-- hyprpaper se lanza AQUÍ y no por `hyprpaper.service` (deshabilitado el
+-- 2026-08-27). Es un cambio de arranque, no de fondo: el fondo sigue siendo el
+-- de `hyprpaper.conf` (tarea 2.4), solo que aparece antes.
+--
+-- MEDIDO en el arranque del 2026-08-27, en tiempo monotónico desde el boot:
+--     23.185  Hyprland arranca (wayland-wm@hyprland.desktop.service)
+--     25.084  Hyprland avisa "listo" a systemd  (uwsm finalize)  +1,90 s
+--     25.537  graphical-session.target activo                    +0,45 s
+--     25.598  systemd lanza hyprpaper                            +0,06 s
+--     25.683  hyprpaper ya ve la salida eDP-1                    +0,09 s
+--
+-- Los 0,5 s entre "listo" y el lanzamiento eran puro coste de systemd, y NO se
+-- podían recortar por la vía de la unidad: hyprpaper.service lleva
+-- `ConditionEnvironment=WAYLAND_DISPLAY`, y esa variable solo llega al entorno
+-- de systemd cuando uwsm hace `finalize`, o sea al final de la inicialización
+-- del compositor. Con systemd de por medio, ese instante es el suelo.
+--
+-- `hyprland.start` se dispara antes de ese aviso, así que lanzar hyprpaper aquí
+-- se salta el suelo entero. Es también lo que hace la plantilla oficial.
+--
+-- CONTRAPARTIDA, que conviene tener presente: se pierde el `Restart=on-failure`
+-- de la unidad. Si hyprpaper se cae a mitad de sesión, ya no vuelve solo; hay
+-- que relanzarlo a mano. Para volver al arranque por systemd basta con comentar
+-- este bloque y `systemctl --user enable --now hyprpaper.service`.
+hl.on("hyprland.start", function ()
+    hl.exec_cmd("hyprpaper")
+end)
 
 
 -------------------------------
@@ -218,8 +244,19 @@ hl.config({
 
 hl.config({
     misc = {
-        force_default_wallpaper = -1,    -- Set to 0 or 1 to disable the anime mascot wallpapers
-        disable_hyprland_logo   = false, -- If true disables the random hyprland logo / anime girl background. :(
+        -- 0 = sin fondo por defecto de Hyprland (mascota / logo aleatorios).
+        -- Era lo que asomaba durante el primer segundo del arranque: Hyprland
+        -- pinta su fondo nada más abrir el monitor, y hyprpaper.service tarda
+        -- un instante más en crear su capa. Con esto, ese hueco se ve del color
+        -- de `misc:background_color` (0x111111 por defecto) en vez del fondo
+        -- ajeno. El fondo real lo sigue poniendo hyprpaper (tarea 2.4).
+        force_default_wallpaper = 0,
+        disable_hyprland_logo   = true,
+
+        -- Color de ese hueco (por defecto 0xff111111, un gris muy oscuro).
+        -- Negro puro porque es el color del que ya viene la pantalla al salir
+        -- de SDDM: cuanto menos cambie, menos se nota el cambio.
+        background_color = 0xff000000,
     },
 })
 
