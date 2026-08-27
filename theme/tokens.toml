@@ -38,6 +38,7 @@ fallback = "monospace"
 size_base_px = 13   # Waybar (era 13) · barra y tooltips
 size_base_pt = 10   # dunst   (era 10) · equivalente a 13 px a 96 dpi
 size_lg_px   = 15   # wlogout (era 15) · botones grandes del menú de apagado
+size_term_pt = 11   # kitty · en PUNTOS, como dunst, no en píxeles
 
 
 # --- Métricas ----------------------------------------------------------------
@@ -128,6 +129,36 @@ overlay   = 0.88   # fondo del menú de apagado sobre el escritorio
 crit = "#f7768e"   # rosa/rojo · batería crítica, urgencia alta, red caída, apagar
 warn = "#e0af68"   # ámbar     · batería baja, dato de Claude caducado
 ok   = "#9ece6a"   # verde     · cargando, enchufado
+
+
+# --- Colores del TERMINAL (ANSI) ---------------------------------------------
+#
+# FIJOS, y por el mismo motivo que los de estado: son información, no
+# decoración. `ls` pinta los directorios de azul y los ejecutables de verde, y
+# git colorea los diff en rojo y verde — eso tiene que seguir siendo legible con
+# cualquier fondo de pantalla.
+#
+# ⚠️ Y HAY UN MOTIVO MEDIDO, no solo de principios: matugen genera una paleta
+# base16, pero es INSERVIBLE para un terminal. Con el fondo actual devuelve
+#     base08 #0b001b · base09 #00061a · base0a #00091d · base0b #00071f
+# es decir, "rojo", "amarillo" y "verde" son todos el mismo azul casi negro,
+# indistinguibles entre sí y del fondo. Comprobado el 2026-08-27.
+#
+# La familia es Tokyo Night, de donde ya salían los colores de estado: el rojo,
+# el verde y el amarillo NO se repiten aquí, se reutilizan de [colors.state]
+# para no tener el mismo valor escrito dos veces.
+[colors.term]
+black          = "#15161e"
+blue           = "#7aa2f7"
+magenta        = "#bb9af7"
+cyan           = "#7dcfff"
+white          = "#a9b1d6"
+
+bright_black   = "#414868"
+bright_blue    = "#8db0ff"
+bright_magenta = "#c7a9ff"
+bright_cyan    = "#a4daff"
+bright_white   = "#c0caf5"
 
 
 # --- Colores de IDENTIDAD ----------------------------------------------------

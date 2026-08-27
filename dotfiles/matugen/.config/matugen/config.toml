@@ -45,3 +45,8 @@ output_path = "~/.config/dunst/dunstrc.d/50-theme.conf"
 [templates.hyprlock]
 input_path  = "~/.config/matugen/templates/hyprlock-theme.conf"
 output_path = "~/.config/hypr/theme.conf"
+
+# kitty conserva su kitty.conf enlazado por Stow y hace `include theme.conf`.
+[templates.kitty]
+input_path  = "~/.config/matugen/templates/kitty-theme.conf"
+output_path = "~/.config/kitty/theme.conf"
