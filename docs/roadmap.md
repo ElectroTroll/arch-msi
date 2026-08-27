@@ -23,7 +23,7 @@ nota y lo más inmediato.
 | 2.2 | ~~**Dunst** — notificaciones~~ **[OK] Completada** | Bajo | Bajo |
 | 2.3 | ~~**hypridle + hyprlock** — bloqueo automático~~ **[OK] Completada** | Medio | **Medio** |
 | 2.4 | ~~**hyprpaper** — fondo de pantalla~~ **[OK] Completada** | Bajo | Bajo |
-| 2.5 | Limpieza: variable `menu` sobrante en `hyprland.lua` | Trivial | Nulo |
+| 2.5 | ~~Limpieza: variable `menu` sobrante en `hyprland.lua`~~ **[OK] Completada** | Trivial | Nulo |
 
 **2.1 Waybar.** **[OK] Completada (2026-08-02).** Barra superior de 34 px con
 nueve módulos: workspaces (los 10, distinguiendo activo / con ventanas /
@@ -107,7 +107,15 @@ vacío en vez de `eDP-1`, y `path = ~/Wallpapers` en vez de una ruta absoluta;
 ambas formas verificadas, igual que el autoarranque **tras un reinicio real**
 (arranque de las 19:19: `systemd Started ...`, PID dentro del cgroup del
 servicio, sin errores). Detalle en `docs/PROJECT_CONTEXT.md` §17. **Con esto se
-cierra el bloque de escritorio (fase 2)** salvo la limpieza trivial de la 2.5.
+cierra el bloque de escritorio (fase 2)**, junto con la limpieza de la 2.5.
+
+**2.5 Limpieza.** **[OK] Completada (2026-08-27).** Eliminada
+`local menu = "hyprlauncher"` de `hyprland.lua`. Era un resto de la plantilla
+original: `Super + R` se corrigió en su día para llamar directamente a
+`rofi -show drun`, y la variable se quedó sin un solo uso. Comprobado antes de
+borrarla que no se referenciaba en ninguna parte del repositorio, y que
+`hyprlauncher` **ni siquiera está instalado** en el equipo. Con esto **se cierra
+la fase 2**.
 
 > ⚠️ **`~/Wallpapers` es UN enlace de directorio, no un directorio real.** Es
 > lo que hace que una imagen dejada ahí aterrice en el repositorio sin copiar
@@ -146,6 +154,7 @@ validado.
 | 3.4 | **Dolphin** — solo archivos versionables | Medio | Bajo |
 | 3.5 | **Theming GTK/Qt coherente** con `nwg-look` | Medio | Bajo |
 | 3.6 | **Spotify** — versionar `spotify-flags.conf` como paquete Stow | Trivial | Nulo |
+| 3.7 | **npm** — versionar `~/.npmrc` como paquete Stow | Trivial | Nulo |
 
 Ya está instalada la fuente `ttf-jetbrains-mono-nerd` y el tema de iconos
 `papirus-icon-theme`, así que hay base para una estética unificada.
@@ -162,6 +171,13 @@ agujero silencioso que la 6.1, pero aquí basta con un **octavo** paquete Stow
 (`dotfiles/spotify/`), no con `install/services.sh`. Corregir el síntoma ya está
 hecho; falta solo meterlo en el repo.
 (Era el «séptimo» hasta que la tarea 2.2 ocupó ese número con `dotfiles/dunst/`.)
+
+**3.7 npm.** Detectada el 2026-08-27 auditando la 2.5. `~/.npmrc` contiene
+`prefix=/home/elok/.local`, que es lo que permite `npm -g` **sin sudo** y lo que
+sitúa a Codex CLI en `~/.local/lib/node_modules` (`PROJECT_CONTEXT.md` §10). No
+está versionado: es el mismo agujero silencioso que la 3.6 —el archivo no vuelve
+tras una restauración y nada lo avisa— y se cierra igual, con un paquete Stow
+(`dotfiles/npm/`). Añadida a la lista de §14.
 
 ---
 
@@ -304,7 +320,7 @@ herramientas para 7.1; qué se quiere automatizar y con qué límites para 7.2.
 **2.1** Waybar y **2.2** Dunst.)
 
 1. ~~**2.4** — fondo de pantalla~~ **[OK] hecha el 2026-08-25**; el escritorio
-   queda completo salvo la limpieza trivial de la 2.5.
+   queda completo, y la **2.5** cierra la fase (2026-08-27).
 2. **5.3 (probar snapshots)** — validar la red de seguridad antes de seguir
    cambiando cosas.
 3. **Fase 3** — pulido estético, sin riesgo, buen trabajo de relleno.

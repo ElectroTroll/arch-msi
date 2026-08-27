@@ -137,7 +137,7 @@ inactividad».
 | Volumen | Clic derecho | Silencia / desilencia la salida (`wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle`). |
 | Red | Clic izquierdo | Abre **nmtui** en una ventana de kitty (`kitty -e nmtui`). |
 | Perfil de energía | Clic izquierdo | **Rota** entre `performance`, `balanced` y `power-saver`. Es comportamiento nativo del módulo por D-Bus; no hay `on-click` definido. |
-| ⏻ Apagado | Clic izquierdo | Abre **wlogout** (`wlogout -b 4 -m 400 -s`): bloquear, salir, reiniciar, apagar. Sin hibernar — este equipo no puede (`PROJECT_CONTEXT.md` §5). |
+| ⏻ Apagado | Clic izquierdo | Abre **wlogout** (`wlogout -b 4 -m 400 -s`): bloquear (`b`), **suspender** (`s`), reiniciar (`r`), apagar (`a`), según [`dotfiles/wlogout/.config/wlogout/layout`](../dotfiles/wlogout/.config/wlogout/layout). Sin hibernar — este equipo no puede (`PROJECT_CONTEXT.md` §5). |
 | Bluetooth | Clic izquierdo | Abre **blueman-manager**. |
 
 **Rueda sobre el volumen** — sube y baja en pasos del **1 %**, con tope al

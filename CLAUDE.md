@@ -49,7 +49,8 @@ en `~/.local/bin` (no mover a `/usr/bin`).
 
 Credenciales, tokens, historiales privados, cookies, datos de sesión, artefactos
 de autenticación (Claude, Codex, VS Code, GNOME Keyring), caches, bases de datos,
-sockets, logs, backups locales (incl. `hyprland.lua.backup`). Ver `.gitignore`.
+sockets, logs, backups locales (cualquier `*.backup` de las configs). Ver
+`.gitignore`.
 
 ## GNU Stow (migración)
 

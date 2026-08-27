@@ -199,8 +199,11 @@ antes y después de la actualización de 221 paquetes).
 - Sesión Wayland: **SDDM → uwsm → Hyprland**. **[OK]**
   (`XDG_SESSION_TYPE=wayland`, `DESKTOP_SESSION=hyprland-uwsm`).
 - **Hyprland 0.56**, configuración **Lua**: `~/.config/hypr/hyprland.lua`
-  (Hyprland ≥0.55 usa Lua; hyprlang/`.conf` está deprecado). Existe también
-  `hyprland.lua.backup` (**no versionar**). **[OK]**
+  (Hyprland ≥0.55 usa Lua; hyprlang/`.conf` está deprecado). **[OK]**
+  Hubo un `hyprland.lua.backup` de la migración a Stow; se **borró el
+  2026-08-27** por ser ruido: nunca estuvo versionado —así que no viajaba a una
+  restauración— y su contenido no era único. Lo que aportaba queda registrado en
+  [`history/2026-08-27-limpieza-fase2.md`](history/2026-08-27-limpieza-fase2.md).
 - Teclado **español** · **natural scrolling** activado. **[OK]**
 - Corrección aplicada en vivo: `SUPER + R` ejecuta `rofi -show drun`
   directamente (antes fallaba por una variable `menu` sin resolver). **[OK]**
@@ -531,11 +534,13 @@ un único listener es justamente lo que permite garantizar el orden.
 
 - **OpenAI Codex CLI 0.145.0** · `~/.local/bin/codex` →
   `~/.local/lib/node_modules/@openai/codex`. Instalado como global npm.
-  `node` v26.4.0 / `npm` 12.0.1.
+  `node` v26.7.0 / `npm` 12.0.2 (comprobado 2026-08-27; las versiones derivan
+  con cada actualización — el inventario vivo es `packages/npm-global.txt`).
   **[OK] Prefix de npm migrado a `~/.local`:** instalaciones globales sin
   sudo. `~/.npmrc` contiene `prefix=/home/elok/.local`.
-- **Anthropic Claude Code 2.1.217** (instalador nativo) ·
-  `~/.local/bin/claude` → `~/.local/share/claude/versions/2.1.217`.
+- **Anthropic Claude Code 2.1.247** (instalador nativo, comprobado 2026-08-27;
+  se autoactualiza, así que el número envejece solo) ·
+  `~/.local/bin/claude` → `~/.local/share/claude/versions/<versión>`.
   PATH corregido con bloque idempotente en `~/.bash_profile` (verificado
   `bash -n` OK). **No mover a `/usr/bin`.**
 - **Claude Desktop** (AUR `claude-desktop`) también instalado.
@@ -618,12 +623,10 @@ un único listener es justamente lo que permite garantizar el orden.
 Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
 
 - Crear configs propias para Kitty, Rofi y yazi, y migrarlas a Stow.
-- Limpiar la variable `menu = "hyprlauncher"` sobrante en `hyprland.lua` (no
-  se usa en ningún bind).
 - **Estado que vive fuera del repositorio y que una restauración NO recupera.**
-  Cuatro agujeros con el mismo final: el fallo es **silencioso**, nada avisa de
-  que falta el paso. En los tres primeros los archivos vuelven a su sitio pero
-  nada los activa; en el cuarto el archivo ni siquiera vuelve.
+  **Cinco** agujeros con el mismo final: el fallo es **silencioso**, nada avisa
+  de que falta el paso. En los dos primeros los archivos vuelven a su sitio pero
+  nada los activa; en los tres últimos el archivo ni siquiera vuelve.
   - `hypridle.service`: el `enable` solo deja rastro en
     `packages/services-enabled.txt`. Sin rehabilitarlo, la sesión no se
     bloquea sola nunca (ver §9).
@@ -637,6 +640,13 @@ Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
     versionado**. Sin él, Spotify arranca en XWayland y se ve borroso otra vez
     (ver §7). Se arregla haciéndolo paquete Stow (`dotfiles/spotify/`), no con
     `install/services.sh`.
+  - `~/.npmrc` (`prefix=/home/elok/.local`): **detectado el 2026-08-27**, en la
+    auditoría de la tarea 2.5. Es lo que permite instalar globales de npm **sin
+    sudo** y lo que pone a Codex CLI en `~/.local/lib/node_modules` (§10). No
+    está versionado, así que tras una restauración `npm -g` volvería a escribir
+    en `/usr` pidiendo sudo y la ruta que documenta §10 dejaría de ser cierta,
+    sin un solo aviso. Mismo patrón y misma solución que `spotify-flags.conf`:
+    un paquete Stow, no `install/services.sh` (roadmap 3.7).
   Decidir cómo cubrirlos: encaja con `install/services.sh` de la fase 6 (ver
   roadmap 6.1, marcado como requisito bloqueante).
 
