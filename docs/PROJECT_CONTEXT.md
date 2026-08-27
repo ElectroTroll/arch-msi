@@ -1,9 +1,12 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-08-24 (incidente de arranque por renumeración de
+Última actualización: 2026-08-27 (**corrección de las vías de rescate**: tres
+afirmaciones falsas en §9 (Red y seguridad) sobre el cambio de VT, el `tty2` y
+faillock, más el registro de los dos bloqueos reales de faillock). Antes:
+2026-08-24 (incidente de arranque por renumeración de
 particiones y actualización completa posterior — §2 (Almacenamiento), §3
-(Bootloader), §4 (Kernel) y §15 (Sin verificar)). Antes: 2026-08-04 (cierre de
+(Bootloader), §4 (Kernel) y §15 (Sin verificar)); 2026-08-04 (cierre de
 la tarea 2.2, Dunst — §16 (Notificaciones)), 2026-08-03 (Spotify y escalado bajo
 XWayland, §7 (Entorno gráfico)) y 2026-08-02 (cierre de la tarea 2.1, Waybar).
 Auditoría no destructiva completa: 2026-07-23. Verificación post-incidente
@@ -479,23 +482,59 @@ pantalla se quedaría negra **sin error en ningún log**, con el equipo por lo
 demás vivo. Se arregla con `wlopm --on '*'` a ciegas, o reiniciando hypridle.
 **[NO VERIFICADO]** si un cambio de VT la recupera.
 
+**[OK] Ocurrió el 2026-08-27, por una puerta que no estaba contemplada.** Se
+probó un botón en hyprlock que ejecutaba `wlopm --off '*'`, y el equipo se quedó
+a ciegas: **ni el teclado ni el ratón devolvieron la pantalla**. El supuesto
+descrito arriba era «si hypridle muere»; aquí hypridle estaba perfectamente,
+pero **quien apagó fue hyprlock**, así que hypridle no se enteró y su `on-resume`
+nunca llegó. La regla real es más simple de lo que decía esta nota: **el apagado
+vive en el compositor y quien apaga tiene que encender**. Se recuperó con
+`wlopm --on '*'` desde otra sesión. El botón se retiró y queda el aviso en
+`hyprlock.conf`.
+
 **Nota para el futuro:** hypridle 0.1.8 expone un campo **`condition_cmd`** por
 listener (visible en el log de arranque), que sería una forma más limpia de
 expresar la guarda de batería que el `&&`. No se ha adoptado: el `&&` dentro de
 un único listener es justamente lo que permite garantizar el orden.
 
-> **Vías de rescate y trampas conocidas (2026-07-27).** Cada punto lleva su
+> **Vías de rescate y trampas conocidas** (2026-07-27; **corregido a fondo el
+> 2026-08-25**, ver los dos primeros puntos). Cada punto lleva su
 > propio estado: **[OK]** observado en la máquina · **[VER]** deducido de la
 > configuración, sin provocar.
 >
-> - **[OK] `Ctrl+Alt+F2` NO funciona bajo Hyprland**: el compositor captura la
->   combinación y no la traduce a un cambio de VT. La vía válida es **tty3**,
->   alcanzable con `sudo chvt 3` desde una terminal.
-> - **[OK] tty2 tiene un Xorg huérfano** del greeter de SDDM (PID variable; en la
->   comprobación de referencia, PID 756 en `vt2` con
->   `-auth /run/sddm/xauth_*`). Su sesión `c1` ya fue eliminada:
->   `loginctl list-sessions` solo muestra la sesión de tty1 y el manager de
->   usuario. **No es un destino válido de rescate.**
+> - **[OK] `Ctrl+Alt+F1/F2/F3` SÍ funcionan.** **Corregido el 2026-08-25**: la
+>   versión anterior de esta sección afirmaba que Hyprland capturaba la
+>   combinación sin traducirla a un cambio de VT. **Era falso, y el diagnóstico
+>   apuntaba al sitio equivocado**: el problema estaba en el TECLADO del
+>   portátil, no en el compositor.
+>
+>   La fila superior de este equipo trae las teclas multimedia como función
+>   PRIMARIA, así que `F1`–`F12` exigen `Fn`, y la combinación de cuatro teclas
+>   no llegaba bien. **Con Fn Lock activado funcionan sin problema**, igual que
+>   con un **teclado externo**, donde las F son primarias y siempre
+>   funcionaron — de hecho eso es lo que delató el error de diagnóstico.
+>
+>   ⚠️ **Fn Lock es, por tanto, un requisito práctico de la vía de rescate**
+>   desde el teclado integrado. Un teclado externo es la alternativa fiable si
+>   Fn Lock no está puesto o no se recuerda el estado.
+>
+>   `sudo chvt 3` sigue siendo válido, pero **ya no es la única vía** ni hace
+>   falta privilegios para cambiar de VT con el atajo.
+> - **[OK] Mapa real de VTs** (verificado 2026-08-25, reconfirmado 2026-08-27
+>   con `loginctl` y `ps`):
+>
+>   | VT | Qué hay | Sirve de rescate |
+>   |----|---------|------------------|
+>   | `tty1` | La sesión de Hyprland (o hyprlock si está bloqueada) | — |
+>   | `tty2` | El **greeter de SDDM** | Sí: permite iniciar una sesión nueva |
+>   | `tty3` | Consola de texto (`getty`) | Sí |
+>   | `tty4` | Consola de texto (`getty`) | Sí |
+>
+>   **Corrección importante:** la versión anterior describía el `tty2` como «un
+>   Xorg huérfano» que «no acepta entrada» y «no es un destino válido». Es
+>   falso: ese Xorg **es el greeter**, sigue vivo y bajo el `sddm` en marcha
+>   (comprobado: `sddm` activo y `/usr/lib/Xorg … vt2 -auth /run/sddm/xauth_*`),
+>   y desde ahí se puede iniciar sesión con normalidad.
 > - **[OK] faillock es compartido** entre hyprlock y el login por TTY:
 >   `/etc/pam.d/hyprlock` hace `auth include login`, y `login` encadena a
 >   `system-auth`, que invoca `pam_faillock.so`. Cadena PAM verificada
@@ -505,15 +544,36 @@ un único listener es justamente lo que permite garantizar el orden.
 >   `deny = 3`, `unlock_time = 600`. Según esa configuración vigente, tres
 >   fallos bloquearían **ambos** caminos durante 10 minutos, incluida la vía
 >   de rescate por TTY.
->   **[VER] El bloqueo NO se ha provocado nunca en esta máquina**: lo anterior
->   se deduce de la configuración leída, no de una observación. Tampoco se ha
->   comprobado que los defaults sigan vigentes tras una actualización de
->   `pam`, que podría descomentar o cambiar esos valores sin aviso.
->   **Este es el único escenario realista de quedarse fuera de la sesión en
->   este equipo**, y es justo el que inutiliza la vía de rescate descrita
->   arriba: si hyprlock ya ha consumido los tres intentos, `sudo chvt 3` lleva
->   a un login que también rechazará la contraseña. La salida es **esperar los
->   10 minutos**. No hay nada que cambiar en la configuración; debe constar.
+>   **[OK] YA NO ES TEÓRICO: ha pasado dos veces.** Esta parte decía «el bloqueo
+>   NO se ha provocado nunca en esta máquina» y quedó desfasada:
+>
+>   - **2026-08-24, con `sudo`.** Se resolvió entrando como **root** con `su -`
+>     y ejecutando `faillock --user elok --reset`.
+>   - **2026-08-25, con hyprlock**, tras cinco intentos fallidos.
+>
+>   **`su - <usuario>` es el test que distingue los dos casos**, y es lo primero
+>   que hay que hacer cuando una contraseña «correcta» deja de valer: si `su -`
+>   con la contraseña buena tampoco entra, no es que la estés escribiendo mal,
+>   es faillock.
+>
+>   **root tiene su PROPIO contador de faillock**, independiente del de `elok`.
+>   Por eso hay salida sin esperar: iniciar sesión como root en una TTY (o
+>   `su -` desde donde se pueda) y resetear el del usuario:
+>
+>   ```
+>   faillock --user elok --reset
+>   ```
+>
+>   Es decir, **esperar los 10 minutos ya no es la única opción**, como afirmaba
+>   la versión anterior de esta sección.
+>
+>   Sigue siendo **el escenario más realista de quedarse fuera de la sesión en
+>   este equipo**, y sigue afectando a los dos caminos a la vez: si hyprlock ha
+>   consumido los intentos, el login por TTY rechazará también la contraseña
+>   buena. Lo que cambia es que ahora hay una salida rápida y está probada.
+>
+>   Tampoco se ha comprobado que los defaults de `pam` sigan vigentes tras cada
+>   actualización, que podría descomentar o cambiar esos valores sin aviso.
 >   **[OK] Reverificado 2026-08-01:** `/etc/security/faillock.conf` sigue
 >   enteramente comentado (defaults vigentes) y `/etc/pam.d/hyprlock` sigue
 >   siendo el del paquete, sin alterar (`pacman -Qkk hyprlock`: 0 archivos
@@ -652,8 +712,11 @@ Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
 
 ## 15. Información sin verificar
 
-- Si un cambio de VT recupera una pantalla apagada con `wlopm` cuando hypridle
-  ha muerto (ver la trampa en §9).
+- Si un cambio de VT recupera una pantalla apagada con `wlopm` cuando nadie va a
+  ejecutar el `--on` (ver la trampa en §9). Sigue sin probarse, pero el
+  2026-08-27 se comprobó lo que **no** la recupera: ni teclado ni ratón. Ahora
+  que se sabe que `Ctrl+Alt+F3` funciona con Fn Lock, la prueba es fácil de
+  hacer la próxima vez que ocurra.
 - Estado de autenticación de Claude Code (no comprobado; no exponer credenciales).
 - **[VER]** hyprlock registra `Starting fade in` pese a tener
   `animations { enabled = false }` en `hyprlock.conf`. Cosmético: no se ha

@@ -85,16 +85,27 @@ inactividad».
 > incidente. A los 900 s: pantalla apagada siempre, suspensión solo con
 > batería y **después** del apagado. Detalle y trampas en §9.
 
-> ⚠️ **Vía de rescate — corrección importante (verificado 2026-07-27).**
-> `Ctrl+Alt+F2` **no funciona** en este equipo: Hyprland captura la combinación
-> y no la traduce a un cambio de VT, así que no hace nada. Además **tty2 está
-> ocupado** por un Xorg huérfano del greeter de SDDM (framebuffer muerto, no
-> acepta entrada): no es un destino válido. La vía válida es **tty3**,
-> alcanzable solo con `sudo chvt 3` desde una terminal, no por teclado. Antes de
-> cualquier cambio que pueda dejar la sesión bloqueada sin poder entrar, tener
-> esa terminal abierta y lista. Ojo también con **faillock**, compartido entre
-> hyprlock y el login por TTY (por defecto `deny = 3`, `unlock_time = 600`):
-> tres fallos cerrarían también la vía de rescate durante 10 minutos.
+> ⚠️ **Vía de rescate — CORREGIDO el 2026-08-25.** Lo que decía aquí antes era
+> falso en sus tres puntos, y conviene saber por qué: se afirmaba que
+> `Ctrl+Alt+F2` no funcionaba porque Hyprland capturaba la combinación, que
+> `tty2` estaba ocupado por un Xorg huérfano y que la única vía era `sudo chvt 3`.
+>
+> La realidad: **`Ctrl+Alt+F1/F2/F3` sí funcionan**. El problema era el TECLADO
+> del portátil, no el compositor — la fila superior lleva las multimedia como
+> función primaria, así que `F1`–`F12` exigen `Fn` y la combinación de cuatro
+> teclas no llegaba. **Con Fn Lock activado va**, y con un teclado externo
+> siempre funcionó. Y `tty2` no es un huérfano: es **el greeter de SDDM**, desde
+> el que se puede iniciar sesión nueva. `tty3` y `tty4` son consolas de texto.
+>
+> ⚠️ **Fn Lock es un requisito práctico** de esta vía desde el teclado
+> integrado; el teclado externo es la alternativa fiable.
+>
+> Ojo con **faillock**, compartido entre hyprlock y el login por TTY (`deny = 3`,
+> `unlock_time = 600`): **ha bloqueado el equipo dos veces** (2026-08-24 con
+> `sudo`, 2026-08-25 con hyprlock). No hace falta esperar los 10 minutos:
+> **root tiene contador propio**, así que se entra como root en una TTY y se
+> ejecuta `faillock --user elok --reset`. Detalle en
+> `docs/PROJECT_CONTEXT.md` §9.
 
 **2.4 hyprpaper.** **[OK] Completada (2026-08-25).** Fondo de pantalla con
 hyprpaper 0.8.4. Toca dos paquetes Stow: la config en `hypr/` (existente) y las
