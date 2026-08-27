@@ -219,6 +219,22 @@ clock_color     = "#ffffff"
 clock_size      = 160   # px lógicos
 clock_offset    = 120   # distancia desde el borde superior
 
+# TAMAÑO DEL CAMPO DE CONTRASEÑA, en porcentaje de la pantalla.
+#
+# Se ensanchó del 20% al 30% el 2026-08-27: con los textos en castellano —más
+# largos que los "Input password..." de fábrica— el mensaje de contraseña
+# incorrecta NO CABÍA y se cortaba por la derecha.
+#
+# ⚠️ hyprlock NO sabe desplazar ni recortar el texto: no tiene scroll ni
+# ellipsis (revisadas las opciones del binario). Si un mensaje no cabe, se corta
+# y punto. O sea que si alargas un texto de [lock] en strings.toml, hay que
+# comprobar aquí que sigue entrando.
+#
+# Referencia: 30% de los 1600 px lógicos del panel son 480 px, unos 40
+# caracteres con la fuente del campo. "Contraseña incorrecta · intento 1" son 33.
+input_width     = "30%"
+input_height    = "5%"
+
 # Fuente propia del reloj, más gruesa que la del resto del escritorio.
 #
 # ⚠️ NO SE PONE EL PESO PEGADO AL NOMBRE. "JetBrainsMono Nerd Font Bold" NO es
