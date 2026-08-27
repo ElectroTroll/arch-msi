@@ -69,7 +69,7 @@ window#waybar {
  * borde del contenido de debajo. Flotando no hace falta — el propio margen
  * separa —, y encima cortaría la esquina redondeada. */
 window#waybar > box {
-    background: alpha(@bg, {{opacity_bar}});
+    background: alpha(@bg, {{opacity_surface}});
     border-radius: {{metrics_radius}}px;
     margin: {{metrics_bar_margin}}px;
     padding: 0 {{metrics_pad_xs}}px;

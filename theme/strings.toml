@@ -1,0 +1,38 @@
+# strings.toml — textos de la interfaz · MSI Summit E16 AI Studio (arch-msi)
+# Fecha: 2026-08-27 · Tarea 3.0.
+#
+# ESTE ARCHIVO ES PARA LOS TEXTOS. Su hermano `tokens.toml` es para los valores
+# (colores, fuentes, métricas). Se separan porque cambian por motivos distintos:
+# un texto se toca por redacción o idioma, un token por estética.
+#
+# Igual que tokens.toml, esto es FUENTE: no lo lee ninguna aplicación
+# directamente. `theme-apply.sh` lo inyecta en las plantillas, y las claves
+# llegan con el prefijo `str_` (por ejemplo, `lock.placeholder` → `str_lock_placeholder`).
+#
+# ⚠️ ALGUNOS TEXTOS LLEVAN VARIABLES DE hyprlock, con $ delante:
+#     $ATTEMPTS  número de intentos fallidos
+#     $FAIL      el mensaje de error que devuelve PAM (en inglés, lo pone el
+#                sistema y no se puede traducir desde aquí)
+#     $USER      nombre de usuario  ·  $DESC  nombre completo
+#     $TIME      hora  ·  $TIME12  hora en formato 12h
+# Esas variables las resuelve hyprlock al dibujar, así que se dejan tal cual.
+#
+# ⚠️ NO USAR el carácter # dentro de un texto sin comillas: en hyprlang inicia
+# un comentario. Aquí van entrecomillados y llegan bien, pero conviene saberlo.
+
+
+# --- Pantalla de bloqueo -----------------------------------------------------
+[lock]
+# Texto del campo de contraseña cuando está vacío.
+placeholder = "Introduce la contraseña"
+
+# Mensaje tras un intento fallido. $ATTEMPTS lleva la cuenta.
+#
+# ⚠️ OJO CON faillock: tres fallos bloquean la cuenta 10 minutos, y eso afecta
+# TAMBIÉN al login por TTY, que es la vía de rescate del equipo
+# (docs/PROJECT_CONTEXT.md §9). Por eso el mensaje muestra los intentos: es
+# información útil, no decoración.
+fail = "Contraseña incorrecta · intento $ATTEMPTS"
+
+# Mientras PAM comprueba la contraseña.
+verifying = "Comprobando…"

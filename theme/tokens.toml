@@ -69,6 +69,7 @@ pad_xs = 4    # margen izquierdo del grupo · margen vertical de las píldoras
 pad_sm = 8    # padding horizontal de los botones de workspace
 pad_md = 10   # padding horizontal de los módulos de la barra
 pad_lg = 12   # padding interior de las notificaciones · botón de apagado
+pad_xl = 14   # padding horizontal de las notificaciones (dunst lo lleva aparte)
 gap    = 6    # separación entre notificaciones apiladas
 
 # --- Barra (Waybar) ---
@@ -94,10 +95,16 @@ bar_margin = 6
 # Tenían una lógica interna que nunca estuvo escrita en ninguna parte, así que
 # en la práctica eran números al azar. Queda documentada:
 [opacity]
-# Fondo de la barra. NO es del todo opaca: deja ver el wallpaper por detrás,
-# que es de donde sale la propia paleta. Bajar de ~0.70 empieza a comprometer la
-# legibilidad del texto sobre fondos claros.
-bar       = 0.85
+# Fondo de las SUPERFICIES FLOTANTES: la barra y las notificaciones. Un solo
+# valor para las dos, para que el conjunto se vea coherente. No son del todo
+# opacas: dejan ver el wallpaper por detrás, que es de donde sale la propia
+# paleta. Bajar de ~0.70 empieza a comprometer la legibilidad del texto.
+#
+# ⚠️ dunst NO mide en opacidad sino en TRANSPARENCIA, y en porcentaje entero
+# (0 = opaco, 100 = invisible). La conversión la hace theme-apply.sh y llega a
+# la plantilla como `opacity_surface_dunst`. Aquí se declara una sola vez y en
+# una sola unidad; que cada aplicación tenga su capricho es problema del script.
+surface   = 0.80
 
 faint     = 0.25   # contorno de los workspaces vacíos: presente, pero apenas
 separator = 0.08   # líneas divisorias y hover de los workspaces
@@ -148,6 +155,49 @@ magenta = "#c678dd"
 # nada que ver con la paleta y el resultado se va demasiado lejos: genera el tema
 # entero a partir de este color en vez de a partir de la imagen.
 seed_fallback = "#7aa2f7"
+
+
+# --- Pantalla de bloqueo (hyprlock) ------------------------------------------
+#
+# hyprlock pinta el FONDO DE PANTALLA en uso, desenfocado y algo oscurecido, en
+# vez de un color liso. La ruta la inyecta theme-apply.sh, que ya se la pregunta
+# a hyprpaper; si el tema se generó con `--seed` (sin imagen), el bloqueo cae al
+# color de fondo del tema sin avisar de nada.
+[lock]
+# Desenfoque. El resultado NO es un porcentaje: hyprlock aplica `blur_passes`
+# pasadas de un radio `blur_size`, así que el efecto crece con el producto de
+# los dos. Con 3 × 7 el paisaje se reconoce pero no se distingue un detalle,
+# que es el punto medio pedido. Subir pasadas cuesta más GPU que subir el radio.
+blur_passes = 3
+blur_size   = 7
+
+# Luminosidad, 1.0 = la imagen tal cual. Se baja para que el campo de contraseña
+# y el reloj destaquen sobre la foto en vez de competir con ella.
+brightness  = 0.75
+
+# Contraste y viveza de la imagen de fondo, no del tema. Se dejan neutros: el
+# desenfoque ya aplana bastante y tocarlos suele ensuciar la imagen.
+contrast    = 1.0
+vibrancy    = 0.20
+
+# Reloj de la pantalla de bloqueo. Blanco puro y no el $fg del tema (#edf6ff):
+# se dibuja sobre una FOTO desenfocada, no sobre una superficie del tema, así
+# que aquí manda la legibilidad sobre la coherencia de paleta.
+clock_color     = "#ffffff"
+clock_size      = 160   # px lógicos
+clock_offset    = 120   # distancia desde el borde superior
+
+# Fuente propia del reloj, más gruesa que la del resto del escritorio.
+#
+# ⚠️ NO SE PONE EL PESO PEGADO AL NOMBRE. "JetBrainsMono Nerd Font Bold" NO es
+# una familia: fontconfig no la encuentra y CAE EN OTRA FUENTE sin decir nada
+# —verificado el 2026-08-27: `fc-match` devuelve Noto Sans Mono—, así que el
+# reloj saldría con una tipografía ajena y nadie avisaría.
+#
+# Los nombres que SÍ existen en este equipo (comprobar con
+# `fc-list : family | tr ',' '\n' | grep JetBrains`):
+#     JetBrainsMono NF Medium · NF SemiBold · NF ExtraBold
+clock_font      = "JetBrainsMono NF ExtraBold"
 
 
 # --- Generación (matugen) ----------------------------------------------------

@@ -33,3 +33,15 @@ output_path = "~/.config/waybar/style.css"
 [templates.waybar-config]
 input_path  = "~/.config/matugen/templates/waybar-config.jsonc"
 output_path = "~/.config/waybar/config.jsonc"
+
+# dunst SÍ conserva su dunstrc enlazado por Stow: el tema entra como drop-in,
+# que dunst aplica encima de la config base (man dunst, FILES).
+[templates.dunst]
+input_path  = "~/.config/matugen/templates/dunst-theme.conf"
+output_path = "~/.config/dunst/dunstrc.d/50-theme.conf"
+
+# hyprlock conserva su hyprlock.conf enlazado por Stow y hace `source` de este
+# archivo, que solo trae variables de hyprlang.
+[templates.hyprlock]
+input_path  = "~/.config/matugen/templates/hyprlock-theme.conf"
+output_path = "~/.config/hypr/theme.conf"

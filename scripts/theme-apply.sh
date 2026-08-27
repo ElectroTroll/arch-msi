@@ -19,6 +19,7 @@ set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TOKENS="$REPO/theme/tokens.toml"
+STRINGS="$REPO/theme/strings.toml"
 MATUGEN_CFG="$HOME/.config/matugen/config.toml"
 TEMPLATES="$HOME/.config/matugen/templates"
 
@@ -47,10 +48,20 @@ command -v jq >/dev/null      || die "jq no está instalado"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
-python3 - "$TOKENS" "$TMP/tokens.json" <<'PY'
+python3 - "$TOKENS" "$TMP/tokens.json" "$STRINGS" <<'PY'
 import json, sys, tomllib
 d = tomllib.load(open(sys.argv[1], "rb"))
 flat = {}
+
+# Los TEXTOS viven aparte, en theme/strings.toml, porque cambian por motivos
+# distintos que los valores: redacción o idioma, no estética. Llegan a las
+# plantillas con prefijo `str_` (lock.placeholder → str_lock_placeholder).
+try:
+    for sec, vals in tomllib.load(open(sys.argv[3], "rb")).items():
+        for k, v in vals.items():
+            flat[f"str_{sec}_{k}"] = v
+except FileNotFoundError:
+    pass
 for sec, vals in d.items():
     if sec == "matugen":
         continue
@@ -61,6 +72,25 @@ for sec, vals in d.items():
     else:
         for k, v in vals.items():
             flat[f"{sec}_{k}"] = v
+
+# Derivados: cada aplicación mide a su manera y tokens.toml declara UNA sola vez
+# y en UNA sola unidad. Las conversiones se hacen aquí, no repetidas a mano en
+# cada plantilla.
+#
+#   dunst EN WAYLAND no admite la clave `transparency`: su manual la marca como
+#   "(X11 only)" y remite a poner el canal alfa en el propio color (#RRGGBBAA).
+#   Se entrega el alfa como sufijo hexadecimal de dos dígitos, listo para pegar
+#   detrás del color en la plantilla.
+flat["opacity_surface_hex"] = f"{round(flat['opacity_surface'] * 255):02X}"
+
+#   hyprlang (hyprlock, Hyprland) escribe los colores SIN almohadilla:
+#   `rgb(58b4ef)`, no `rgb(#58b4ef)`. Se añade una versión `_stripped` de cada
+#   color para poder pegarla dentro de rgb()/rgba() sin trucos en la plantilla.
+for k in list(flat):
+    v = flat[k]
+    if isinstance(v, str) and v.startswith("#") and len(v) == 7:
+        flat[f"{k}_stripped"] = v[1:]
+
 json.dump(flat, open(sys.argv[2], "w"), ensure_ascii=False)
 PY
 
@@ -123,7 +153,12 @@ PAL="$(matugen "${SRC[@]}" -c "$TMP/pass1.toml" "${COMMON[@]}" -j hex 2>/dev/nul
     || die "matugen falló al resolver la paleta; no se toca nada"
 ACCENT="$(printf '%s' "$PAL" | jq -er ".palettes.primary.\"$TONE\".color")" \
     || die "no hay tono $TONE en la paleta"
-jq --arg a "$ACCENT" '. + {accent:$a}' "$TMP/resolved.json" > "$TMP/render.json"
+# `wallpaper` es la ruta de la imagen en uso: hyprlock la pinta desenfocada como
+# fondo del bloqueo. Va vacía si el tema se generó desde una semilla, y entonces
+# hyprlock cae a su color liso.
+jq --arg a "$ACCENT" --arg s "${ACCENT#\#}" --arg w "${WP:-}" \
+   '. + {accent:$a, accent_stripped:$s, wallpaper:$w} + (to_entries|map(select(.value|type=="string" and startswith("#")))|map({key:(.key+"_stripped"), value:(.value[1:])})|from_entries)' \
+   "$TMP/resolved.json" > "$TMP/render.json"
 
 # --- 4. Contraste ------------------------------------------------------------
 # Si la paleta sale ilegible se conserva la anterior. Vale más un tema viejo que
