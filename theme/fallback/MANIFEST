@@ -1,0 +1,9 @@
+# Generado por theme-apply.sh --save-fallback. NO editar a mano.
+# <archivo en esta carpeta>  <ruta relativa a ~/.config>
+waybar__style.css  waybar/style.css
+waybar__config.jsonc  waybar/config.jsonc
+dunst__dunstrc.d__50-theme.conf  dunst/dunstrc.d/50-theme.conf
+hypr__theme.conf  hypr/theme.conf
+kitty__theme.conf  kitty/theme.conf
+hypr__theme.lua  hypr/theme.lua
+fastfetch__config.jsonc  fastfetch/config.jsonc

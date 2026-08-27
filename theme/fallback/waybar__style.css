@@ -1,0 +1,259 @@
+/* waybar-style.css — PLANTILLA de la hoja de estilo de Waybar (arch-msi)
+ * Fecha: 2026-08-01 (tarea 2.1) · convertida en plantilla el 2026-08-27 (3.0).
+ *
+ * Fuente:  dotfiles/matugen/.config/matugen/templates/waybar-style.css  (esto)
+ * Salida:  ~/.config/waybar/style.css                                  (artefacto)
+ *
+ * ⚠️ NO EDITAR ~/.config/waybar/style.css: lo reescribe matugen en cada arranque.
+ * Se edita ESTE archivo, o theme/tokens.toml para valores.
+ *
+ * POR QUÉ WAYBAR NO SIGUE EL PATRÓN DE LOS DEMÁS. dunst, hyprlock, Hyprland,
+ * kitty y rofi conservan su config enlazada por Stow y reciben el tema como un
+ * fragmento incluido, porque sus formatos admiten VARIABLES reutilizables. GTK
+ * CSS no: solo tiene `@define-color`, que sirve para colores y para nada más.
+ * Sin variables numéricas no hay forma de que el tamaño de fuente o el radio
+ * salgan de tokens.toml… salvo generando la hoja entera. De ahí la excepción.
+ *
+ * Clases y selectores verificados contra las páginas de manual de waybar
+ * 0.15.0-2 (ver la lista Style de waybar-hyprland-workspaces(5)).
+ *
+ * HiDPI: escala 1.60. Todo aquí está en píxeles LÓGICOS, igual que la altura
+ * de config.jsonc. 13px de fuente son ≈21px físicos: es el tamaño cómodo en
+ * esta pantalla, no un descuido.
+ *
+ * Todos los valores vienen de theme/tokens.toml (fuente, métricas, opacidades y
+ * colores de estado) o de matugen (colores que siguen al fondo).
+ */
+
+/* --- Colores -------------------------------------------------------------
+ * Superficies y texto con ROLES del esquema (ahí Material garantiza el
+ * contraste). El acento con un TONO de paleta, que es lo que evita el pastel:
+ * ver `accent_tone` en theme/tokens.toml. */
+@define-color bg      #0c141b;
+@define-color bg_alt  #1d252c;
+@define-color fg      #edf6ff;
+@define-color muted   #6d757e;
+@define-color accent  #58b4ef;
+
+/* Identidad azul/rosa/magenta, ya armonizada hacia el fondo. */
+@define-color ident_pink    #eaace9;
+@define-color ident_magenta #b17fee;
+
+/* Estado: FIJOS, no pasan por matugen. Una batería crítica debe leerse igual
+ * con cualquier fondo. */
+@define-color ok    #9ece6a;
+@define-color warn  #e0af68;
+@define-color crit  #f7768e;
+
+/* Reset. `all: unset` evita heredar el tema GTK del sistema, que cambiaría el
+ * aspecto de la barra al tocar nwg-look en la tarea 3.5. */
+* {
+    all: unset;
+    font-family: "JetBrainsMono Nerd Font", monospace;
+    font-size: 13px;
+    /* Sin transiciones: la barra debe repintar sin animaciones a 165 Hz. */
+    min-height: 0;
+}
+
+/* La VENTANA es transparente: lo que se pinta es la isla de dentro. Sin esto,
+ * el margen dejaría ver un rectángulo de fondo en vez del wallpaper. */
+window#waybar {
+    background: transparent;
+    color: @fg;
+}
+
+/* LA ISLA. Flota separada de los tres bordes de la pantalla, con las cuatro
+ * esquinas redondeadas y el fondo de pantalla visible alrededor.
+ *
+ * Ya no hay `border-bottom`: esa línea existía para separar una barra pegada al
+ * borde del contenido de debajo. Flotando no hace falta — el propio margen
+ * separa —, y encima cortaría la esquina redondeada. */
+window#waybar > box {
+    background: alpha(@bg, 0.8);
+    border-radius: 10px;
+    margin: 6px;
+    padding: 0 4px;
+}
+
+/* --- Tooltips ------------------------------------------------------------
+ * OBLIGATORIO, no decorativo: el `all: unset` de arriba borra también el
+ * estilo que GTK da por defecto a los tooltips, incluido su FONDO. Sin estas
+ * reglas los tooltips salen como texto blanco flotando sobre lo que haya
+ * detrás — ilegible, y así se vio en la primera prueba con el calendario.
+ * Si algún día se quita el reset, esto puede revisarse; mientras esté, no. */
+
+tooltip {
+    background: @bg;
+    border: 1px solid alpha(@fg, 0.18);
+    border-radius: 10px;
+}
+
+tooltip label {
+    color: @fg;
+    padding: 8px 10px;
+}
+
+/* --- Workspaces --------------------------------------------------------- */
+
+#workspaces {
+    margin-left: 4px;
+}
+
+/* Los diez workspaces están siempre presentes, así que lo que comunica el
+ * estado es el CONTRASTE entre ellos. De menos a más peso visual:
+ *   vacío (sin contorno)  <  con ventanas (contorno tenue)  <  en uso (relleno)
+ * El orden de estas reglas importa: .active va al final para ganar siempre,
+ * porque el workspace activo también lleva .persistent o .empty. */
+
+/* OJO CON EL ORDEN DE ESTAS REGLAS. Un workspace vacío lleva a la vez las
+ * clases .persistent (por estar declarado en persistent-workspaces) y .empty
+ * (por no tener ventanas). Con la misma especificidad gana la que aparezca
+ * DESPUÉS, así que estilar `.persistent` detrás de `.empty` hacía que todos
+ * los botones se vieran idénticos — exactamente el fallo de la primera
+ * versión. Por eso aquí NO se estila `.persistent`: el estado "con ventanas"
+ * es el ESTILO BASE del botón, y `.empty` lo rebaja después. Así la cascada
+ * funciona sin depender de qué clases acumule cada botón. */
+
+/* PÍLDORAS, no subrayados (2026-08-27). Cada número va dentro de su propia
+ * caja redondeada; el estado se comunica con el BORDE y el FONDO de esa caja,
+ * no con una línea inferior.
+ *
+ * ⚠️ TODOS los estados declaran `border` y `margin`, incluso cuando el borde es
+ * transparente. Si un estado no lo declarara, su caja mediría 2 px menos y los
+ * números BAILARÍAN al abrirse o cerrarse la última ventana de un workspace.
+ * Es el mismo motivo por el que antes la franja se dejaba transparente en vez
+ * de quitarla. */
+
+/* 1. BASE = CON VENTANAS. Contorno tenue de acento: se localizan de un vistazo
+ * sin competir con el activo. */
+#workspaces button {
+    padding: 0 8px;
+    margin: 4px 2px;
+    color: @fg;
+    border: 2px solid alpha(@accent, 0.35);
+    border-radius: 10px;
+}
+
+/* 2. VACÍO — rebaja la base sin desaparecer: el contorno sigue ahí, pero en el
+ * MISMO gris del texto apagado y a baja opacidad. Lo justo para que la píldora
+ * se intuya y los diez workspaces formen una fila regular. */
+#workspaces button.empty {
+    color: @muted;
+    border-color: alpha(@muted, 0.25);
+}
+
+#workspaces button:hover {
+    color: @fg;
+    background: alpha(@fg, 0.08);
+}
+
+#workspaces button.urgent {
+    color: @crit;
+    border-color: @crit;
+}
+
+/* 3. EN USO — acento pleno, negrita, fondo propio y contorno sólido. Es el
+ * único elemento de toda la barra que lleva fondo, para que salte a la vista
+ * incluso de reojo. */
+#workspaces button.active {
+    color: @accent;
+    font-weight: bold;
+    background: alpha(@accent, 0.15);
+    border-color: @accent;
+}
+
+/* --- Módulos ------------------------------------------------------------ */
+
+#clock,
+#custom-claude,
+#wireplumber,
+#bluetooth,
+#network,
+#battery,
+#power-profiles-daemon,
+#custom-power {
+    padding: 0 10px;
+}
+
+/* Perfil de energía: en gris. Es información de contexto, no un estado que
+ * debas vigilar; el acento se reserva para el workspace activo. */
+#power-profiles-daemon {
+    color: @muted;
+}
+
+#power-profiles-daemon:hover {
+    color: @fg;
+}
+
+#clock {
+    color: @fg;
+}
+
+/* --- Uso de Claude -------------------------------------------------------
+ * Tres estados que vienen del script en el campo `class`. La distinción entre
+ * `fresco` y `viejo` es lo importante: un porcentaje de hace tres horas se ve
+ * exactamente igual que uno de hace tres segundos si no se marca. */
+
+/* Sin dato: no hay sesión de Claude Code desde el último arranque. */
+#custom-claude.sin-dato {
+    color: @muted;
+}
+
+/* Dato al día: hay una sesión abierta refrescándolo. */
+#custom-claude.fresco {
+    color: @fg;
+}
+
+/* Dato caducado: la cifra sigue ahí porque es la última conocida, pero en
+ * ámbar y a media opacidad para que no se confunda con información actual.
+ * El tooltip dice cuántas horas tiene. */
+#custom-claude.viejo {
+    color: @warn;
+    opacity: 0.65;
+}
+
+#wireplumber.muted {
+    color: @muted;
+}
+
+#bluetooth.off,
+#bluetooth.disabled {
+    color: @muted;
+}
+
+#bluetooth.connected {
+    color: @accent;
+}
+
+#network.disconnected {
+    color: @crit;
+}
+
+/* --- Batería ------------------------------------------------------------ */
+
+#battery.charging,
+#battery.plugged {
+    color: @ok;
+}
+
+/* Umbrales definidos en config.jsonc → states (30% y 15%). */
+#battery.warning:not(.charging) {
+    color: @warn;
+}
+
+#battery.critical:not(.charging) {
+    color: @crit;
+}
+
+/* --- Botón de apagado --------------------------------------------------- */
+
+/* Rojo solo al pasar por encima: en reposo no debe llamar la atención, pero
+ * al apuntarlo tiene que quedar claro que es destructivo. */
+#custom-power {
+    color: @muted;
+    padding-right: 12px;
+}
+
+#custom-power:hover {
+    color: @crit;
+}

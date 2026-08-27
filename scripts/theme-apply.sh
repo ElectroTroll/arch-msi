@@ -8,6 +8,8 @@
 #   theme-apply.sh                 → desde el fondo que hyprpaper tenga puesto
 #   theme-apply.sh --seed "#hex"   → desde un color fijo, ignorando el fondo
 #   theme-apply.sh --dry-run       → enseña qué haría, sin escribir ni recargar
+#   theme-apply.sh --fallback      → instala la paleta de reserva, sin matugen
+#   theme-apply.sh --save-fallback → congela el tema actual como reserva
 #
 # ⚠️ REGLA DE ORO: este script NUNCA escribe sobre una ruta gestionada por Stow.
 # Los enlaces de ~/.config/{waybar,dunst,hypr} apuntan DENTRO del repositorio;
@@ -17,7 +19,15 @@
 
 set -euo pipefail
 
-REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# ⚠️ `readlink -f` NO SOBRA. Este script se invoca de dos formas: por su ruta
+# (./scripts/theme-apply.sh) y POR NOMBRE (`theme-apply`), porque el paquete Stow
+# `bin` lo enlaza en ~/.local/bin —que es como lo llama Hyprland al arrancar—.
+# Por la segunda vía, `BASH_SOURCE` es el enlace, así que sin resolverlo el repo
+# se calculaba como ~/.local y el script moría con
+#     theme-apply: no encuentro /home/elok/.local/theme/tokens.toml
+# Verificado el 2026-08-27, y son además DOS enlaces encadenados
+# (~/.local/bin → dotfiles/bin/… → scripts/), que `readlink -f` resuelve enteros.
+REPO="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 TOKENS="$REPO/theme/tokens.toml"
 STRINGS="$REPO/theme/strings.toml"
 MATUGEN_CFG="$HOME/.config/matugen/config.toml"
@@ -25,16 +35,59 @@ TEMPLATES="$HOME/.config/matugen/templates"
 
 SEED=""
 DRY=0
+MODO=""
 while [ $# -gt 0 ]; do
     case "$1" in
         --seed) SEED="${2:-}"; shift 2 ;;
         --dry-run) DRY=1; shift ;;
-        -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
+        --fallback) MODO="fallback"; shift ;;
+        --save-fallback) MODO="save"; shift ;;
+        -h|--help) sed -n '2,14p' "$0"; exit 0 ;;
         *) echo "opción desconocida: $1" >&2; exit 2 ;;
     esac
 done
 
 die() { echo "theme-apply: $*" >&2; exit 1; }
+
+# --- Paleta de reserva -------------------------------------------------------
+# theme/fallback/ guarda una copia congelada de los artefactos. Existe porque
+# Waybar y fastfetch NO tienen config versionada: la suya se GENERA entera, así
+# que un repo recién clonado —con Stow hecho pero matugen todavía sin ejecutar—
+# se quedaría literalmente sin barra y sin fastfetch. Los demás componentes
+# sobreviven porque conservan su config y solo pierden el fragmento de tema.
+#
+# El MANIFEST se genera con `--save-fallback` a partir de los `output_path` del
+# config.toml de matugen, para que la reserva no se desincronice cuando se añada
+# un componente nuevo.
+# ⚠️ SE LLAMA FALLBACK_DIR Y NO `FALLBACK` POR UNA RAZÓN. Más abajo hay un
+# `read -r … FALLBACK …` que recoge `seed_fallback` de tokens.toml, o sea un
+# COLOR. Cuando esta ruta se llamaba igual, el read la pisaba y `--save-fallback`
+# creaba un directorio llamado "#7aa2f7" en la raíz del repositorio. Ocurrió el
+# 2026-08-27; no volver a juntar los dos nombres.
+FALLBACK_DIR="$REPO/theme/fallback"
+
+instalar_fallback() {
+    [ -r "$FALLBACK_DIR/MANIFEST" ] || { echo "theme-apply: no hay paleta de reserva en $FALLBACK_DIR" >&2; return 1; }
+    local origen destino n=0
+    while read -r archivo rel; do
+        case "$archivo" in ''|'#'*) continue ;; esac
+        origen="$FALLBACK_DIR/$archivo"
+        destino="$HOME/.config/$rel"
+        [ -f "$origen" ] || continue
+        if [ -L "$destino" ]; then
+            echo "theme-apply: $destino es un ENLACE de Stow, no se toca" >&2
+            continue
+        fi
+        mkdir -p "$(dirname "$destino")"
+        cp "$origen" "$destino" && n=$((n+1))
+    done < "$FALLBACK_DIR/MANIFEST"
+    echo "theme-apply: instalados $n artefactos de reserva"
+}
+
+if [ "$MODO" = "fallback" ]; then
+    instalar_fallback || exit 1
+    exit 0
+fi
 command -v matugen >/dev/null || die "matugen no está instalado (pacman -S matugen)"
 command -v jq >/dev/null      || die "jq no está instalado"
 [ -f "$TOKENS" ]              || die "no encuentro $TOKENS"
@@ -150,8 +203,16 @@ input_path  = "$TMP/harmonize.tmpl"
 output_path = "$TMP/resolved.json"
 CFG
 
-PAL="$(matugen "${SRC[@]}" -c "$TMP/pass1.toml" "${COMMON[@]}" -j hex 2>/dev/null)" \
-    || die "matugen falló al resolver la paleta; no se toca nada"
+# Si matugen falla y encima NO hay artefactos (repo recién restaurado), se
+# instala la reserva antes de rendirse: vale más un escritorio con la paleta de
+# ayer que uno sin barra.
+if ! PAL="$(matugen "${SRC[@]}" -c "$TMP/pass1.toml" "${COMMON[@]}" -j hex 2>/dev/null)"; then
+    if [ ! -f "$HOME/.config/waybar/style.css" ]; then
+        echo "theme-apply: matugen falló y no hay tema instalado; uso la reserva" >&2
+        instalar_fallback || true
+    fi
+    die "matugen falló al resolver la paleta"
+fi
 ACCENT="$(printf '%s' "$PAL" | jq -er ".palettes.primary.\"$TONE\".color")" \
     || die "no hay tono $TONE en la paleta"
 # Segundo color del degradado del borde activo de Hyprland. Sale TAMBIÉN de la
@@ -234,5 +295,26 @@ fi
 command -v dunstctl >/dev/null && dunstctl reload 2>/dev/null && echo "theme-apply: dunst recargado"
 # Hyprland relee su config; hyprlock la lee al lanzarse, así que no necesita nada.
 command -v hyprctl >/dev/null && hyprctl reload >/dev/null 2>&1 && echo "theme-apply: hyprland recargado"
+
+if [ "$MODO" = "save" ]; then
+    # Congela los artefactos recién generados como paleta de reserva. Los
+    # destinos salen del config.toml de matugen, no de una lista escrita a mano,
+    # para que no se olvide ninguno al añadir un componente.
+    mkdir -p "$FALLBACK_DIR"
+    : > "$FALLBACK_DIR/MANIFEST.tmp"
+    printf '%s\n' "# Generado por theme-apply.sh --save-fallback. NO editar a mano." \
+                   "# <archivo en esta carpeta>  <ruta relativa a ~/.config>" >> "$FALLBACK_DIR/MANIFEST.tmp"
+    for o in "${OUTPUTS[@]}"; do
+        dest="${o/#\~/$HOME}"
+        rel="${dest#"$HOME"/.config/}"
+        plano="${rel//\//__}"
+        if [ -f "$dest" ]; then
+            cp "$dest" "$FALLBACK_DIR/$plano"
+            printf '%s  %s\n' "$plano" "$rel" >> "$FALLBACK_DIR/MANIFEST.tmp"
+        fi
+    done
+    mv "$FALLBACK_DIR/MANIFEST.tmp" "$FALLBACK_DIR/MANIFEST"
+    echo "theme-apply: paleta de reserva actualizada en theme/fallback/"
+fi
 
 echo "theme-apply: listo"

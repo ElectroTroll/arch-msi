@@ -122,4 +122,35 @@ echo "El archivo está ya dentro del repo ($repo)."
 echo "Compruébalo con:  git -C $repo status --short"
 echo
 echo "El fondo cambia en el siguiente arranque de la sesión (timeout = 0)."
-echo "Para verlo ahora:  systemctl --user restart hyprpaper.service"
+echo
+
+# ⚠️ NO uses `systemctl --user restart hyprpaper.service`: era el consejo de este
+# script hasta el 2026-08-27, pero la unidad está DESHABILITADA desde que
+# hyprpaper lo lanza hyprland.lua (ver PROJECT_CONTEXT §17). Y hyprpaper 0.8.4
+# no tiene IPC para recargar: de sus peticiones solo responde `listactive`
+# —`reload`, `next`, `unload` y `preload` devuelven "invalid hyprpaper
+# request"—, así que la única forma de que sortee otra imagen es relanzarlo.
+aplicar_ahora() {
+    pkill -x hyprpaper 2>/dev/null
+    hyprctl dispatch 'hl.dsp.exec_cmd("hyprpaper")' >/dev/null 2>&1
+    sleep 1
+    # El tema DESPUÉS de hyprpaper, no antes: theme-apply le pregunta cuál es el
+    # fondo en uso, así que si corre antes generaría la paleta del anterior.
+    if command -v theme-apply >/dev/null; then
+        theme-apply
+    else
+        echo "AVISO: no encuentro 'theme-apply' en el PATH; el tema no se ha" >&2
+        echo "       regenerado. ¿Falta 'stow -d dotfiles -t ~ bin'?" >&2
+    fi
+}
+
+if [ -t 0 ] && [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+    read -r -p "¿Aplicarlo ahora (relanza hyprpaper y regenera el tema)? [s/N] " ahora
+    if [[ "$ahora" == [sS] ]]; then
+        aplicar_ahora
+    else
+        echo "Para aplicarlo más tarde:  pkill hyprpaper; hyprctl dispatch 'hl.dsp.exec_cmd(\"hyprpaper\")'; theme-apply"
+    fi
+else
+    echo "Para aplicarlo:  pkill hyprpaper; hyprctl dispatch 'hl.dsp.exec_cmd(\"hyprpaper\")'; theme-apply"
+fi

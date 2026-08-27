@@ -87,6 +87,20 @@ local fileManager = "dolphin"
 -- este bloque y `systemctl --user enable --now hyprpaper.service`.
 hl.on("hyprland.start", function ()
     hl.exec_cmd("hyprpaper")
+
+    -- REGENERA EL TEMA con el fondo que hyprpaper acabe de elegir. Sin esto, el
+    -- escritorio arrancaría con la paleta del fondo ANTERIOR: hyprpaper sortea
+    -- una imagen distinta en cada arranque (order = random) y los artefactos
+    -- del tema se quedan como estaban.
+    --
+    -- No hace falta esperar a hyprpaper aquí: `theme-apply` le pregunta por el
+    -- fondo con `hyprctl hyprpaper listactive` reintentando durante 5 s, y si no
+    -- contesta cae en la semilla de reserva en vez de quedarse colgado.
+    --
+    -- Se invoca POR NOMBRE, no por ruta: el paquete Stow `bin` lo enlaza en
+    -- ~/.local/bin, que está en el PATH de la sesión (verificado en el entorno
+    -- del propio Hyprland). Así esto no depende de dónde esté clonado el repo.
+    hl.exec_cmd("theme-apply")
 end)
 
 

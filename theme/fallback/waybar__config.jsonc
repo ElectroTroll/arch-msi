@@ -1,0 +1,303 @@
+// waybar-config.jsonc — PLANTILLA de la config de Waybar (arch-msi)
+//
+// Fuente:  dotfiles/matugen/.config/matugen/templates/waybar-config.jsonc (esto)
+// Salida:  ~/.config/waybar/config.jsonc                                  (artefacto)
+//
+// ⚠️ NO EDITAR ~/.config/waybar/config.jsonc: lo reescribe matugen. Se edita
+// este archivo, o theme/tokens.toml para los valores.
+//
+// Es plantilla desde el 2026-08-27 por un motivo concreto: la ALTURA de la barra
+// se define aquí, y con la barra flotante la altura y el margen del CSS son dos
+// mitades del mismo cálculo. Tenerlas en archivos distintos, uno versionado y
+// otro generado, era pedir que se desincronizaran.
+//
+// config.jsonc original — Waybar · MSI Summit E16 AI Studio (arch-msi)
+// Origen: escrito desde cero. /etc/xdg/waybar/config.jsonc (waybar 0.15.0-2)
+// se usó solo como referencia de sintaxis, no como base.
+// Fecha: 2026-08-01 · Tarea 2.1, paso 1/4.
+//
+// Nombres de opción y clases CSS verificados contra las páginas de manual de
+// la versión instalada (waybar-hyprland-workspaces(5), waybar-battery(5),
+// waybar-network(5), waybar-bluetooth(5), waybar-wireplumber(5),
+// waybar-custom(5)). No copiar opciones de guías de otras versiones.
+//
+// HiDPI: eDP-1 es 2560x1600 con escala 1.60, o sea 1600x1000 LÓGICOS.
+// Waybar dimensiona en píxeles lógicos: `height: 34` son 34 lógicos (≈54
+// físicos), no 34 físicos. Si algún día cambia la escala, hay que revisar
+// esta altura y el font-size de style.css a la vez.
+{
+    "layer": "top",
+    "position": "top",
+
+    // Altura fija en lugar de automática: evita que la barra "salte" cuando un
+    // módulo cambia de ancho o aparece un icono más alto.
+    //
+    // Es la altura de la SUPERFICIE, no la de la isla visible: el margen del CSS
+    // se descuenta por dentro. Ver `bar_height` y `bar_margin` en tokens.toml.
+    "height": 46,
+
+    // Separación 0: el espaciado se hace con padding en CSS, no aquí, para
+    // tenerlo todo en un sitio.
+    "spacing": 0,
+
+    "modules-left": ["hyprland/workspaces"],
+    "modules-center": ["clock"],
+    "modules-right": [
+        "custom/claude",
+        "wireplumber",
+        "bluetooth",
+        "network",
+        "battery",
+        "power-profiles-daemon",
+        "custom/power"
+    ],
+
+    // --- Workspaces -------------------------------------------------------
+    // Los 10 SIEMPRE visibles. Hyprland por su cuenta solo crea el workspace
+    // cuando tiene ventanas, así que sin `persistent-workspaces` la barra
+    // mostraría únicamente los ocupados y los números bailarían al abrir y
+    // cerrar cosas. Declarándolos persistentes, las posiciones son fijas.
+    //
+    // Tres estados, distinguidos SOLO por CSS (ver style.css):
+    //   button.active      → el que estás usando   (acento + fondo + subrayado)
+    //   button.persistent  → tiene ventanas abiertas          (texto normal)
+    //   button.empty       → existe pero está vacío                (apagado)
+    // Los nombres de estado salen de waybar-hyprland-workspaces(5): `empty` es
+    // "non-active, non-special EMPTY persistent workspaces" y `persistent` es
+    // "NON-EMPTY persistent workspaces".
+    //
+    // ⚠️ EL CLIC NO CAMBIA DE WORKSPACE, Y NO TIENE ARREGLO DESDE AQUÍ.
+    // Verificado el 2026-08-02. Waybar 0.15 envía por IPC la sintaxis clásica
+    // `dispatch workspace N`; Hyprland 0.56 con configuración Lua la envuelve
+    // en `hl.dispatch(workspace N)` y falla al parsearla. Waybar no comprueba
+    // la respuesta, así que el clic no hace nada y NO se registra ningún error
+    // en el journal: parece que el botón esté muerto.
+    //
+    // No se puede corregir: el módulo no expone opción para cambiar lo que
+    // envía (revisadas las 15 de waybar-hyprland-workspaces(5)), Hyprland no
+    // tiene modo de compatibilidad, y `workspace N` no es una llamada Lua
+    // válida bajo ninguna definición que se pusiera en hyprland.lua.
+    //
+    // La sintaxis que SÍ vale es la de los binds Super+N de hyprland.lua:
+    //   hyprctl dispatch 'hl.dsp.focus({ workspace = 2 })'   → ok
+    //
+    // DECISIÓN (2026-08-02): se asume. La alternativa era sustituir este
+    // módulo por diez `custom`, uno por workspace, con su propio on-click; eso
+    // costaba perder la actualización por eventos (este módulo no sondea nada)
+    // y añadir un proceso residente escuchando el socket de Hyprland. No
+    // compensa por un clic: se navega con Super+N.
+    //
+    // Contexto general del problema en PROJECT_CONTEXT §7.
+    "hyprland/workspaces": {
+        "format": "{id}",
+
+        // "*": 10 → diez en cualquier monitor. Si algún día se conecta una
+        // pantalla externa, también saldrán los diez ahí.
+        "persistent-workspaces": {
+            "*": 10
+        },
+
+        // Un solo monitor hoy, pero con `true` la barra sigue mostrando todos
+        // los workspaces si algún día se conecta una pantalla externa.
+        "all-outputs": true,
+
+        // El workspace especial (scratchpad `magic`, Super+S) NO se lista:
+        // es un contenedor de paso, no un destino de navegación.
+        "show-special": false
+    },
+
+    // --- Reloj ------------------------------------------------------------
+    "clock": {
+        "interval": 30,
+        "format": "{:%H:%M}",
+
+        // Clic izquierdo alterna a la vista larga con día y fecha.
+        "format-alt": "{:%a %d %b · %H:%M}",
+        "tooltip-format": "<tt>{calendar}</tt>",
+        "calendar": {
+            "mode": "month",
+            "format": {
+                "today": "<b>{}</b>"
+            }
+        }
+    },
+
+    // --- Uso de Claude ----------------------------------------------------
+    // Lee el archivo que deja el hook `statusLine` de Claude Code. El rodeo es
+    // obligado: los porcentajes de las ventanas de 5 h y 7 días NO se pueden
+    // consultar desde fuera —no hay subcomando del CLI ni archivo en ~/.claude
+    // que los exponga—, solo llegan en el JSON que Claude Code pasa a su hook.
+    // Ver dotfiles/waybar/.config/waybar/claude-usage.sh y
+    // scripts/claude-statusline.sh.
+    //
+    // `return-type: json` para poder fijar además una clase CSS: el script
+    // distingue dato fresco de dato viejo, y la barra lo pinta distinto. Sin
+    // eso mostraría un porcentaje de hace horas como si fuera actual.
+    //
+    // 30 s es suficiente: leer un archivo de tmpfs no cuesta nada, y con una
+    // sesión abierta el hook lo reescribe muchísimo más a menudo.
+    "custom/claude": {
+        "exec": "$HOME/.config/waybar/claude-usage.sh",
+        "return-type": "json",
+        "interval": 30,
+        "format": "󰚩 {}",
+        "tooltip": true
+    },
+
+    // --- Sonido -----------------------------------------------------------
+    // wireplumber, no pulseaudio: el sistema usa PipeWire y wpctl.
+    "wireplumber": {
+        "format": "{icon} {volume}%",
+        "format-muted": "󰝟",
+        "format-icons": ["󰕿", "󰖀", "󰕾"],
+
+        // 1% por evento de scroll, no 5%. El touchpad emite muchísimos más
+        // eventos que la rueda del ratón para el mismo gesto, así que con 5
+        // el volumen se disparaba. wireplumber NO tiene la opción
+        // `smooth-scrolling-threshold` (comprobado en waybar-wireplumber(5)),
+        // de modo que reducir el paso es la única palanca disponible.
+        "scroll-step": 1,
+
+        // DIRECCIÓN DEL SCROLL — decisión tomada el 2026-08-01, no es un
+        // descuido. Hyprland tiene `input:natural_scroll = false` (rueda) e
+        // `input:touchpad:natural_scroll = true` (touchpad), así que ambos
+        // dispositivos envían direcciones OPUESTAS. Waybar recibe solo
+        // "arriba" o "abajo" y no puede saber de cuál viene, de modo que
+        // cualquier elección deja uno de los dos invertido.
+        // Se conserva el comportamiento por defecto: la RUEDA queda correcta
+        // y el touchpad invertido. Invertirlo con on-scroll-up/down arreglaría
+        // el touchpad y rompería la rueda. Tocar el natural scrolling del
+        // touchpad no es opción: es un invariante del proyecto (CLAUDE.md).
+
+        // Tope al 100%: por encima hay distorsión y este equipo no lo necesita.
+        "max-volume": 100,
+        "on-click": "pavucontrol",
+        "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+        "tooltip-format": "{node_name} · {volume}%"
+    },
+
+    // --- Bluetooth --------------------------------------------------------
+    "bluetooth": {
+        "format": "󰂯",
+        "format-off": "󰂲",
+        "format-disabled": "󰂲",
+        "format-connected": "󰂱 {num_connections}",
+        "tooltip-format": "{controller_alias}\n{status}",
+        "tooltip-format-connected": "{controller_alias}\n{device_enumerate}",
+        "on-click": "blueman-manager"
+    },
+
+    // --- Red --------------------------------------------------------------
+    // NO se fija `interface`. Podría ponerse "wlp44s0f0", pero sería la misma
+    // clase de fragilidad que `ADP1` en hypridle.conf: un nombre de dispositivo
+    // que depende de la enumeración del kernel y que al reinstalar puede
+    // cambiar, dejando el módulo mudo sin avisar. Sin `interface`, Waybar sigue
+    // a la interfaz de la ruta por defecto y funciona igual con WiFi o cable.
+    "network": {
+        "interval": 5,
+
+        // La IP siempre a la vista, junto al icono. Lo que se mostraba antes
+        // era {signalStrength}: la CALIDAD DE SEÑAL del enlace WiFi en tanto
+        // por ciento (100% = enlace perfecto), nada que ver con la velocidad
+        // ni con el uso de datos. Pasa al tooltip, que es donde encaja.
+        "format-wifi": "󰖩 {ipaddr}",
+        "format-ethernet": "󰈀 {ipaddr}",
+        "format-linked": "󰈀",
+        "format-disconnected": "󰖪",
+        "tooltip-format-wifi": "{essid}\nSeñal {signalStrength}% · {frequency} GHz\n{ipaddr}/{cidr} · gw {gwaddr}",
+        "tooltip-format-ethernet": "{ifname} · {ipaddr}",
+        "tooltip-format-disconnected": "Sin conexión",
+
+        // nmtui, NO nm-connection-editor: este último tiene la interfaz
+        // desalineada respecto a los botones reales (comprobado el 2026-08-01).
+        // nmtui es la interfaz oficial de NetworkManager en modo texto: no
+        // depende del escalado HiDPI ni del tema GTK, así que no puede
+        // desalinearse. Cubre conectar, desconectar y editar conexiones.
+        "on-click": "kitty -e nmtui"
+    },
+
+    // --- Batería ----------------------------------------------------------
+    // BAT1 y ADP1 verificados en /sys/class/power_supply/ el 2026-08-01.
+    // Este equipo no tiene conector de corriente propio: toda la alimentación
+    // externa entra por USB-C y se refleja igualmente en ADP1 (ver
+    // PROJECT_CONTEXT §9, guarda de alimentación de hypridle).
+    "battery": {
+        "bat": "BAT1",
+        "adapter": "ADP1",
+        "interval": 30,
+        "states": {
+            "warning": 30,
+            "critical": 15
+        },
+        "format": "{icon} {capacity}%",
+        "format-charging": "󰂄 {capacity}%",
+        "format-plugged": "󰚥 {capacity}%",
+        "format-icons": ["󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"],
+        "tooltip-format": "{timeTo}"
+    },
+
+    // --- Perfil de energía ------------------------------------------------
+    // power-profiles-daemon está activo; ofrece performance / balanced /
+    // power-saver. El clic ROTA entre perfiles: es comportamiento nativo del
+    // módulo, no hace falta on-click.
+    //
+    // `{profile}` lo devuelve el demonio y viene SIEMPRE EN INGLÉS: no hay
+    // forma de traducirlo desde Waybar. Es la única palabra en inglés de la
+    // barra; si molesta, se cambia el formato a solo "{icon}".
+    //
+    // No se fija `format-icons` a propósito: se usan los iconos por defecto
+    // del módulo, que son codepoints de Font Awesome (U+F0E7 performance,
+    // U+F24E balanced, U+F06C power-saver). Elegir glifos a mano aquí
+    // arriesgaría cuadraditos vacíos si el codepoint no existiera.
+    //
+    // Quien los PINTA es JetBrainsMono Nerd Font, no el paquete
+    // woff2-font-awesome: los tres codepoints están dentro del rango Font
+    // Awesome que Nerd Fonts parchea en la fuente, y JetBrainsMono Nerd Font
+    // es la PRIMERA familia de `font-family` en style.css, así que es la que
+    // Pango resuelve. Comprobado el 2026-08-02 con `fc-list :charset=...`.
+    // No dar por hecho que quitar woff2-font-awesome rompería estos iconos.
+    "power-profiles-daemon": {
+        "format": "{icon} {profile}",
+        "tooltip-format": "Perfil de energía: {profile}\nControlador: {driver}",
+        "tooltip": true
+    },
+
+    // --- Menú de apagado --------------------------------------------------
+    // Módulo `custom` sin `exec`: solo pinta `format` y actúa de botón.
+    // wlogout 1.2.2 (AUR). Su layout y su estilo se versionan en el paquete
+    // Stow `wlogout` (dotfiles/wlogout/), enlazado a ~/.config/wlogout/.
+    //
+    // Los flags van aquí y no en el paquete porque wlogout NO los lee de
+    // ningún archivo de configuración: solo existen como argumentos de línea
+    // de comandos (ver `wlogout --help`).
+    //
+    // LOS MÁRGENES SON LO QUE FIJA EL TAMAÑO DE LOS BOTONES. wlogout los monta
+    // en una rejilla GTK que los estira hasta llenar el hueco disponible, y
+    // desde CSS no hay forma de impedirlo. Recortando el área con márgenes, los
+    // botones encogen.
+    //
+    // VAN EN PÍXELES, NO EN PORCENTAJE. `wlogout --help` los declara como
+    // <0-x>: un número. Pasarle "27%" no da error pero se interpreta como 27
+    // píxeles, así que el menú sigue ocupando toda la pantalla y parece que la
+    // opción no hace nada. Comprobado el 2026-08-02.
+    //
+    // Cálculo para que salgan CUADRADOS (son cuatro en fila, así que el hueco
+    // debe ser cuatro veces más ancho que alto):
+    //
+    //   pantalla lógica  1600 x 1000  (2560x1600 a escala 1.60)
+    //   400 por lado  →  útil 800 x 200
+    //   cada celda    →  800/4 = 200 de ancho por 200 de alto
+    //   menos el margin de 10 px del CSS  →  botón de 180 x 180
+    //
+    // Un único número controla el tamaño: subirlo encoge los botones. Si
+    // cambia la resolución o la escala de la pantalla, hay que rehacerlo.
+    //
+    //   -b 4   los cuatro en una sola fila
+    //   -s     muestra la tecla de cada botón (b/s/r/a); sin esto, los atajos
+    //          quedan como conocimiento oculto
+    "custom/power": {
+        "format": "⏻",
+        "on-click": "wlogout -b 4 -m 400 -s",
+        "tooltip": false
+    }
+}
