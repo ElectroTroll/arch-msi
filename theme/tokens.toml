@@ -71,7 +71,8 @@ pad_sm = 8    # padding horizontal de los botones de workspace
 pad_md = 10   # padding horizontal de los módulos de la barra
 pad_lg = 12   # padding interior de las notificaciones · botón de apagado
 pad_xl = 14   # padding horizontal de las notificaciones (dunst lo lleva aparte)
-gap    = 6    # separación entre notificaciones apiladas
+gap    = 6    # separación entre notificaciones apiladas · gaps_in de Hyprland
+gaps_out = 20 # hueco entre las ventanas y el borde de la pantalla (Hyprland)
 
 # --- Barra (Waybar) ---
 # La barra NO está pegada a los bordes: flota como una isla, con el fondo de
@@ -285,6 +286,24 @@ contrast = 0.3
 # textos siguen usando los roles del esquema (`surface`, `on_surface`), porque
 # ahí Material sí garantiza el contraste y elegir tonos a mano lo rompería.
 accent_tone = 70
+
+# SEGUNDO COLOR DEL BORDE ACTIVO DE HYPRLAND. El marco de la ventana enfocada es
+# un degradado, y sus DOS colores salen del fondo de pantalla — antes el segundo
+# era el magenta de identidad, que partía de un valor fijo.
+#
+# La familia puede ser primary, secondary o tertiary. Medido con el fondo actual:
+#     primary.70    #58b4ef  hue 203   (el acento)
+#     primary.50    #007eb6  hue 198   <- se usa este
+#     secondary.70  #9cadbd  hue 209   apagado, casi gris
+#     tertiary.70   #b3a5cc  hue 262   violeta grisáceo, también apagado
+#
+# Se usa `primary` a otro tono en vez de `tertiary` porque con esta imagen las
+# familias secundarias salen desaturadas y el degradado quedaba lavado. Dentro
+# del mismo azul, de claro a intenso, el marco se ve vivo y sigue siendo 100%
+# del wallpaper. Con otro fondo más colorido, `tertiary` puede lucir más:
+# cambiar aquí y regenerar.
+accent_alt_family = "primary"
+accent_alt_tone   = 50
 
 # light | dark | smart. El escritorio es oscuro.
 mode = "dark"

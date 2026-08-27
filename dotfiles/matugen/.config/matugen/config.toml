@@ -50,3 +50,8 @@ output_path = "~/.config/hypr/theme.conf"
 [templates.kitty]
 input_path  = "~/.config/matugen/templates/kitty-theme.conf"
 output_path = "~/.config/kitty/theme.conf"
+
+# Hyprland: hyprland.lua carga este archivo con `dofile` y usa la tabla.
+[templates.hyprland]
+input_path  = "~/.config/matugen/templates/hyprland-theme.lua"
+output_path = "~/.config/hypr/theme.lua"

@@ -123,17 +123,48 @@ hl.env("HYPRCURSOR_SIZE", "24")
 ---- LOOK AND FEEL ----
 -----------------------
 
+-- COLORES Y MÉTRICAS: no se definen aquí. Los genera matugen a partir del fondo
+-- de pantalla en `theme.lua`, que es un ARTEFACTO —archivo real junto a estos
+-- enlaces, fuera del repo y fuera de Stow—. La plantilla versionada está en
+-- dotfiles/matugen/.config/matugen/templates/hyprland-theme.lua y los valores
+-- salen de theme/tokens.toml.
+--
+-- `dofile` y no `require`: `require` busca por package.path, que no incluye
+-- ~/.config/hypr, y al ser este archivo un ENLACE de Stow la resolución sería
+-- imprevisible — es el mismo problema que tuvo el `source` de hyprlock, que
+-- acabó buscando dentro del repositorio. La ruta se construye desde $HOME, así
+-- que no queda /home/elok cableado.
+--
+-- ⚠️ SI FALTA EL ARCHIVO, Hyprland se queda SIN CONFIGURAR. Por eso hay
+-- respaldo: si `dofile` falla (una restauración recién hecha, matugen aún sin
+-- ejecutar), se usan los valores de reserva de abajo y la sesión arranca igual.
+local ok, theme = pcall(dofile, os.getenv("HOME") .. "/.config/hypr/theme.lua")
+if not ok or type(theme) ~= "table" then
+    theme = {
+        accent = "rgba(7aa2f7ff)", accent_alt = "rgba(3d59a1ff)",
+        surface = "rgba(16181dff)", outline = "rgba(595959aa)",
+        shadow = "rgba(000000ee)",
+        border_size = 2, rounding = 10, gaps_in = 5, gaps_out = 20,
+    }
+end
+
 -- Refer to https://wiki.hypr.land/Configuring/Basics/Variables/
 hl.config({
     general = {
-        gaps_in  = 5,
-        gaps_out = 20,
+        gaps_in  = theme.gaps_in,
+        gaps_out = theme.gaps_out,
 
-        border_size = 2,
+        border_size = theme.border_size,
 
         col = {
-            active_border   = { colors = {"rgba(33ccffee)", "rgba(00ff99ee)"}, angle = 45 },
-            inactive_border = "rgba(595959aa)",
+            -- Era el degradado cian→verde de la plantilla de fábrica, lo último
+            -- del escritorio que seguía fuera de la paleta del proyecto.
+            -- LOS DOS COLORES SALEN DEL FONDO DE PANTALLA. Era el degradado
+            -- cian→verde de la plantilla de fábrica; después, acento→magenta de
+            -- identidad; desde el 2026-08-27, dos tonos de la paleta extraída
+            -- de la imagen (ver accent_alt_family en tokens.toml).
+            active_border   = { colors = { theme.accent, theme.accent_alt }, angle = 45 },
+            inactive_border = theme.outline,
         },
 
         -- Set to true to enable resizing windows by clicking and dragging on borders and gaps
@@ -146,7 +177,7 @@ hl.config({
     },
 
     decoration = {
-        rounding       = 10,
+        rounding       = theme.rounding,
         rounding_power = 2,
 
         -- Change transparency of focused and unfocused windows
@@ -157,7 +188,7 @@ hl.config({
             enabled      = true,
             range        = 4,
             render_power = 3,
-            color        = 0xee1a1a1a,
+            color        = theme.shadow,
         },
 
         blur = {

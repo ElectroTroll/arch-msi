@@ -94,13 +94,14 @@ for k in list(flat):
 json.dump(flat, open(sys.argv[2], "w"), ensure_ascii=False)
 PY
 
-read -r TYPE CONTRAST TONE IDX MODE BLUE PINK MAGENTA FALLBACK <<<"$(
+read -r TYPE CONTRAST TONE IDX MODE BLUE PINK MAGENTA FALLBACK ALTFAM ALTTONE <<<"$(
 python3 - "$TOKENS" <<'PY'
 import sys, tomllib
 d = tomllib.load(open(sys.argv[1], "rb"))
 m, i = d["matugen"], d["colors"]["identity"]
 print(m["type"], m["contrast"], m["accent_tone"], m["source_color_index"],
-      m["mode"], i["blue"], i["pink"], i["magenta"], i["seed_fallback"])
+      m["mode"], i["blue"], i["pink"], i["magenta"], i["seed_fallback"],
+      m["accent_alt_family"], m["accent_alt_tone"])
 PY
 )"
 
@@ -153,11 +154,17 @@ PAL="$(matugen "${SRC[@]}" -c "$TMP/pass1.toml" "${COMMON[@]}" -j hex 2>/dev/nul
     || die "matugen falló al resolver la paleta; no se toca nada"
 ACCENT="$(printf '%s' "$PAL" | jq -er ".palettes.primary.\"$TONE\".color")" \
     || die "no hay tono $TONE en la paleta"
+# Segundo color del degradado del borde activo de Hyprland. Sale TAMBIÉN de la
+# paleta del fondo (familia y tono en tokens.toml), no de un color de identidad:
+# el marco de la ventana enfocada tiene que venir del wallpaper entero.
+ACCENT_ALT="$(printf '%s' "$PAL" | jq -er ".palettes.\"$ALTFAM\".\"$ALTTONE\".color")" \
+    || die "no hay $ALTFAM tono $ALTTONE en la paleta"
 # `wallpaper` es la ruta de la imagen en uso: hyprlock la pinta desenfocada como
 # fondo del bloqueo. Va vacía si el tema se generó desde una semilla, y entonces
 # hyprlock cae a su color liso.
 jq --arg a "$ACCENT" --arg s "${ACCENT#\#}" --arg w "${WP:-}" \
-   '. + {accent:$a, accent_stripped:$s, wallpaper:$w} + (to_entries|map(select(.value|type=="string" and startswith("#")))|map({key:(.key+"_stripped"), value:(.value[1:])})|from_entries)' \
+   --arg a2 "$ACCENT_ALT" --arg s2 "${ACCENT_ALT#\#}" \
+   '. + {accent:$a, accent_stripped:$s, wallpaper:$w, accent_alt:$a2, accent_alt_stripped:$s2} + (to_entries|map(select(.value|type=="string" and startswith("#")))|map({key:(.key+"_stripped"), value:(.value[1:])})|from_entries)' \
    "$TMP/resolved.json" > "$TMP/render.json"
 
 # --- 4. Contraste ------------------------------------------------------------
