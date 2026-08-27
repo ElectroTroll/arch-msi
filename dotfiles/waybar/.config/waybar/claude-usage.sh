@@ -17,6 +17,14 @@
 #
 # El estado `viejo` es el importante: sin él, la barra enseñaría un porcentaje
 # de hace horas como si fuera de ahora. Preferimos marcarlo antes que mentir.
+#
+# CUÁNTO QUEDA PARA QUE SE RENUEVE (2026-08-27): el hook ya guardaba
+# `resets_at` de cada ventana —un timestamp absoluto— sin que nadie lo usara.
+# Se muestra en el tooltip.
+#
+# Que sea ABSOLUTO tiene una consecuencia útil: la cuenta atrás sigue siendo
+# exacta aunque el porcentaje esté viejo, porque no depende de cuándo se escribió
+# el archivo. Por eso también aparece en el estado `viejo`.
 
 set -uo pipefail
 
@@ -38,10 +46,31 @@ sin_dato() {
 jq -c --argjson stale "$stale_after" '
     def pct(x): if x == null then null else (x | floor) end;
 
+    # Cuenta atrás hasta un timestamp absoluto, en lenguaje llano.
+    #
+    # Devuelve la FRASE ENTERA, no solo el hueco de tiempo: los tres casos se
+    # redactan distinto ("se renueva en…", "ya renovada", "sin dato") y armarlos
+    # concatenando en el tooltip daba engendros del tipo
+    # "se renueva ya renovada".
+    #
+    # Si el instante ya pasó, la ventana se ha renovado y el porcentaje guardado
+    # ya no vale: se dice, en vez de enseñar un "en -3 h" o callar.
+    def restante(ts):
+        if ts == null then "sin dato de renovación"
+        else (ts - (now | floor)) as $s
+        | if   $s <= 0    then "ya renovada"
+          elif $s < 60    then "se renueva en menos de 1 min"
+          elif $s < 3600  then "se renueva en \(($s/60) | floor) min"
+          else "se renueva en \(($s/3600) | floor) h \((($s%3600)/60) | floor) min"
+          end
+        end;
+
     (now | floor) - (.written_at // 0)          as $age
     | pct(.five_hour.used_percentage)            as $five
     | pct(.seven_day.used_percentage)            as $seven
     | pct(.context)                              as $ctx
+    | restante(.five_hour.resets_at)             as $five_reset
+    | restante(.seven_day.resets_at)             as $seven_reset
 
     # Texto: se omite el tramo que falte en vez de escribir 0%.
     | ( [ (if $five  != null then "5h \($five)%"  else empty end),
@@ -61,9 +90,9 @@ jq -c --argjson stale "$stale_after" '
            tooltip: "Uso de Claude: la sesión no informó de límites.\nActualizado \($edad)."}
       elif $age > $stale then
           {text: $txt, class: "viejo",
-           tooltip: "Uso de Claude (DATO VIEJO, \($edad))\nNo hay ninguna sesión abierta refrescándolo.\n\($ctx // "?" | tostring)% de contexto en la última sesión."}
+           tooltip: "Uso de Claude (DATO VIEJO, \($edad))\nNo hay ninguna sesión abierta refrescándolo.\nVentana de 5 h: \($five_reset)\nVentana de 7 días: \($seven_reset)\n\($ctx // "?" | tostring)% de contexto en la última sesión."}
       else
           {text: $txt, class: "fresco",
-           tooltip: "Uso de Claude · actualizado \($edad)\nVentana de 5 h: \($five // "?" | tostring)%\nVentana de 7 días: \($seven // "?" | tostring)%\nContexto de la sesión: \($ctx // "?" | tostring)%"}
+           tooltip: "Uso de Claude · actualizado \($edad)\nVentana de 5 h: \($five // "?" | tostring)% · \($five_reset)\nVentana de 7 días: \($seven // "?" | tostring)% · \($seven_reset)\nContexto de la sesión: \($ctx // "?" | tostring)%"}
       end
 ' "$file" 2>/dev/null || sin_dato
