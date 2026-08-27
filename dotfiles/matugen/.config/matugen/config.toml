@@ -55,3 +55,10 @@ output_path = "~/.config/kitty/theme.conf"
 [templates.hyprland]
 input_path  = "~/.config/matugen/templates/hyprland-theme.lua"
 output_path = "~/.config/hypr/theme.lua"
+
+# fastfetch: config ENTERA generada. No admite incluir un segundo archivo
+# ("Error: only one config file can be loaded"), así que no puede seguir el
+# patrón de dunst/kitty y no tiene paquete Stow propio.
+[templates.fastfetch]
+input_path  = "~/.config/matugen/templates/fastfetch-config.jsonc"
+output_path = "~/.config/fastfetch/config.jsonc"

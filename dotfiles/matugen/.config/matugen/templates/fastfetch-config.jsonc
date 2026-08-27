@@ -1,0 +1,145 @@
+// fastfetch-config.jsonc — PLANTILLA de la config de fastfetch (arch-msi)
+// Fecha: 2026-08-27 · Tarea 3.4, sobre la arquitectura de tema de la 3.0.
+// Verificado con fastfetch 2.67.1.
+//
+// Fuente:  dotfiles/matugen/.config/matugen/templates/fastfetch-config.jsonc
+// Salida:  ~/.config/fastfetch/config.jsonc                      (artefacto)
+//
+// ⚠️ NO EDITAR la salida: la reescribe matugen. Se edita esta plantilla.
+//
+// POR QUÉ SE GENERA ENTERA, como Waybar y al contrario que dunst o kitty:
+// fastfetch NO admite incluir un segundo archivo. Su propia ayuda dice que los
+// config "are merged", pero al pasarle dos responde
+//     Error: only one config file can be loaded
+// (verificado el 2026-08-27 con 2.67.1). Sin `include` no hay forma de separar
+// estructura y tema, así que la config entera es plantilla y fastfetch no tiene
+// paquete Stow propio.
+//
+// ⚠️ EL PROBLEMA QUE RESUELVE ESTE ARCHIVO ES EL ANCHO.
+//
+// fastfetch NO adapta su salida al tamaño de la terminal: emite las líneas
+// enteras y deja que el terminal las parta. Medido el 2026-08-27 con el logo
+// grande AL LADO y los formatos por defecto, la línea más larga era de 106
+// columnas (38 de dibujo + hasta 68 de texto), así que en cualquier ventana más
+// estrecha el texto se envolvía y DESTROZABA el dibujo.
+//
+// LA CAUSA REAL ES LA DISPOSICIÓN, no el tamaño del logo. Con el logo a la
+// izquierda, el ancho necesario es la SUMA de las dos columnas; poniéndolo
+// arriba, es el MÁXIMO de las dos:
+//     al lado   →  38 + 61 = 99 columnas mínimas
+//     arriba    →  max(38, 61) = 61 columnas mínimas
+// Por eso el logo va arriba: se conserva el ASCII grande de Arch íntegro y cabe
+// hasta con la ventana partida por la mitad, sin cambiar de logo según el sitio.
+//
+// Con el logo arriba sobra ancho, así que los módulos van con su formato
+// COMPLETO: el host con su revisión, la CPU con núcleos y frecuencia, y la
+// pantalla con pulgadas, escala y hercios. Solo se recorta lo que se repetía o
+// no aportaba.
+
+{
+    "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+
+    "logo": {
+        // El ASCII clásico de Arch, entero y SIEMPRE el mismo.
+        "source": "arch",
+
+        // ⚠️ ESTA LÍNEA ES LA QUE ARREGLA EL PROBLEMA. Con "left" (el defecto)
+        // el ancho necesario es la suma del dibujo y del texto; con "top" es el
+        // mayor de los dos.
+        "position": "top",
+
+        "padding": { "top": 1, "bottom": 1 }
+    },
+
+    "display": {
+        // Alinea los dos puntos de todas las claves.
+        "key": { "width": 11 },
+        "separator": "  ",
+
+        // Colores del tema. fastfetch acepta hexadecimal y lo traduce a color
+        // verdadero: "#58b4ef" sale como 38;2;88;180;239 (comprobado).
+        "color": {
+            "keys": "{{accent}}",
+            "title": "{{accent_alt}}"
+        }
+    },
+
+    "modules": [
+        "title",
+        "separator",
+
+        // --- Sistema ---------------------------------------------------------
+        { "type": "os", "key": "OS" },
+        { "type": "kernel", "key": "Kernel" },
+        { "type": "packages", "key": "Paquetes" },
+        { "type": "uptime", "key": "Encendido" },
+
+        // systemd. Cuesta una línea y aquí no es evidente: la sesión gráfica va
+        // por uwsm, que es systemd de usuario de arriba abajo (ver §17).
+        { "type": "initsystem", "key": "Init" },
+        { "type": "locale", "key": "Idioma" },
+
+        "break",
+
+        // --- Máquina ---------------------------------------------------------
+        // Con (REV:1.0): identifica la revisión exacta del portátil, que es lo
+        // que hace falta al buscar firmware o errata del fabricante.
+        { "type": "host", "key": "Equipo" },
+        { "type": "board", "key": "Placa" },
+
+        // El repo se llevó un susto con el bootloader el 2026-08-24 (§3), así
+        // que la versión de BIOS y el gestor de arranque están a la vista.
+        { "type": "bios", "key": "BIOS" },
+        { "type": "bootmgr", "key": "Arranque" },
+        { "type": "chassis", "key": "Chasis" },
+
+        "break",
+
+        // --- Cómputo ---------------------------------------------------------
+        // Formato completo: núcleos (12+8+2, los P+E+LP de este híbrido) y
+        // frecuencia. Es la información por la que se mira un fastfetch.
+        { "type": "cpu", "key": "CPU" },
+        { "type": "cpuusage", "key": "Carga CPU", "format": "{avg}" },
+
+        // Las DOS GPU con su tipo: es un portátil con PRIME offload y saber
+        // cuál es la discreta y cuál la integrada importa (§6).
+        { "type": "gpu", "key": "GPU" },
+
+        { "type": "memory", "key": "RAM" },
+
+        // zram, sin partición de intercambio en disco: por eso este equipo NO
+        // hiberna (§5). Tenerlo delante evita la pregunta.
+        { "type": "swap", "key": "Swap" },
+
+        { "type": "disk", "key": "Disco", "folders": "/" },
+
+        "break",
+
+        // --- Pantalla y escritorio -------------------------------------------
+        // Formato completo otra vez: pulgadas, ESCALA y HERCIOS. La escala 1.6
+        // y los 165 Hz son dos rarezas de este panel que salen en media
+        // documentación del repo.
+        { "type": "display", "key": "Pantalla" },
+        { "type": "wm", "key": "WM", "format": "{pretty-name} {version}" },
+        { "type": "terminal", "key": "Terminal", "format": "{pretty-name} {version}" },
+        { "type": "terminalfont", "key": "Fuente" },
+        { "type": "cursor", "key": "Cursor" },
+
+        "break",
+
+        // --- Energía y red ---------------------------------------------------
+        { "type": "battery", "key": "Batería", "format": "{capacity} ({status})" },
+
+        // Este portátil NO tiene conector de corriente propio: toda la
+        // alimentación entra por USB-C PD (§9). Aquí se ve si está enchufado.
+        { "type": "poweradapter", "key": "Corriente" },
+
+        // ⚠️ {signal-quality} YA TRAE el %, igual que {capacity} en la batería:
+        // poner "%" detrás imprime "100%%". Verificado el 2026-08-27.
+        { "type": "wifi", "key": "WiFi", "format": "{ssid} ({signal-quality})" },
+        { "type": "localip", "key": "IP" },
+
+        "break",
+        "colors"
+    ]
+}
