@@ -168,3 +168,91 @@ eventos que la rueda para el mismo gesto y con 5 el volumen se disparaba.
 > `dispatch workspace N`, que Hyprland 0.56 con configuración Lua rechaza.
 > No tiene arreglo desde la configuración y **está asumido**: se navega con
 > `Super + N`. Detalle en `docs/PROJECT_CONTEXT.md` §7 (Entorno gráfico).
+
+## Gestor de archivos (yazi)
+
+> **No son binds de Hyprland**, igual que los de rofi: son atajos INTERNOS de
+> yazi y no aparecen en `hyprctl binds`. Se abre desde una terminal (`yazi`, o
+> `y` para que la shell se quede donde estabas). La lista completa se consulta
+> **dentro del programa con `~` o `F1`**, y pulsando solo la primera tecla de un
+> acorde (`g`, `c`, `m`, `,`) aparece un menú con las opciones.
+
+**Los atajos de fábrica se conservan enteros** (tarea 3.3): son completos y de
+estilo vim. `keymap.toml` solo **añade** cuatro, con `prepend_keymap`.
+
+| Atajo | Acción | Origen |
+|---|---|---|
+| `g d` | Ir a `~/Descargas` | **propio** — corrige el de fábrica |
+| `g D` | Ir a `~/Documentos` | **propio** |
+| `g i` | Ir a `~/Imágenes` | **propio** |
+| `g p` | Ir a `~/Projects` | **propio** |
+| `M` | **Previsualización a pantalla completa** (misma tecla para volver) | **propio** |
+
+> **Por qué hacían falta.** El preset trae `g d` → `~/Downloads`, y en este
+> equipo los directorios de `~` están en castellano
+> (`~/.config/user-dirs.dirs`): el atajo de fábrica no llevaba a ninguna parte.
+> Verificado el 2026-08-28 que el `prepend_keymap` gana: tras la corrección,
+> el menú de `g` muestra «Ir a Descargas» y **`Go to ~/Downloads` ya no
+> aparece**.
+
+> **`M` — ver la imagen a pantalla completa.** Abre el visor propio de kitty
+> (`kitten icat`) sobre el archivo señalado, a resolución nativa. Se cierra con
+> cualquier tecla y vuelves justo donde estabas.
+>
+> **Es un visor, no un panel**: mientras está abierto no se navega con `j`/`k`.
+> Hubo antes un plugin que maximizaba el panel de previsualización y sí dejaba
+> navegar, pero se retiró — mover la disposición en caliente rompía el
+> repintado, primero dejando los paneles en blanco y después borrando los
+> separadores de columna. Detalle en `PROJECT_CONTEXT.md` §19.
+>
+> **Ningún atajo de fábrica se pisa.** `M` está libre en el preset. (La
+> minúscula `m` sí la usa, como prefijo de los acordes de linemode `m s`, `m p`,
+> `m b`…, pero son teclas distintas.)
+>
+> Y de paso, para que no vuelva a confundir: **`v` no es un visor**, es el modo
+> de selección visual. Que no agrande la imagen no es un fallo.
+>
+> ⚠️ Sobre un archivo que no sea imagen, `icat` muestra su propio error y espera
+> una tecla. Se deja así a propósito: filtrar por tipo excluiría los PDF y demás
+> formatos que icat SÍ sabe pintar apoyándose en imagemagick.
+
+Los de fábrica que más se usan, para no tener que abrir la ayuda:
+
+| Atajo | Acción |
+|---|---|
+| `h` `j` `k` `l` / flechas | Navegar (izquierda = subir, derecha = entrar) |
+| `H` / `L` | Atrás / adelante en el historial |
+| `Espacio` | Marcar o desmarcar el archivo |
+| `v` / `V` | Modo selección / deselección visual |
+| `Enter` u `o` | Abrir · `O` elige con qué |
+| `y` / `x` / `p` | Copiar / cortar / pegar |
+| `d` / `D` | A la papelera / borrar sin retorno |
+| `a` / `r` | Crear (acaba en `/` para directorio) / renombrar |
+| `.` | Mostrar u ocultar los archivos ocultos |
+| `f` | Filtrar · `/` y `?` buscar dentro de la lista |
+| `s` / `S` | Buscar por **nombre** (`fd`) / por **contenido** (`ripgrep`) |
+| `z` / `Z` | Saltar con **fzf** / con **zoxide** |
+| `g g` / `G` | Al principio / al final |
+| `t t` / `1`…`9` | Nueva pestaña / cambiar de pestaña |
+| `Tab` | Ficha del archivo (metadatos) |
+| `;` / `:` | Ejecutar una orden de shell (`:` espera a que termine) |
+| `w` | Gestor de tareas |
+| `q` / `Q` | Salir · **`q` guarda el directorio y `Q` no** (ver `y` abajo) |
+
+> **fzf y zoxide no hubo que integrarlos.** Son plugins internos del binario y
+> ya vienen atados a `z` y `Z` en el preset. Lo mismo `fd` y `ripgrep` en `s`
+> y `S`. Comprobado en yazi 26.8.15 leyendo el keymap compilado.
+
+### `y` — salir dejando la shell en el directorio donde estabas
+
+Función de [`dotfiles/shell/.bashrc`](../dotfiles/shell/.bashrc). Hace falta
+porque **un proceso hijo no puede cambiar el directorio de su padre**: yazi
+escribe el suyo en un temporal (`--cwd-file`) y el `cd` lo hace la shell.
+
+| Orden | Efecto al salir |
+|---|---|
+| `y` | La shell queda en el último directorio visitado |
+| `yazi` | La shell no se mueve |
+
+Y dentro del programa la distinción se mantiene: **`q` escribe el directorio y
+`Q` sale sin escribirlo**, así que se puede cancelar el salto sobre la marcha.

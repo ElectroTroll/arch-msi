@@ -86,3 +86,22 @@ output_path = "~/.config/wlogout/style.css"
 [templates.rofi]
 input_path  = "~/.config/matugen/templates/rofi-theme.rasi"
 output_path = "~/.config/rofi/theme.rasi"
+
+# yazi: conserva `yazi.toml` y `keymap.toml` enlazados por Stow, y el tema va
+# entero generado, como la hoja de Waybar. NO es porque a yazi le falte una vía
+# de importación —tiene `[flavor]`—, sino porque su `theme.toml` no contiene
+# nada de comportamiento: eso vive en `yazi.toml`. Al no haber qué separar, un
+# flavor solo añadiría un archivo puntero.
+#
+# ⚠️ Su `theme.toml` es una capa PARCIAL sobre el preset compilado en el
+# binario, así que la plantilla solo declara el cromo. Los colores por tipo de
+# archivo y los de permisos siguen saliendo de los ANSI de kitty, que ya son los
+# del proyecto: redeclararlos aquí sería duplicar. Ver la cabecera de la
+# plantilla.
+#
+# ⚠️ El artefacto se llama `theme.toml` y ese nombre NO existe en el repositorio
+# (el paquete Stow `yazi` solo trae `yazi.toml` y `keymap.toml`), que es lo que
+# mantiene la regla de oro.
+[templates.yazi]
+input_path  = "~/.config/matugen/templates/yazi-theme.toml"
+output_path = "~/.config/yazi/theme.toml"

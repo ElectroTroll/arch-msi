@@ -1,0 +1,73 @@
+#:schema https://yazi-rs.github.io/schemas/yazi.json
+# yazi.toml — MSI Summit E16 AI Studio (arch-msi)
+# Fecha: 2026-08-28 · Tarea 3.3 (yazi), sobre la arquitectura de tema de la 3.0.
+# Verificado con yazi 26.8.15.
+#
+# AQUÍ VA EL COMPORTAMIENTO. Los colores están en `theme.toml`, que es un
+# ARTEFACTO: archivo real junto a este enlace, fuera del repositorio y fuera de
+# Stow. La plantilla que lo genera sí se versiona, en
+# dotfiles/matugen/.config/matugen/templates/yazi-theme.toml.
+#
+# ⚠️ LA SECCIÓN SE LLAMA [mgr], NO [manager]. Se renombró río arriba y casi
+# todos los tutoriales que circulan usan el nombre viejo. Los presets reales de
+# esta versión se leen con:
+#     strings /usr/bin/yazi | grep -n '^\[mgr\]'
+# porque el paquete de Arch NO instala ningún archivo de ejemplo: los tres
+# presets (yazi.toml, keymap.toml, theme.toml) van compilados en el binario.
+#
+# ⚠️ ESTE ARCHIVO SOLO DECLARA LO QUE CAMBIA. yazi mezcla lo de aquí sobre su
+# preset, así que no hay que copiarlo entero — y no conviene: una lista copiada
+# se quedaría vieja en silencio cuando yazi la cambie río arriba.
+#
+# ⚠️ PERO OJO CON LAS LISTAS: en [opener], [open] y [plugin], la clave sin
+# prefijo (`rules`, `previewers`…) SUSTITUYE la lista del preset entera. Para
+# añadir sin perder lo de fábrica existen `prepend_*` y `append_*`. Mismo error
+# de una palabra que en keymap.toml, y con la misma consecuencia silenciosa.
+
+
+[mgr]
+# ORDEN NATURAL, no alfabético. Medido el 2026-08-28 en un directorio de prueba:
+#     alphabetical  →  archivo1  archivo10  archivo2
+#     natural       →  archivo1  archivo2   archivo10
+sort_by = "natural"
+
+# ⚠️ ESTO ARREGLA UN DEFECTO QUE SE VE EN CUANTO ABRES ~. Sin transliterar, la
+# comparación es por punto de código Unicode y la á (U+00E1) va DESPUÉS de la z,
+# así que TODO nombre acentuado se amontona al final de la lista. Medido el
+# mismo día, con los mismos archivos:
+#     translit = false  →  Alba  Bruno  Zoe  Ángel  Ávila
+#     translit = true   →  Alba  Ángel  Ávila  Bruno  Zoe
+# En este equipo eso afecta a Música, Imágenes, Vídeos y Público, o sea a cuatro
+# de los directorios de ~.
+sort_translit = true
+
+# Tamaño a la derecha de cada nombre. El preset no muestra ninguna columna
+# extra; `m s` / `m n` siguen alternándolo en caliente sin tocar esto.
+linemode = "size"
+
+
+[preview]
+# TAMAÑO DE LA COPIA CACHEADA, en píxeles FÍSICOS (yazi los saca del tamaño en
+# píxeles que el terminal reporta, y kitty reporta los físicos: 2560x1600).
+#
+# El panel de previsualización es 3/8 del ancho (`ratio = [1, 4, 3]` del
+# preset). MEDIDO el 2026-08-28 leyendo la cabecera que yazi manda al terminal
+# (`a=T,f=24,s=…,v=…`): en una ventana de 2240 px pidió imágenes de 816 px de
+# ancho, o sea el 36% — que es 3/8 menos los bordes. A pantalla completa, sobre
+# los 2560 px del panel, eso son unos 930. Los 600x900 de fábrica se quedan por
+# debajo y las fotos se ven blandas; con 1200 sobra margen.
+#
+# ⚠️ ESTUVO EN 2560x1600 UN DÍA, Y VOLVIÓ AQUÍ AL CAMBIAR EL ATAJO `M`. Mientras
+# `M` maximizaba el PANEL, la previsualización llegaba a pedir el ancho entero y
+# la cota recortaba: medido con la caché limpia, cota 1200 → maximizado 1200,
+# cota 2000 → 1200 (la demanda real). Desde que `M` abre el visor de kitty, ese
+# visor lee el ARCHIVO ORIGINAL y no pasa por esta caché, así que nada vuelve a
+# pedir más de los ~930 px del panel lateral. Mantener 2560 solo engordaría la
+# caché sin que se notara en pantalla.
+max_width  = 1200
+max_height = 1600
+
+# Calidad del JPEG cacheado. 90 es el máximo que admite —lo valida el propio
+# binario: "image_quality must be between 50 and 90"—, y con la cota de arriba
+# la diferencia frente al 75 de fábrica se ve, sobre todo maximizado.
+image_quality = 90

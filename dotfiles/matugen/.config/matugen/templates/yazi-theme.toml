@@ -1,0 +1,142 @@
+#:schema https://yazi-rs.github.io/schemas/theme.json
+# theme.toml — PLANTILLA del tema de yazi (arch-msi)
+#
+# Fuente:  dotfiles/matugen/.config/matugen/templates/yazi-theme.toml (esto)
+# Salida:  ~/.config/yazi/theme.toml                                  (artefacto)
+#
+# ⚠️ NO EDITAR la salida: la reescribe matugen en cada arranque. Se edita este
+# archivo, o theme/tokens.toml para los valores.
+#
+# yazi.toml y keymap.toml siguen enlazados por Stow; este archivo es el tercero
+# y va entero generado, como la hoja de Waybar. El motivo NO es que a yazi le
+# falte una vía de importación —sí la tiene, vía flavor—, sino que su theme.toml
+# no contiene NADA de comportamiento: eso vive en yazi.toml. Al no haber qué
+# separar, un segundo archivo solo añadiría un puntero.
+#
+# ⚠️ ES UNA CAPA PARCIAL SOBRE EL PRESET COMPILADO. yazi elige theme-dark.toml o
+# theme-light.toml sondeando el fondo del terminal (OSC 11) y mezcla esto
+# encima, así que aquí solo se declara lo que cambia. Una consecuencia práctica:
+# si este artefacto falta —repo recién clonado, Stow hecho y matugen aún sin
+# ejecutar—, yazi arranca con el preset y NO se ve mal, porque el preset está
+# escrito en ANSI y los ANSI de esta sesión ya son los del proyecto. Es la misma
+# degradación elegante que el import opcional de rofi, pero de regalo.
+#
+#
+# --- QUÉ NO ESTÁ AQUÍ, Y NO ES UN OLVIDO ------------------------------------
+#
+# El preset de yazi está escrito casi entero con NOMBRES ANSI (fg = "blue",
+# "cyan", "yellow", "gray"…), no con hexadecimales. Y los ANSI de esta sesión
+# los pone kitty desde theme/tokens.toml, o sea que YA son los del proyecto:
+#
+#     color1/9  = state.crit    color2/10 = state.ok    color3/11 = state.warn
+#     color4/12 = term.blue     color6/14 = term.cyan   …
+#
+# Por eso NO se redeclaran aquí, y volver a declararlos sería justo el problema
+# que resolvió la tarea 3.0 —el mismo color escrito en dos sitios—:
+#
+#   · [filetype]  color por tipo de archivo (imagen amarillo, medios magenta,
+#                 comprimido rojo, documento cian, ejecutable verde, directorio
+#                 azul). Es INFORMACIÓN, igual que la de `ls` y `git diff`: tiene
+#                 que leerse igual con cualquier fondo de pantalla. Mismo
+#                 criterio que fija tokens.toml para los 16 ANSI.
+#   · [status]    perm_type / perm_read / perm_write / perm_exec — íd.
+#   · [mgr]       marker_copied / cut / marked / selected. El preset usa
+#                 lightgreen / lightred / lightyellow, que en esta paleta son
+#                 EXACTAMENTE state.ok / state.crit / state.warn. Ya salen bien.
+#   · [icon]      los iconos de archivo, que son lo único del preset con
+#                 hexadecimales propios y no tienen equivalente en el tema.
+#
+# Y una que importa más de lo que parece:
+#
+#   · EL FONDO. yazi no pinta superficie propia: dibuja sobre la de kitty, así
+#     que la opacidad de [opacity].surface y el translúcido le llegan solos y ya
+#     coherentes con la barra y las notificaciones. Poner un `bg` en
+#     [app].overall lo ROMPERÍA, tapando la transparencia con un color liso.
+#     Este archivo no declara [app] a propósito.
+#
+# Lo que SÍ está aquí es el CROMO —lo que en kitty son el cursor, la selección y
+# los bordes—: sigue al fondo de pantalla, porque es decoración y no dato.
+
+
+# --- Panel de archivos -------------------------------------------------------
+[mgr]
+cwd            = { fg = "{{accent}}", bold = true }
+border_style   = { fg = "{{colors.outline_variant.default.hex}}" }
+symlink_target = { fg = "{{colors.outline_variant.default.hex}}", italic = true }
+
+# La coincidencia de una búsqueda es un AVISO momentáneo, no decoración: sale
+# del ámbar de estado y no del acento, para que se distinga del cromo.
+find_keyword  = { fg = "{{state_warn}}", bold = true, italic = true, underline = true }
+find_position = { fg = "{{ident_magenta}}", bg = "reset", bold = true, italic = true }
+
+
+# --- Pestañas ----------------------------------------------------------------
+[tabs]
+active   = { fg = "{{colors.surface.default.hex}}", bg = "{{accent}}", bold = true }
+inactive = { fg = "{{accent}}", bg = "{{colors.surface_container.default.hex}}" }
+
+
+# --- Indicador de modo (NOR / SEL / UNS) -------------------------------------
+#
+# ⚠️ AQUÍ SE SEPARA DEL PRESET A PROPÓSITO. yazi pinta de ROJO los modos de
+# selección (`v` y `V`). En este proyecto el rojo es state.crit y significa
+# peligro —batería crítica, red caída, botón de apagar—, así que gastarlo en un
+# modo de navegación normal lo devaluaría. Los tres modos salen de la familia de
+# identidad (azul del acento, rosa y magenta), que matugen ARMONIZA con el fondo
+# de pantalla: siempre se ven del tema y nunca se confunden con una alarma.
+[mode]
+normal_main = { fg = "{{colors.surface.default.hex}}", bg = "{{accent}}", bold = true }
+normal_alt  = { fg = "{{accent}}", bg = "{{colors.surface_container.default.hex}}" }
+
+select_main = { fg = "{{colors.surface.default.hex}}", bg = "{{ident_pink}}", bold = true }
+select_alt  = { fg = "{{ident_pink}}", bg = "{{colors.surface_container.default.hex}}" }
+
+unset_main  = { fg = "{{colors.surface.default.hex}}", bg = "{{ident_magenta}}", bold = true }
+unset_alt   = { fg = "{{ident_magenta}}", bg = "{{colors.surface_container.default.hex}}" }
+
+
+# --- Cajas flotantes ---------------------------------------------------------
+# Todas comparten marco y título de acento, como las superficies flotantes del
+# resto del escritorio (tooltip de Waybar, notificación de dunst, lanzador).
+[which]
+border          = { fg = "{{accent}}" }
+cand            = { fg = "{{accent}}" }
+rest            = { fg = "{{colors.outline_variant.default.hex}}" }
+desc            = { fg = "{{colors.on_surface.default.hex}}" }
+separator_style = { fg = "{{colors.outline_variant.default.hex}}" }
+
+[confirm]
+border = { fg = "{{accent}}" }
+title  = { fg = "{{accent}}" }
+
+[spot]
+border  = { fg = "{{accent}}" }
+title   = { fg = "{{accent}}" }
+tbl_col = { fg = "{{accent}}" }
+
+[pick]
+border = { fg = "{{accent}}" }
+active = { fg = "{{accent}}", bold = true }
+
+[input]
+border = { fg = "{{accent}}" }
+
+[cmp]
+border = { fg = "{{accent}}" }
+
+[tasks]
+border  = { fg = "{{accent}}" }
+hovered = { fg = "{{accent}}", bold = true }
+
+[help]
+border = { fg = "{{accent}}" }
+chord  = { fg = "{{accent}}" }
+
+
+# --- Notificaciones internas de yazi -----------------------------------------
+# FIJAS, fuera de matugen, y por el mismo motivo que en dunst y en Waybar: un
+# error tiene que leerse como error con cualquier fondo de pantalla.
+[notify]
+title_info  = { fg = "{{state_ok}}" }
+title_warn  = { fg = "{{state_warn}}" }
+title_error = { fg = "{{state_crit}}" }

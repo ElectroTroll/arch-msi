@@ -9,3 +9,4 @@ hypr__theme.lua  hypr/theme.lua
 fastfetch__config.jsonc  fastfetch/config.jsonc
 wlogout__style.css  wlogout/style.css
 rofi__theme.rasi  rofi/theme.rasi
+yazi__theme.toml  yazi/theme.toml

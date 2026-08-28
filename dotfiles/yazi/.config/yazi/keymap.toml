@@ -1,0 +1,84 @@
+#:schema https://yazi-rs.github.io/schemas/keymap.json
+# keymap.toml — MSI Summit E16 AI Studio (arch-msi)
+# Fecha: 2026-08-28 · Tarea 3.3 (yazi).
+# Verificado con yazi 26.8.15.
+#
+# LOS ATAJOS DE FÁBRICA SE CONSERVAN ENTEROS. Son completos y de estilo vim, y
+# ya traen atadas las integraciones que en otros gestores hay que montar a mano:
+#
+#     z  fzf        Z  zoxide      s  buscar por nombre (fd)
+#     S  buscar por contenido (ripgrep)
+#
+# Es decir: no hay ninguna integración que añadir para fzf ni para zoxide. Son
+# plugins internos del binario y vienen ya en el keymap del preset.
+#
+# ⚠️ LA CLAVE ES `prepend_keymap`, NO `keymap`. `keymap` SUSTITUYE el juego
+# entero de atajos: con esas seis letras en vez de estas catorce, yazi se queda
+# solo con lo que haya en este archivo y sin una sola tecla de las de fábrica —
+# ni j/k, ni q para salir. Es un error de una palabra y no avisa de nada.
+# Mismo patrón que `rules` / `prepend_rules` en yazi.toml.
+#
+# Lo que va primero GANA sobre el preset, que es lo que permite corregir `g d`
+# aquí abajo sin tocar nada más.
+
+
+[mgr]
+prepend_keymap = [
+	# LOS DIRECTORIOS DE FÁBRICA ESTÁN EN INGLÉS Y AQUÍ NO EXISTEN. El preset
+	# trae `g d` → ~/Downloads, que en este equipo es ~/Descargas: el atajo de
+	# fábrica no lleva a ninguna parte. Los nombres reales los fija
+	# ~/.config/user-dirs.dirs, que los pone en castellano.
+	#
+	# Se escriben con ~ y NO con ruta absoluta: yazi lo expande, así que estos
+	# atajos siguen valiendo con otro nombre de usuario.
+	{ on = [ "g", "d" ], run = "cd ~/Descargas",  desc = "Ir a Descargas" },
+	{ on = [ "g", "D" ], run = "cd ~/Documentos", desc = "Ir a Documentos" },
+	{ on = [ "g", "i" ], run = "cd ~/Imágenes",   desc = "Ir a Imágenes" },
+
+	# ⚠️ ESTE NO ES UN DIRECTORIO XDG y hay DOS candidatos en este equipo:
+	# ~/Projects (donde vive este repositorio, y donde se trabaja de verdad) y
+	# ~/Proyectos (que es al que apunta XDG_PROJECTS_DIR, y está vacío). Se
+	# elige el primero a conciencia; si algún día se unifican, esto se cambia.
+	{ on = [ "g", "p" ], run = "cd ~/Projects",   desc = "Ir a Projects" },
+
+	# VER LA IMAGEN A PANTALLA COMPLETA, con el visor propio de kitty.
+	#
+	# `M` de Maximizar. Está LIBRE: el preset no usa ninguna mayúscula M, y la
+	# minúscula `m` es el prefijo de los acordes de linemode (m s, m p, m b…),
+	# que no estorba porque son teclas distintas. Con esto el proyecto NO pisa
+	# ningún atajo de fábrica de yazi.
+	#
+	# `--hold` espera a que pulses una tecla antes de salir; `--clear` retira
+	# las imágenes que ya hubiera en pantalla. El archivo señalado llega como
+	# `$0` — verificado, no supuesto: yazi ejecuta el comando a través de una
+	# shell y le pasa el mismo valor en `$0`, `$1` y `$@`.
+	#
+	# ⚠️ ESTO SUSTITUYE A UN PLUGIN QUE MAXIMIZABA EL PANEL, Y EL CAMBIO NO ES
+	# COSMÉTICO. Aquel movía `rt.mgr.ratio` en caliente, y eso obliga a pelearse
+	# con el repintado DIFERENCIAL de ratatui mientras el protocolo gráfico de
+	# kitty escribe celdas por fuera de su búfer: dio dos fallos seguidos
+	# —paneles en blanco al volver, y después los separadores de columna
+	# borrados— y cada arreglo solo tapaba un trozo. Con `shell --block` no hay
+	# nada que arreglar: es la MISMA vía por la que yazi abre `$EDITOR` o fzf, y
+	# al volver se redibuja entero él solo. Ver PROJECT_CONTEXT.md §19.
+	#
+	# Contrapartida asumida: es un VISOR, no un panel. Mientras está abierto no
+	# se navega con j/k; se cierra con cualquier tecla y vuelves donde estabas.
+	#
+	# ⚠️ Sobre un archivo que no sea imagen, icat muestra su propio error y se
+	# queda esperando una tecla. Se deja así a propósito: filtrar por tipo
+	# excluiría los PDF y demás formatos que icat SÍ sabe pintar apoyándose en
+	# imagemagick, que está instalado.
+	# ⚠️ EL ARCHIVO SE PASA CON `%s`, NO CON `$0`. Es lo que hizo fallar la
+	# primera versión, y el error no ayudaba nada: icat respondía
+	# «Stat sh: no such file or directory», o sea que había recibido el texto
+	# `sh` como nombre de archivo.
+	#
+	# La causa, medida: el `shell` de yazi NO pasa parámetros posicionales
+	# —comprobado dentro del comando: `$#` vale 0 y `$0` es `sh`, el nombre de
+	# la propia shell—. Lo que hace es SUSTITUIR `%s` dentro del texto del
+	# comando, igual que en las reglas de `[opener]`. Y lo sustituye ya
+	# entrecomillado: verificado con un archivo llamado «foto con espacios.jpg»,
+	# que llega como UN solo argumento.
+	{ on = "M", run = 'shell --block -- kitten icat --hold --clear -- %s', desc = "Ver la imagen a pantalla completa" },
+]

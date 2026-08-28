@@ -32,3 +32,37 @@ fastfetch() {
         command fastfetch "$@"
     fi
 }
+
+
+# --- Editor ------------------------------------------------------------------
+# ARREGLA UN FALLO REAL, no es una preferencia. `EDITOR` estaba sin definir, y
+# el opener de texto de yazi es `${EDITOR:-vi} %s`: caía a `vi`, que en este
+# equipo NO EXISTE —comprobado, ningún paquete lo provee; solo está `vim`—, así
+# que abrir un archivo de texto desde yazi fallaba. Definirlo aquí lo arregla de
+# raíz y de paso sirve a git, `systemctl edit` y cualquier otro programa que
+# respete la variable.
+export EDITOR=vim
+
+
+# --- yazi --------------------------------------------------------------------
+# DEJA LA SHELL EN EL DIRECTORIO DONDE ESTABAS AL SALIR, que es lo que convierte
+# a yazi en una herramienta de navegación y no solo en un visor.
+#
+# La función es necesaria porque un proceso hijo NO puede cambiar el directorio
+# de su padre: yazi escribe el suyo en un archivo temporal (`--cwd-file`) y el
+# `cd` lo hace la shell, aquí.
+#
+# Con `y` se cambia de directorio; invocando `yazi` a secas NO, que es la vía de
+# escape si alguna vez estorba. Y dentro del programa la distinción sigue
+# existiendo: `q` guarda el directorio y `Q` sale sin guardarlo.
+#
+# Sin rutas fijas: `mktemp` respeta TMPDIR y el archivo se borra siempre, salga
+# yazi como salga.
+y() {
+    local tmp cwd
+    tmp="$(mktemp -t "yazi-cwd.XXXXXX")" || return 1
+    yazi "$@" --cwd-file="$tmp"
+    IFS= read -r -d '' cwd < "$tmp"
+    [ -n "$cwd" ] && [ "$cwd" != "$PWD" ] && builtin cd -- "$cwd"
+    rm -f -- "$tmp"
+}

@@ -665,6 +665,24 @@ un único listener es justamente lo que permite garantizar el orden.
     absolute symlink» y aborta— y un symlink relativo a `/usr/share` dependería
     de dónde esté clonado el repositorio. Contrapartida asumida: si Claude
     cambia su icono, esta copia se queda con el antiguo.
+- **Paquete Stow añadido por la tarea 3.3** (2026-08-28):
+  - **yazi** → `dotfiles/yazi/` (`yazi.toml` y `keymap.toml`). Duodécimo
+    paquete. Nace dentro del tema: no llega a tener colores propios. **No
+    añade ningún requisito a `install/services.sh`**: no tiene servicio ni
+    activación D-Bus,
+    se invoca desde una terminal y todo lo demás cae dentro de paquetes Stow.
+    Y **no añade ningún paquete a `packages/`**: todas las herramientas que usa
+    para previsualizar —`ffmpeg`, `poppler`, `imagemagick`, `7zip`, `fd`,
+    `ripgrep`, `fzf`, `zoxide`— ya estaban instaladas. Comprobado regenerando
+    los inventarios: solo cambia la fecha de las cabeceras.
+    ⚠️ **Enlazado con `--no-folding`, y no es opcional**: `~/.config/yazi` es
+    donde matugen escribe `theme.toml`. Con un `stow yazi` normal, Stow enlaza
+    el DIRECTORIO entero —lo dijo la simulación: `LINK: .config/yazi => …`— y
+    el artefacto habría caído dentro del repositorio. Es la misma trampa que
+    hubo que deshacer en `wlogout` y `fastfetch` (§18).
+    ⚠️ **La tarea 3.3 toca además el paquete `shell`**, que es la primera vez
+    que un componente de la fase 3 sale de su propio paquete: `.bashrc` gana
+    `export EDITOR=vim` y la función `y`. Las dos razones, abajo en §19.
 - **Paquetes que dejaron de enlazar parte de su config**, porque su formato no
   admite incluir un fragmento y se genera entera (§18): `waybar` (conserva solo
   `claude-usage.sh`), `wlogout` (conserva solo `layout`) y `fastfetch` (que por
@@ -723,8 +741,11 @@ un único listener es justamente lo que permite garantizar el orden.
     ⚠️ **`~/Wallpapers` debe quedar como UN enlace de directorio**, no como un
     directorio real con enlaces dentro. Al restaurar, no crearlo a mano: solo
     así las imágenes nuevas caen dentro del repo. Ver §17.
-- Sin config todavía: `kitty`, `rofi`, `yazi`. Se difieren hasta que existan
-  (o se cree una config mínima como tarea propia).
+- **Ya no queda ninguno sin config.** Esta línea decía «sin config todavía:
+  `kitty`, `rofi`, `yazi`» y se quedó vieja sin que nada avisara: kitty se
+  configuró en la 3.1, rofi en la 3.2 y yazi en la 3.3, los tres con paquete
+  Stow propio. De la fase 3 quedan Dolphin (3.4), el theming GTK/Qt (3.5),
+  Spotify (3.6) y npm (3.7).
 
 ## 14. Tareas pendientes (fases futuras)
 
@@ -1315,6 +1336,7 @@ No es una preferencia, lo decide **lo que cada formato permite**:
 | **Waybar** | GTK CSS | **Config generada entera** |
 | **wlogout** | GTK CSS | **Config generada entera** (el `layout` sí sigue en Stow) |
 | **fastfetch** | JSONC sin `include` | **Config generada entera** |
+| **yazi** | `theme.toml`, capa parcial | **Tema generado entero** (`yazi.toml` y `keymap.toml` siguen en Stow) |
 
 GTK CSS solo tiene `@define-color`, que sirve para colores y para nada más: sin
 variables numéricas, la única forma de que el tamaño de fuente o el radio salgan
@@ -1545,3 +1567,313 @@ Todo en `[matugen]` de `tokens.toml`, y todo medido con `--dry-run`:
 Cada aplicación mide a su manera y `tokens.toml` declara cada valor UNA vez y en
 UNA unidad; las conversiones (alfa hexadecimal, colores sin almohadilla para
 hyprlang, ruta absoluta del home) las hace el script.
+
+---
+
+## 19. Gestor de archivos de terminal (yazi)  **[OK]**
+
+Tarea 3.3, completada el 2026-08-28. yazi **26.8.15** (repositorio `extra`),
+duodécimo paquete Stow. Corría con los valores de fábrica desde la instalación:
+`~/.config/yazi` no existía.
+
+- **Config de comportamiento**: `dotfiles/yazi/.config/yazi/yazi.toml` y
+  `keymap.toml` (enlazados por Stow).
+- **Tema**: `~/.config/yazi/theme.toml`, ARTEFACTO generado por matugen desde
+  `dotfiles/matugen/.config/matugen/templates/yazi-theme.toml`.
+- **Atajos**: `docs/keybindings.md` → «Gestor de archivos (yazi)».
+
+### Lo primero, porque invalida casi todo lo que se lee por ahí
+
+**El paquete de Arch no instala ni un solo archivo de configuración de
+ejemplo.** Los tres presets (`yazi.toml`, `keymap.toml`, `theme.toml`) van
+COMPILADOS dentro del binario. `pacman -Ql yazi` solo devuelve binarios,
+completions e iconos. La forma de leer los de la versión instalada es:
+
+```
+strings /usr/bin/yazi | grep -n '^\[mgr\]'      # y leer desde ahí
+```
+
+Y el nombre de la sección es **`[mgr]`, no `[manager]`**: se renombró río arriba
+y prácticamente todo lo que circula usa el nombre viejo.
+
+### El reparto: qué manda desde theme.toml y qué desde los ANSI de kitty
+
+Es la pregunta que hubo que resolver ANTES de escribir nada, para no acabar con
+el mismo color declarado en dos sitios — el problema que resolvió la 3.0.
+
+**El preset de tema de yazi está escrito casi entero con NOMBRES ANSI**, no con
+hexadecimales:
+
+```
+[mgr]      cwd = { fg = "cyan" }            border_style = { fg = "gray" }
+[status]   perm_type = { fg = "green" }     perm_read = { fg = "yellow" }
+[filetype] imagen amarillo · medios magenta · comprimido rojo · documento cian
+           ejecutable verde · directorio azul
+```
+
+Solo los **iconos de archivo** llevan hexadecimales propios.
+
+Y esos ANSI son los que kitty toma de `theme/tokens.toml` (§18). O sea que
+**yazi ya estaba medio dentro del tema sin configurar nada**: no estaba «sin
+tema», estaba **temado por herencia**. Lo que NO hacía era seguir al fondo de
+pantalla, porque nada del preset usa el acento de matugen.
+
+De ahí sale el reparto, que es el criterio de §18 aplicado tal cual:
+
+| Elemento | De dónde sale | Por qué |
+|---|---|---|
+| Color por tipo de archivo, permisos del status | **ANSI de kitty** (fijos) | Es INFORMACIÓN, como `ls` y `git diff`. Un JPEG tiene que verse amarillo con cualquier fondo |
+| Marcadores de copiar/cortar/seleccionar | **ANSI de kitty** (fijos) | El preset usa `lightgreen`/`lightred`/`lightyellow`, que en esta paleta **ya son** `state.ok`/`state.crit`/`state.warn`. Salen bien solos |
+| Fondo y opacidad | **de kitty**, sin declarar nada | Ver abajo |
+| Cromo: `cwd`, bordes, pestañas, indicador de modo, marcos y títulos de las cajas | **acento de matugen** | Es decoración, sigue al fondo. Mismo criterio que el cursor y la selección de kitty |
+| Avisos y errores internos | **`[colors.state]`** | Un error se lee como error con cualquier fondo |
+
+> ⚠️ **yazi NO pinta fondo propio: dibuja sobre el de kitty.** Por eso la
+> opacidad de `[opacity].surface` y el translúcido le llegan solos y ya
+> coherentes con la barra y las notificaciones. **Poner un `bg` en
+> `[app].overall` lo rompería**, tapando la transparencia con un color liso. La
+> plantilla no declara `[app]` a propósito.
+
+### Por qué el tema se genera entero y no como fragmento
+
+`theme.toml` de yazi es una **capa PARCIAL sobre el preset compilado**: solo hay
+que declarar lo que cambia, no copiarlo entero. Eso lo pone en el grupo de
+Waybar y fastfetch, pero por una razón distinta a la suya.
+
+⚠️ **Y corrige un supuesto del roadmap.** Al planificar la 3.0 se anotó que
+«rofi admite `@import` y yazi no». **Es falso**: yazi sí tiene una vía de
+importación, `[flavor]`, que carga `flavors/<nombre>.yazi/flavor.toml`. Se
+descartó igualmente, pero por otro motivo: **el `theme.toml` de yazi no contiene
+NADA de comportamiento** —eso vive en `yazi.toml`—, así que no hay nada que
+separar y un flavor solo añadiría un archivo puntero.
+
+Consecuencia buena y gratis: si el artefacto falta —repo recién clonado, Stow
+hecho y matugen aún sin ejecutar—, yazi arranca con el preset y **no se ve mal**,
+porque el preset es ANSI y los ANSI de la sesión ya son los del proyecto. Es la
+misma degradación elegante que el `?import` opcional de rofi, sin pedirla.
+
+### Previsualizaciones: no hubo nada que habilitar
+
+Todas son **plugins internos** del binario y **todas las herramientas ya estaban
+instaladas**. Verificado leyendo el Lua embebido (`Command("ffmpeg")`,
+`Command("pdftoppm")`, `Command("magick")`, `spawn_7z`):
+
+| Tipo | Invoca | Paquete |
+|---|---|---|
+| Imagen (jpg/png/webp/gif) | — (Rust nativo) | — |
+| AVIF · HEIC · JXL · SVG · fuentes | `magick` | imagemagick |
+| PDF | `pdftoppm` | poppler |
+| Vídeo | `ffmpeg` + `ffprobe` | ffmpeg |
+| Comprimidos, ISO, AppImage, .deb/.rpm | `7z` / `7zz` | 7zip |
+| Código, JSON | — (syntect interno) | — |
+
+Medido el 2026-08-28, leyendo la cabecera que yazi manda al terminal:
+
+| Archivo | Resultado |
+|---|---|
+| `.jpg` | imagen KGP `a=T,f=24,s=816,v=510` |
+| `.pdf` | imagen KGP `s=816,v=1122` (proporción vertical correcta) |
+| `.mp4` | imagen KGP `s=640,v=360` (fotograma extraído) |
+| `.tar.gz` | listado de texto con el contenido |
+
+**El protocolo gráfico de kitty (KGP) funciona de forma nativa**: 405 fragmentos
+APC `_G` para una foto, cero sixel y cero `chafa`. No hacen falta `chafa` ni
+`ueberzugpp`, y ninguno está instalado.
+
+> **Tres correcciones a los supuestos de partida.** **`ffmpegthumbs` NO lo usa
+> yazi**: es el thumbnailer de KDE, para Dolphin; yazi llama a `ffmpeg` y
+> `ffprobe` directamente. **`unarchiver` tampoco**: usa 7z. Y **`mediainfo` sí,
+> pero como opener** (`O` → «Show media info»), no como previsualizador.
+
+Único ajuste: `image_quality` de 75 a **90** (el máximo que admite, lo valida el
+propio binario) y la cota de la copia cacheada de 600x900 a **2560x1600**, que
+es el tamaño del panel — o sea, el mayor tamaño que esta pantalla puede llegar
+a pedir. Con 600 las fotos se veían blandas ya en el panel lateral, que mide el
+36% del ancho de la ventana (medido, no supuesto: unos 930 px físicos a pantalla
+completa).
+
+> ⚠️ **La cota dejó de ser cosmética al añadir la vista a pantalla completa**
+> (ampliación del 2026-08-28, más abajo). Maximizada, la previsualización pide
+> el ancho entero y ahí la cota SÍ recorta, **sin avisar de nada**: no hay error,
+> solo una imagen más blanda de lo que podría. Medido con la caché limpia entre
+> pruebas: cota 900 → maximizado 900; cota 1200 → 1200; cota 2000 → 1200, que
+> era ya la demanda real. La cota manda hasta que deja de mandar.
+
+### Trampas verificadas
+
+⚠️ **`keymap` SUSTITUYE el juego entero de atajos; `prepend_keymap` añade.** Con
+la clave equivocada, yazi se queda solo con lo que haya en el archivo — ni `j`,
+ni `k`, ni `q` para salir. Es un error de una palabra y no avisa. Lo mismo pasa
+en `yazi.toml` con `rules` / `prepend_rules` de `[opener]`, `[open]` y
+`[plugin]`.
+
+⚠️ **yazi NO aplica el tema de usuario hasta terminar el handshake con el
+terminal, y eso hace que las pruebas ingenuas MIENTAN.** Al arrancar manda una
+batería de sondeos —`CSI ?996n` (esquema claro/oscuro), `OSC 11` (color de
+fondo), `XTVERSION`, `DECRQSS`, `DA1`, tamaño de celda, protocolo gráfico— y
+hasta que no los tiene contestados se queda con el preset compilado. Bajo
+`script`, que no responde a nada, el resultado es que **`theme.toml` no se lee
+en absoluto**: se puede dejar el archivo con TOML roto y yazi no protesta, ni
+con `--debug` ni en `YAZI_LOG=debug`. Cuesta media hora concluir que la config
+está mal cuando lo que está mal es el banco de pruebas. **La verificación buena
+es abrir yazi en kitty y mirarlo**, exactamente como en rofi (§18). Para
+comprobarlo sin abrir ventana hay que emular las respuestas del terminal en un
+pty; así se verificó esta vez.
+
+> Ojo con la diferencia: un `yazi.toml` roto **sí** aborta y con mensaje claro
+> («Failed to parse config … Press \<Enter\> to continue with preset
+> settings»). Un `theme.toml` roto, no. Los dos archivos no se tratan igual.
+
+⚠️ **`stow yazi` a secas mete el artefacto DENTRO del repositorio.** Como
+`~/.config/yazi` no existía, Stow enlaza el directorio entero (`LINK:
+.config/yazi => …`, lo dice la simulación) y el `theme.toml` de matugen caería
+en el repo. Hay que enlazar con **`--no-folding`**. Misma trampa que hubo que
+deshacer en `wlogout` y `fastfetch`.
+
+⚠️ **Los directorios de fábrica están en inglés y aquí no existen.** El preset
+trae `g d` → `~/Downloads`; en este equipo es `~/Descargas`
+(`~/.config/user-dirs.dirs`). Los cuatro atajos propios del `keymap.toml` no son
+un capricho: son la corrección de un atajo roto y sus vecinos.
+
+⚠️ **El orden alfabético de fábrica manda todo nombre acentuado al final de la
+lista.** La comparación es por punto de código Unicode y la `á` (U+00E1) va
+después de la `z`. Medido el 2026-08-28 con archivos de prueba:
+
+```
+sort_by = "alphabetical", translit = false   Alba  Bruno  Zoe  Ángel  Ávila
+sort_by = "natural",      translit = true    Alba  Ángel  Ávila  Bruno  Zoe
+```
+
+En este equipo eso afecta a `Música`, `Imágenes`, `Vídeos` y `Público`, o sea a
+cuatro de los directorios de `~`. De ahí `sort_translit = true`. `sort_by =
+"natural"` va en el mismo lote por otra razón: ordena `archivo2` antes que
+`archivo10`.
+
+### Lo que la 3.3 cambió fuera de su propio paquete
+
+Es la primera tarea de la fase 3 que toca otro paquete Stow, `shell`, y las dos
+razones son de peso:
+
+- **`export EDITOR=vim`.** No es una preferencia: **arregla un fallo real**. El
+  opener de texto de yazi es `${EDITOR:-vi} %s`, `EDITOR` estaba sin definir y
+  **`/usr/bin/vi` NO EXISTE en este equipo** —comprobado, ningún paquete lo
+  provee; solo está `vim`—, así que abrir un archivo de texto desde yazi
+  fallaba. Definirlo en el shell lo arregla de raíz y de paso sirve a git,
+  `systemctl edit` y a cualquier programa que respete la variable.
+- **La función `y`.** Deja la shell en el directorio donde estabas al salir.
+  Tiene que vivir en el shell porque **un proceso hijo no puede cambiar el
+  directorio de su padre**: yazi escribe el suyo en un temporal (`--cwd-file`) y
+  el `cd` lo hace la shell. Con `y` se salta, con `yazi` a secas no, y dentro
+  del programa `q` guarda el directorio mientras que `Q` no.
+
+### Ampliación (2026-08-28/29): ver la imagen a pantalla completa
+
+Al usarlo se pidió que una imagen se pudiera ver grande, ocupando la terminal
+entera, en vez de quedarse en el panel lateral. Lo hace **`M`**, y abre el visor
+propio de kitty:
+
+```toml
+{ on = "M", run = 'shell --block -- kitten icat --hold --clear -- %s' }
+```
+
+`--hold` espera a que pulses una tecla; `--clear` retira las imágenes que ya
+hubiera en pantalla. Es un VISOR, no un panel: mientras está abierto no se
+navega con `j`/`k`.
+
+> **De paso aclara un malentendido razonable: `v` NO es un visor.** Es el modo
+> de selección VISUAL, estilo vim. Que no agrandase la imagen no era un fallo,
+> era otra función. `v` se conserva intacto, y `M` está libre en el preset, así
+> que **el proyecto no pisa ningún atajo de fábrica de yazi**.
+
+#### Antes hubo un plugin que maximizaba el panel, y se retiró
+
+La primera implementación era un plugin local que movía `rt.mgr.ratio` en
+caliente —la palanca existe: es lo que hace el propio yazi al arrastrar el
+separador entre paneles con el ratón— para que el panel de previsualización
+ocupara toda la ventana. **Funcionaba, y aun así se tiró.** Merece quedar
+escrito por qué, porque la idea es tentadora y volverá a parecer buena.
+
+Mover el ratio obliga a pelearse con el repintado **diferencial** de ratatui
+mientras el protocolo gráfico de kitty escribe celdas **por fuera** de su búfer.
+Al encoger el panel esas celdas quedan huérfanas y nadie las sobrescribe. Dio
+dos fallos seguidos, y **los dos los encontró el uso real, no las pruebas**:
+
+1. Al volver, los paneles de archivos quedaban **en blanco** con los glifos de
+   la imagen pintados por encima.
+2. Arreglado eso (saliendo y volviendo a entrar en el directorio, que
+   reconstruye el árbol de componentes), aparecieron **los separadores de
+   columna borrados**.
+
+Cada arreglo tapaba un trozo. Las variantes medidas, dos corridas de cada:
+
+| Variante | Panel padre | Lista | Previsualización |
+|---|---|---|---|
+| `ui.render()` | vacío | vacía | ok |
+| `+ arrow ±1` | **vacío** | ok | ok |
+| `+ leave`/`enter` | ok | ok | ok — pero se fueron los separadores |
+| `ui.hide()` + soltar permiso | ok | ok | **muerta para siempre** |
+
+Hallazgos que conviene no repetir:
+
+- **`ui.hide()` parece la respuesta y no lo es.** Es lo que usan fzf y zoxide
+  para ceder la pantalla, y fuerza un repintado completo: arregla los paneles,
+  pero deja la previsualización **muerta de forma permanente** — la imagen se
+  retransmite y no se coloca nunca, ni siquiera navegando.
+- **El plugin no puede ser asíncrono.** Sin el marcador `--- @sync entry`,
+  escribir `rt.mgr.ratio` **no hace absolutamente nada**: medido, 4 de 4.
+- **`leave`/`enter` necesita guarda en la raíz.** En `/` no se puede subir, así
+  que `leave` no hacía nada pero `enter` sí entraba: la tecla te metía en el
+  primer subdirectorio (el título pasaba de `/` a `bin`).
+
+**Por qué el visor no puede tener esta clase de fallo.** `shell --block` es la
+MISMA vía por la que yazi abre `$EDITOR` o fzf: suelta el terminal —verificado,
+emite `ESC[?1049l` y desactiva ratón, *bracketed paste* y compañía—, deja correr
+el programa y **se redibuja entero al volver**. Medido con un programa que borra
+la pantalla y escribe encima: al regresar vuelven los paneles, la lista, la
+previsualización y los 76 separadores, 3 corridas de 3. No hay repintado que
+arreglar porque no se toca el repintado.
+
+#### ⚠️ El archivo se pasa con `%s`, no con `$0`
+
+Es lo que hizo fallar la primera versión del visor, y el error no ayudaba nada:
+
+```
+Error: Stat sh: stat sh: no such file or directory
+exit=1 archivo=[sh]
+```
+
+`icat` había recibido el texto **`sh`** como nombre de archivo. La causa, medida
+desde dentro del propio comando: **el `shell` de yazi no pasa parámetros
+posicionales** —`$#` vale 0 y `$0` es `sh`, el nombre de la shell—. Lo que hace
+es **sustituir `%s` dentro del texto del comando**, igual que las reglas de
+`[opener]`. Y lo sustituye ya entrecomillado: verificado con un archivo llamado
+«foto con espacios.jpg», que llega como UN solo argumento.
+
+> ⚠️ **Y una trampa de medición que costó el error entero.** Antes de escribir
+> nada comprobé cómo llegaba el archivo con una sonda que hacía
+> `printf "0=[%s]" "$0"` … y devolvió la ruta correcta, así que di por bueno
+> `$0`. **La sonda se estaba engañando sola**: el `%s` del formato del `printf`
+> era justamente el marcador que yazi sustituye, de modo que la ruta que leí no
+> venía de `$0` sino de la sustitución. Una sonda que contiene el marcador que
+> intenta medir no mide nada. Se ve en cuanto se pregunta por `$#`, que vale 0.
+
+#### La cota de la caché volvió a 1200
+
+Estuvo un día en 2560x1600: mientras `M` maximizaba el PANEL, la previsualización
+llegaba a pedir el ancho entero y la cota recortaba (medido con la caché limpia:
+cota 1200 → maximizado 1200; cota 2000 → 1200, la demanda real). **El visor de
+kitty lee el ARCHIVO ORIGINAL y no pasa por esta caché**, así que nada vuelve a
+pedir más de los ~930 px del panel lateral y mantener 2560 solo engordaría la
+caché sin verse en pantalla.
+
+
+### Lo que se dejó fuera a propósito
+
+- **Los rótulos de los botones de confirmación** (`[confirm].btn_labels`, hoy
+  «[Y]es / (N)o») **no pasan a `strings.toml`**, al revés que los de hyprlock y
+  rofi. Traducirlos sin tocar también las teclas del `[confirm]` de
+  `keymap.toml` dejaría el rótulo diciendo una letra y el atajo esperando otra.
+  Es un cambio de dos archivos, no de uno, y no entraba en esta tarea.
+- **No se redefine ningún `[opener]`.** Redefinir uno obliga a copiar al repo
+  una lista del preset, que se quedaría vieja en silencio cuando yazi la cambie
+  río arriba. Es justo el patrón que este proyecto evita.
