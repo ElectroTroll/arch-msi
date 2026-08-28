@@ -159,19 +159,51 @@ validado.
 
 | # | Tarea | Esfuerzo | Riesgo |
 |---|-------|----------|--------|
-| 3.1 | **Kitty** — tema, fuente, opacidad | Bajo | Nulo |
+| 3.0 | ~~**Tema centralizado** con matugen~~ **[OK] Completada** | Alto | Medio |
+| 3.1 | ~~**Kitty** — tema, fuente, opacidad~~ **[OK] Completada** | Bajo | Nulo |
 | 3.2 | **Rofi** — tema y comportamiento | Bajo | Nulo |
 | 3.3 | **yazi** — atajos, previsualizaciones | Bajo | Nulo |
 | 3.4 | **Dolphin** — solo archivos versionables | Medio | Bajo |
 | 3.5 | **Theming GTK/Qt coherente** con `nwg-look` | Medio | Bajo |
 | 3.6 | **Spotify** — versionar `spotify-flags.conf` como paquete Stow | Trivial | Nulo |
 | 3.7 | **npm** — versionar `~/.npmrc` como paquete Stow | Trivial | Nulo |
+| 3.8 | ~~**fastfetch** — config propia dentro del tema~~ **[OK] Completada** | Bajo | Nulo |
+
+**3.0 Tema centralizado.** **[OK] Completada (2026-08-27/28).** Es la tarea que
+hizo falta ANTES que las demás de esta fase: cada componente definía sus colores
+por su cuenta —cinco duplicados en unas 25 apariciones literales y en dos
+notaciones— y de hecho convivían DOS temas, porque Hyprland y hyprlock seguían
+con los cian/verde/naranja de fábrica. Configurar Kitty, Rofi y yazi encima
+habría multiplicado el problema.
+
+Ahora hay una sola fuente, `theme/tokens.toml` (más `theme/strings.toml` para los
+textos), y los colores que siguen al fondo de pantalla los pone **matugen**.
+Arquitectura completa, trampas incluidas, en `docs/PROJECT_CONTEXT.md` §18.
+
+**Con esto, TODO el escritorio está dentro del tema**: Waybar, dunst, hyprlock,
+Hyprland, Kitty, fastfetch y wlogout.
+
+**3.1 Kitty.** **[OK] Completada (2026-08-27).** Config propia como noveno
+paquete Stow, y nace ya dentro del tema: nunca llega a tener colores cableados.
+Los 16 colores ANSI sí son fijos, y por una medición: la paleta base16 de matugen
+devuelve ocho azules casi negros indistinguibles entre sí, con lo que `ls` y
+`git diff` serían ilegibles. Detalle en §18.
+
+**3.8 fastfetch.** **[OK] Completada (2026-08-27).** Config propia, dentro del
+tema, y con el ASCII de Arch dejando de romperse al estrechar la terminal: la
+causa no era el tamaño del logo sino la DISPOSICIÓN, porque a la izquierda el
+ancho necesario es la suma de dibujo y texto, y arriba es el máximo de los dos.
 
 Ya está instalada la fuente `ttf-jetbrains-mono-nerd` y el tema de iconos
 `papirus-icon-theme`, así que hay base para una estética unificada.
 
 En 3.4, cuidado: Dolphin genera muchos archivos de estado y cachés. Versionar
 solo lo relevante (`dolphinrc`, atajos), nunca el directorio completo.
+
+Rofi (3.2) y yazi (3.3) heredan la ventaja de la 3.0: cuando se configuren,
+nacerán con plantilla y no llegarán a tener colores propios. Rofi admite
+`@import` y yazi no, así que el primero conservará su config enlazada por Stow y
+el segundo se generará entero — el mismo reparto que explica §18.
 
 **3.6 Spotify.** Instalado desde AUR (`paru -S spotify`) el 2026-08-02. El
 2026-08-03 se creó a mano `~/.config/spotify-flags.conf` para forzar Wayland

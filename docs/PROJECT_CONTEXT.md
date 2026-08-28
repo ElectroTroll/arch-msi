@@ -1,7 +1,10 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-08-27 (**corrección de las vías de rescate**: tres
+Última actualización: 2026-08-28 (**tema centralizado con matugen** — §18 nueva,
+y §13 al día con los paquetes Stow que entran y salen; trampas del proceso en
+`history/2026-08-28-trampas-del-tema.md`). Antes: 2026-08-27 (**corrección de las
+vías de rescate**: tres
 afirmaciones falsas en §9 (Red y seguridad) sobre el cambio de VT, el `tty2` y
 faillock, más el registro de los dos bloqueos reales de faillock). Antes:
 2026-08-24 (incidente de arranque por renumeración de
@@ -624,9 +627,32 @@ un único listener es justamente lo que permite garantizar el orden.
 
 ## 13. Dotfiles y estado del repositorio  **[EN CURSO]**
 
+> **Desde la tarea 3.0 hay dos clases de archivo en `~/.config`** y conviene no
+> confundirlas: los **enlaces de Stow**, que apuntan al repositorio y se editan
+> ahí, y los **artefactos generados** por `theme-apply`, que son archivos reales,
+> no se versionan y se reescriben en cada arranque. Editar un artefacto es tirar
+> el trabajo: la próxima regeneración lo pisa. La lista completa y el porqué del
+> reparto, en §18.
+
 - Repo `~/Projects/arch-msi` con `git init`: creado.
 - `stow` 2.4.1 instalado; migración **en curso**. Existe el paquete `dotfiles/`
   con los componentes `hypr/`, `shell/` y `swappy/` ya enlazados.
+- **Paquetes Stow añadidos por la tarea 3.0/3.1** (2026-08-27/28):
+  - **matugen** → `dotfiles/matugen/` (`config.toml` y las plantillas de todos
+    los componentes). Es la fuente del tema.
+  - **kitty** → `dotfiles/kitty/` (`kitty.conf`; tarea 3.1).
+  - **bin** → `dotfiles/bin/` (enlaza `theme-apply` en `~/.local/bin`, que está
+    en el PATH de la sesión: así Hyprland lo invoca por nombre y no depende de
+    dónde esté clonado el repo).
+- **Paquetes que dejaron de enlazar parte de su config**, porque su formato no
+  admite incluir un fragmento y se genera entera (§18): `waybar` (conserva solo
+  `claude-usage.sh`), `wlogout` (conserva solo `layout`) y `fastfetch` (que por
+  eso ya no tiene paquete propio).
+- ⚠️ **`wlogout` y `fastfetch` estaban enlazados como DIRECTORIO COMPLETO** y se
+  reconvirtieron a enlaces por archivo (`stow -D X && stow --no-folding X`),
+  porque si no cualquier artefacto habría acabado dentro del repositorio.
+  **`swappy` sigue plegado**: hoy no genera nada, pero si algún día lo hiciera
+  hay que reconvertirlo antes.
 - Migrado y validado:
   - **Hyprland** → `dotfiles/hypr/` (commit `f2c9f4d`).
   - **Shell** → `dotfiles/shell/` (`.bashrc`, `.bash_profile`; commit
@@ -635,8 +661,9 @@ un único listener es justamente lo que permite garantizar el orden.
   - **hyprlock + hypridle** → `dotfiles/hypr/` (`hyprlock.conf`,
     `hypridle.conf`; commits `887cfb3`, `03f4bc5`, `0d8a364`, `b99f62d`,
     `c36e5c5`). Detalle en §9.
-  - **Waybar** → `dotfiles/waybar/` (`config.jsonc`, `style.css`,
-    `claude-usage.sh`). Tarea 2.1 completada. `waybar.service` habilitado, así
+  - **Waybar** → `dotfiles/waybar/` (solo `claude-usage.sh` desde la tarea 3.0:
+    `config.jsonc` y `style.css` pasaron a ser PLANTILLAS y su salida es un
+    artefacto generado, ver §18). Tarea 2.1 completada. `waybar.service` habilitado, así
     que arranca sola con la sesión gráfica.
     ⚠️ **Dos valores dependen de este hardware y fallan sin dar error.** El
     módulo de batería fija `bat: BAT1` y `adapter: ADP1`, y el `on-click` del
@@ -886,13 +913,19 @@ una clave desconocida: la ignora y sigue**, así que una errata como
   codifica la urgencia es el **color del marco**, no un fondo distinto por
   nivel — gris `#2a2e37` (baja), acento `#7aa2f7` (normal), rojo `#f7768e`
   (crítica). Radio de 6 px, el mismo que los tooltips de la barra.
-  > **`#2a2e37` es el único color que NO sale de `style.css`.** Los demás son
-  > literales de la paleta (`bg`, `accent`, `crit`, `fg`, `muted`). Este es un
-  > **derivado**: el equivalente opaco del `rgba(200, 204, 212, 0.08)` que
-  > Waybar usa para sus bordes sutiles, resuelto sobre el fondo `#16181d`.
-  > dunst no admite alfa en `frame_color`, de ahí el valor plano. Al retocar
-  > la paleta en la tarea 3.5 hay que recalcularlo a mano: **no cambiará solo**
-  > al cambiar `bg` ni `fg`.
+  > **[HISTÓRICO desde la tarea 3.0.]** Lo anterior describe los colores y
+  > métricas que dunst tuvo **cableados en `dunstrc` hasta el 2026-08-27**. Ya
+  > no es así: los pone un **drop-in generado**
+  > (`~/.config/dunst/dunstrc.d/50-theme.conf`), salen del fondo de pantalla y
+  > el radio es el común del escritorio, no 6 px. `dunstrc` conserva el
+  > comportamiento —historial, atajos, reglas, urgencias— y ningún color. Ver
+  > §18.
+  >
+  > Aquel `#2a2e37` era además un **derivado calculado a mano**: el equivalente
+  > opaco del `rgba(200,204,212,0.08)` de Waybar resuelto sobre `#16181d`,
+  > porque dunst no admite alfa en `frame_color`. Era justo el tipo de valor que
+  > obligaba a recalcular a mano al tocar la paleta, y es una de las razones por
+  > las que se centralizó el tema.
 - **Fuente:** `JetBrainsMono Nerd Font 10`. Pango mide en **puntos**: 10 pt a
   96 dpi = 13,3 px lógicos, que es el `font-size: 13px` de Waybar. El nombre de
   familia es el exacto de `fc-list` (existen variantes `NF`, `NFM`, `NL` que
@@ -1192,3 +1225,133 @@ y **cero** coincidencias de `Config has errors`, `no target`, `Failed to resolve
 o `does not contain a valid image`. El enlace `~/Wallpapers` sobrevivió intacto.
 Los tres servicios del hueco 6.1 —`hypridle`, `waybar`, `hyprpaper`— quedaron
 `enabled` + `active` en el mismo arranque.
+
+
+## 18. Tema del escritorio (matugen)  **[OK]**
+
+Tarea 3.0, completada el 2026-08-27/28. **Todo el aspecto del escritorio sale de
+dos archivos y de la imagen de fondo.**
+
+- **Fuente única de valores**: `theme/tokens.toml` — tipografía, métricas,
+  opacidades, colores de estado, colores ANSI del terminal, identidad y la
+  configuración de la propia generación.
+- **Fuente única de textos**: `theme/strings.toml`. Separados porque cambian por
+  otros motivos: redacción o idioma, no estética.
+- **Colores que siguen al fondo**: los pone **matugen 4.2** (repositorio `extra`,
+  NO el AUR: `matugen-bin` entra en conflicto con él).
+- **Un solo comando**: `theme-apply` (paquete Stow `bin` → `~/.local/bin`).
+
+### El problema que resolvió
+
+Cada componente definía sus colores por su cuenta: **cinco colores duplicados en
+unas 25 apariciones literales** y en dos notaciones (hex y `rgba()` descompuesto).
+Y algo peor que la duplicación: **convivían dos temas**, porque Waybar, dunst y
+wlogout usaban Tokyo Night mientras Hyprland y hyprlock seguían con los
+cian/verde/naranja de la plantilla de fábrica — justo lo que más se ve.
+
+### Regla de oro
+
+> **matugen no escribe JAMÁS sobre una ruta gestionada por Stow.**
+
+Los enlaces de `~/.config` apuntan DENTRO del repositorio: escribir sobre uno
+metería la salida generada en el repo o rompería el enlace. Las salidas usan
+nombres que no existen en el repo, y `theme-apply.sh` **aborta** si detecta que
+un destino es un symlink.
+
+**La prueba de aceptación es objetiva: `git status` queda limpio después de
+regenerar el tema.**
+
+⚠️ Dos paquetes estaban enlazados como DIRECTORIO COMPLETO (`wlogout` y
+`fastfetch`), con lo que cualquier artefacto habría caído dentro del repo. Se
+reconvirtieron a enlaces por archivo con `stow -D X && stow --no-folding X`.
+`swappy` sigue plegado, pero no genera nada; si algún día lo hiciera, mismo paso.
+
+### Reparto: quién conserva su config y quién se genera entera
+
+No es una preferencia, lo decide **lo que cada formato permite**:
+
+| Componente | Formato | Patrón |
+|---|---|---|
+| dunst | drop-in `dunstrc.d/*.conf` | Config en Stow + fragmento generado |
+| hyprlock | `source =` de hyprlang | Config en Stow + fragmento generado |
+| Hyprland | `dofile` de Lua | Config en Stow + tabla generada |
+| Kitty | `include` | Config en Stow + fragmento generado |
+| **Waybar** | GTK CSS | **Config generada entera** |
+| **wlogout** | GTK CSS | **Config generada entera** (el `layout` sí sigue en Stow) |
+| **fastfetch** | JSONC sin `include` | **Config generada entera** |
+
+GTK CSS solo tiene `@define-color`, que sirve para colores y para nada más: sin
+variables numéricas, la única forma de que el tamaño de fuente o el radio salgan
+de `tokens.toml` es generar la hoja completa. Y fastfetch no admite un segundo
+archivo — su ayuda dice que los config "are merged", pero al pasarle dos responde
+`Error: only one config file can be loaded`.
+
+### Artefactos (ninguno se versiona)
+
+```
+~/.config/waybar/style.css · config.jsonc      ~/.config/hypr/theme.conf · theme.lua
+~/.config/dunst/dunstrc.d/50-theme.conf        ~/.config/kitty/theme.conf
+~/.config/wlogout/style.css · icons/*.png      ~/.config/fastfetch/config.jsonc
+```
+
+`~/.config/wlogout/icons/` es **el único punto del tema que genera binarios**:
+los iconos del paquete son PNG lila y GTK3 no sabe teñir una imagen de fondo
+desde CSS, así que se recolorean con `magick -colorize 100`, que conserva el
+canal alfa y por tanto el recorte.
+
+### Regeneración
+
+- **En cada arranque**, desde el `hl.on("hyprland.start")` de `hyprland.lua`,
+  después de hyprpaper. Necesario porque hyprpaper sortea una imagen distinta
+  cada vez (`order = random`) y si no el escritorio arrancaría con la paleta del
+  fondo anterior.
+- **Al cambiar de fondo**, desde `scripts/add-wallpaper.sh`.
+- El fondo en uso se consulta con `hyprctl hyprpaper listactive`.
+
+**Red de seguridad**: `theme/fallback/` guarda una copia congelada de los
+artefactos (`--save-fallback` la actualiza, `--fallback` la instala). Existe
+porque Waybar, wlogout y fastfetch NO tienen config versionada: un repo recién
+clonado, con Stow hecho y matugen aún sin ejecutar, se quedaría sin barra y sin
+menú de apagado. Hyprland tiene además su propio respaldo en un `pcall`, porque
+si a él le falta el tema no te quedas sin colores: te quedas sin gestor de
+ventanas configurado.
+
+### Qué NO sigue al fondo de pantalla, y por qué
+
+- **Colores de estado** (`crit`/`warn`/`ok`) y los **16 ANSI del terminal**: son
+  información, no decoración. Una batería crítica o un `git diff` tienen que
+  leerse igual con cualquier wallpaper.
+- Los ANSI tienen además un motivo medido: **la paleta base16 de matugen es
+  inservible para un terminal**. Con el fondo actual devuelve `base08 #0b001b`,
+  `base09 #00061a`, `base0a #00091d` — "rojo", "amarillo" y "verde" son el mismo
+  azul casi negro.
+
+### Ajustes del generador
+
+Todo en `[matugen]` de `tokens.toml`, y todo medido con `--dry-run`:
+
+- **El "pastel de matugen" no es culpa del scheme sino del ROL**: `primary` en
+  modo oscuro es siempre el tono 80, claro y desaturado. Los tonos crudos de la
+  misma paleta sí tienen color, y de ahí sale el acento (`accent_tone`).
+- **Subir `--contrast` DESATURA**: de 0.3 a 0.5 el acento pasa de sat 33 % a
+  19 %. Para separar del fondo aclara, y al aclarar lava. Subirlo no aviva el
+  tema, lo apaga.
+- **`--source-color-index` es obligatorio**: sin fijarlo, matugen abre un prompt
+  interactivo cuando la imagen ofrece varios candidatos, y en el arranque eso
+  dejaría el script colgado en silencio.
+
+### Trampas del motor de plantillas
+
+1. **Las claves importadas van planas** (`state_crit`, no `colors.state.crit`):
+   matugen toma lo que sigue al último punto por un FORMATO de color y aborta con
+   `Parse Error: The format provided is not valid`.
+2. **Los filtros solo aceptan literales**, no variables importadas, y
+   `palettes.*` no existe en plantilla (solo `colors.*`). De ahí que
+   `theme-apply.sh` haga **dos pasadas**: la primera resuelve el acento y
+   armoniza las identidades, la segunda renderiza.
+3. **Los comentarios no protegen nada**: escribir la sintaxis de llaves dobles
+   dentro de un comentario rompe el render.
+
+Cada aplicación mide a su manera y `tokens.toml` declara cada valor UNA vez y en
+UNA unidad; las conversiones (alfa hexadecimal, colores sin almohadilla para
+hyprlang, ruta absoluta del home) las hace el script.
