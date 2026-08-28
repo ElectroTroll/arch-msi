@@ -104,7 +104,7 @@ mainbox {
     /* `message` va en medio aunque casi nunca se vea: es donde rofi escribe
      * los errores (un directorio ilegible en filebrowser, por ejemplo). Sin
      * declararlo, esos avisos no se pintan en ninguna parte. */
-    children: [ inputbar, message, listview ];
+    children: [ inputbar, message, listview, mode-switcher ];
     spacing:  6px;
     padding:  12px;
 }
@@ -266,4 +266,52 @@ error-message {
     background-color: @field;
     border-radius:    10px;
     text-color:       @urgent;
+}
+
+
+/* --- Barra de modos ----------------------------------------------------------
+ * Discreta y abajo, leyéndose como una barra de estado y no como un control
+ * principal: los modos inactivos en el gris apagado del texto secundario y el
+ * activo con el MISMO tratamiento que la fila seleccionada y que el workspace
+ * en uso de Waybar (acento al 15 % con texto de acento).
+ *
+ * Existe por un motivo concreto: con un solo bind (`Super + R`) y el ciclo en
+ * `Ctrl+Tab`, no había NADA en pantalla que anunciara que hay otros dos modos.
+ * El rótulo de la izquierda dice en cuál estás, pero no que existan los demás.
+ *
+ * Los botones también son clicables, así que el ratón llega a los tres modos
+ * sin tocar el teclado.
+ *
+ * ⚠️ SIN ESTA ENTRADA EN `mainbox children` NO SE PINTA. Declarar el estilo no
+ * basta: mainbox solo dibuja los hijos que se le enumeran, y por eso el
+ * `mode-switcher` no aparecía por defecto aunque los tres modos ya estuvieran
+ * activos. */
+mode-switcher {
+    spacing: 2px;
+    padding: 4px 0px 0px 0px;
+
+    /* ⚠️ SIN `expand: false` LOS BOTONES SE REPARTEN TODO EL ANCHO, y la
+     * píldora del modo activo acaba midiendo un tercio de la ventana: 233 px
+     * para una palabra de ocho letras. Con esto cada botón mide lo que ocupa su
+     * texto, que es lo que la vuelve discreta.
+     *
+     * Queda alineada a la IZQUIERDA, a plomo con la columna de iconos de la
+     * lista. Se probó `horizontal-align: 0.5` para centrar el grupo y NO hace
+     * nada aquí (2026-08-28), así que se retiró en vez de dejarlo puesto
+     * aparentando un efecto que no tiene. */
+    expand: false;
+}
+
+button {
+    expand:           false;
+    padding:          2px 8px;
+    border-radius:    10px;
+    background-color: transparent;
+    text-color:       @muted;
+    cursor:           pointer;
+}
+
+button selected {
+    background-color: @sel-bg;
+    text-color:       @accent;
 }

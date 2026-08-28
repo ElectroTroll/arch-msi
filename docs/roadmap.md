@@ -189,11 +189,22 @@ Los 16 colores ANSI sí son fijos, y por una medición: la paleta base16 de matu
 devuelve ocho azules casi negros indistinguibles entre sí, con lo que `ls` y
 `git diff` serían ilegibles. Detalle en §18.
 
-**3.2 Rofi.** **[OK] Completada (2026-08-28).** Décimo paquete Stow, y como
+**3.2 Rofi.** **[OK] Completada (2026-08-28), ampliada el mismo día.** Décimo paquete Stow, y como
 Kitty nace ya dentro del tema: nunca llega a tener colores cableados. Tres modos
 en un solo bind —`drun`, `window` y `filebrowser`, ciclados con `Ctrl+Tab`—,
 centrada, una columna, iconos de Papirus-Dark a 28 px. Detalle en
 `docs/PROJECT_CONTEXT.md` §18.
+
+> **Ampliación: barra de modos y el modo ventana.** Al usarlo se vio que con un
+> solo bind no había NADA que anunciara los otros dos modos, así que se añadió
+> una barra discreta abajo, con el activo resaltado y los botones clicables. Y
+> el modo ventana tenía dos defectos, los dos de rofi y no de la config: Claude
+> salía sin icono (rofi lo busca por `app_id` y la app lo instala con otro
+> nombre) y como `com.anthropic.Claude` (el modo ventana no lee los `.desktop`,
+> donde sí está `Name=Claude`). El icono se arregla en la raíz con un
+> **undécimo paquete Stow, `icons`**, que da al tema el nombre que rofi busca;
+> el nombre, retirando la clase de la vista — sin perder búsqueda, porque
+> `window-match-fields` es independiente del formato. Detalle en §18.
 
 > **No es la rofi 1.7 de los tutoriales, y eso ahorra trabajo.** La 2.0 fusionó
 > río arriba el soporte Wayland del fork de lbonn, así que `rofi-wayland` ya no

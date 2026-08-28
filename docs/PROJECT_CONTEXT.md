@@ -653,6 +653,18 @@ un único listener es justamente lo que permite garantizar el orden.
     proyecto, tras dunst, cuyo autoarranque se restaura solo. `rofi` ya
     figuraba en `packages/pacman-explicit.txt`, así que los inventarios no
     cambian.
+- **Paquete Stow añadido al ampliar la 3.2** (2026-08-28):
+  - **icons** → `dotfiles/icons/` (`com.anthropic.claude.png`). Undécimo
+    paquete, y existe por un solo archivo: un ALIAS del icono de Claude con el
+    nombre que rofi busca. **Es el segundo binario del repositorio**, tras el
+    fondo de pantalla, y por el mismo tipo de razón: no se recupera con
+    `pacman -S` porque no es un archivo de ningún paquete, es una decisión de
+    nomenclatura de este equipo. Son 21 KB (la variante 128x128, de sobra para
+    los 28 px que pide rofi). Se copió en vez de enlazar porque **Stow rechaza
+    los symlinks absolutos dentro de un paquete** — avisa con «source is an
+    absolute symlink» y aborta— y un symlink relativo a `/usr/share` dependería
+    de dónde esté clonado el repositorio. Contrapartida asumida: si Claude
+    cambia su icono, esta copia se queda con el antiguo.
 - **Paquetes que dejaron de enlazar parte de su config**, porque su formato no
   admite incluir un fragmento y se genera entera (§18): `waybar` (conserva solo
   `claude-usage.sh`), `wlogout` (conserva solo `layout`) y `fastfetch` (que por
@@ -1362,6 +1374,52 @@ comprobaciones obvias:**
 la primera la caza `rofi -no-config -theme ~/.config/rofi/theme.rasi
 -dump-theme`, y la segunda **solo se ve abriendo rofi**. La verificación buena
 de un cambio de tema en rofi es abrirlo y mirarlo.
+
+### El modo `window` de rofi: dos límites del propio rofi
+
+Ampliación del 2026-08-28, después de mirar el modo en pantalla por primera vez.
+
+**El icono.** rofi pide el icono por el `app_id` de la ventana, en minúsculas.
+Para Claude eso es `com.anthropic.claude`, pero la aplicación instala el suyo
+como `claude-desktop.png`: nombres distintos, así que la fila salía sin icono
+—y con el texto corrido a la izquierda, desalineando la columna—. **rofi no
+puede remapearlo**, así que se arregla en la raíz, dándole al tema de iconos el
+nombre que busca: el paquete Stow `icons` (§13) deja un alias en
+`~/.local/share/icons/hicolor/`. Verificado: cero avisos `Failed to load image`.
+
+**El nombre.** El modo `window` NO consulta los `.desktop`. El nombre bonito
+existe —`com.anthropic.Claude.desktop` declara `Name=Claude` y
+`StartupWMClass=com.anthropic.Claude`—, pero los únicos campos de
+`window-format` son `w`/`t`/`n`/`r`/`c` y ninguno lo devuelve. Medido pintando
+los tres en pantalla a la vez:
+
+| Campo | En Wayland (wlr-foreign-toplevel) |
+|---|---|
+| `{w}` desktop | **vacío** — el protocolo no expone el workspace |
+| `{n}` name | **vacío** — tampoco lo expone |
+| `{c}` class | el `app_id` CRUDO (`firefox`, `kitty`, `com.anthropic.Claude`) |
+| `{t}` title | el título de la ventana |
+
+Así que la clase se retira de la vista y el formato queda en `{t}`. **No se
+pierde nada al buscar**: `window-match-fields` es independiente del formato y
+sigue en `"all"`, de modo que teclear «kitty» o «claude» encuentra esas ventanas
+aunque la clase ya no se pinte; quién es cada una lo dice el icono. Contrapartida
+asumida: la fila muestra el título del momento — para Claude hoy es «Claude»,
+pero si algún día pone el nombre del chat, eso será lo que se lea.
+
+### La barra de modos hay que enumerarla, no solo darle estilo
+
+`mainbox` **solo dibuja los hijos que se le enumeran**, así que el
+`mode-switcher` no aparece por muy bien que se le dé estilo: hay que meterlo en
+`children`. Va abajo, con los modos inactivos en el gris apagado y el activo con
+el mismo acento al 15 % que la fila seleccionada. Existe porque con un solo bind
+y el ciclo en `Ctrl+Tab` no había nada en pantalla que anunciara los otros dos
+modos. Sus botones son además clicables.
+
+⚠️ Y necesita `expand: false` **en la barra y en los botones**: por defecto se
+reparten todo el ancho y la píldora del activo acaba midiendo un tercio de la
+ventana. Queda alineada a la izquierda; `horizontal-align: 0.5` para centrar el
+grupo no hace nada aquí y se retiró en vez de dejarlo aparentando un efecto.
 
 ### Las transparencias de rofi son las de Waybar, a propósito
 

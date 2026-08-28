@@ -23,7 +23,9 @@
 > desde `~`) con **`Ctrl + Tab`** — o `Shift + →` / `Shift + ←`—, sin cerrar ni
 > volver a pulsar el atajo. Son atajos INTERNOS de rofi, no binds de Hyprland,
 > así que no aparecen en `hyprctl binds`. La lista completa de teclas de rofi se
-> consulta con `rofi -show keys`.
+> consulta con `rofi -show keys`. **Desde el 2026-08-28 los tres modos se ven
+> en una barra abajo del lanzador**, con el activo resaltado, y sus botones son
+> clicables — así que el ciclo ya no es la única vía ni hay que recordarlo.
 
 ## Gestión de ventanas
 
