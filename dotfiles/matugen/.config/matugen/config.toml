@@ -73,3 +73,16 @@ output_path = "~/.config/fastfetch/config.jsonc"
 [templates.wlogout]
 input_path  = "~/.config/matugen/templates/wlogout-style.css"
 output_path = "~/.config/wlogout/style.css"
+
+# rofi: conserva su config.rasi enlazada por Stow y la cierra con
+# `?import "theme"`. El lenguaje .rasi tiene variables reutilizables, así que
+# sigue el patrón de dunst/hyprlock/kitty y no el de Waybar.
+#
+# ⚠️ El artefacto se llama `theme.rasi` y ese nombre NO existe en el repositorio,
+# que es lo que mantiene la regla de oro. Y hay una segunda red: comprobado el
+# 2026-08-28 que rofi resuelve sus `?import` junto al ENLACE, no junto al
+# destino del enlace, así que este import no puede leer nada de dentro del repo
+# ni aunque algún día apareciera ahí un archivo con este nombre.
+[templates.rofi]
+input_path  = "~/.config/matugen/templates/rofi-theme.rasi"
+output_path = "~/.config/rofi/theme.rasi"

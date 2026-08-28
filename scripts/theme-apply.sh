@@ -134,7 +134,14 @@ for sec, vals in d.items():
 #   "(X11 only)" y remite a poner el canal alfa en el propio color (#RRGGBBAA).
 #   Se entrega el alfa como sufijo hexadecimal de dos dígitos, listo para pegar
 #   detrás del color en la plantilla.
-flat["opacity_surface_hex"] = f"{round(flat['opacity_surface'] * 255):02X}"
+#   Y desde la tarea 3.2 se calcula para TODAS las opacidades, no solo para
+#   `surface`: el lenguaje .rasi de rofi no tiene la función `alpha()` de GTK
+#   CSS, así que la única forma de que use las mismas transparencias que Waybar
+#   es pegarles el alfa al color. `opacity_surface_hex` sigue llamándose igual,
+#   así que las plantillas que ya existían no se enteran.
+for _k, _v in list(flat.items()):
+    if _k.startswith("opacity_") and isinstance(_v, (int, float)):
+        flat[f"{_k}_hex"] = f"{round(_v * 255):02X}"
 
 #   hyprlang (hyprlock, Hyprland) escribe los colores SIN almohadilla:
 #   `rgb(58b4ef)`, no `rgb(#58b4ef)`. Se añade una versión `_stripped` de cada

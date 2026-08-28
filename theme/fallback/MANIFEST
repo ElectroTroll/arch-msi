@@ -7,3 +7,5 @@ hypr__theme.conf  hypr/theme.conf
 kitty__theme.conf  kitty/theme.conf
 hypr__theme.lua  hypr/theme.lua
 fastfetch__config.jsonc  fastfetch/config.jsonc
+wlogout__style.css  wlogout/style.css
+rofi__theme.rasi  rofi/theme.rasi

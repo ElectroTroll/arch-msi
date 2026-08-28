@@ -108,6 +108,29 @@ gaps_out = 20 # hueco entre las ventanas y el borde de la pantalla (Hyprland)
 bar_height = 46
 bar_margin = 6
 
+# --- Lanzador (rofi) ---
+#
+# En píxeles LÓGICOS, como todo lo de arriba. MEDIDO el 2026-08-28 sobre rofi
+# 2.0.0, no supuesto: `width: 1000px` en un .rasi produce una superficie de 1000
+# px lógicos, y `width: 25%` produce 400 — el 25% de los 1600 lógicos del panel.
+#
+# ⚠️ NO FIARSE DE LO QUE IMPRIME `rofi -h`. Dice
+#     name: eDP-1   scale: 2   size: 2560,1600   dpi: 96,92
+# y ninguno de esos números es la unidad del tema. rofi 2.0 solo enlaza
+# `wl_output`: ni `xdg-output` ni `wp_fractional_scale_v1` (comprobado con
+# `strings`), así que ve el modo FÍSICO y la escala ENTERA, porque Hyprland
+# redondea 1.6 a 2. Los 96 dpi salen de dividir 2560 entre esa escala 2 y luego
+# entre los 340 mm del panel. Es un cálculo interno suyo que no describe nada
+# de lo que se ve en pantalla.
+launcher_width = 700
+
+# Filas visibles antes de que aparezca la barra de desplazamiento.
+launcher_rows = 10
+
+# Lado del icono de cada fila. Los de papirus-icon-theme son SVG, así que
+# escalan sin pixelarse a cualquier tamaño.
+launcher_icon = 28
+
 
 # --- Opacidades --------------------------------------------------------------
 #

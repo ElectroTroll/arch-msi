@@ -1,0 +1,209 @@
+/* wlogout-style.css — PLANTILLA del estilo de wlogout (arch-msi)
+ * Fecha: 2026-08-02 (tarea 2.1) · convertida en plantilla el 2026-08-28 (3.0).
+ *
+ * Fuente:  dotfiles/matugen/.config/matugen/templates/wlogout-style.css
+ * Salida:  ~/.config/wlogout/style.css                        (artefacto)
+ *
+ * ⚠️ NO EDITAR ~/.config/wlogout/style.css: lo reescribe matugen.
+ *
+ * Como Waybar, y por el mismo motivo: GTK CSS solo tiene `@define-color`, que
+ * sirve para colores y para nada más. Sin variables numéricas, la única forma
+ * de que el tamaño de fuente, el radio y los márgenes salgan de tokens.toml es
+ * generar la hoja entera. Por eso `style.css` ya NO lo enlaza Stow — el
+ * `layout`, que no es temático, sí sigue enlazado.
+ *
+ * ── SOBRE EL ARCHIVO `layout` (hermano de este) ──────────────────────────
+ *
+ * NO SE LE PUEDEN PONER COMENTARIOS. Son objetos JSON consecutivos, sin
+ * corchetes de array y sin comas entre ellos, y wlogout los parsea como JSON
+ * estricto: una sola línea `//` hace que falle con "Failed to parse JSON data"
+ * y el menú NO ABRE. Comprobado el 2026-08-02 — se intentó documentarlo ahí
+ * dentro y rompió el botón. Por eso su explicación vive aquí.
+ *
+ * Tres diferencias frente a /etc/wlogout/layout:
+ *
+ * 1. SIN BOTÓN DE HIBERNAR. El original lo trae, pero este equipo NO PUEDE
+ *    hibernar: no hay swap en disco donde escribir la imagen (solo zram, que
+ *    no sirve) ni parámetro `resume=` en la línea de arranque del kernel.
+ *    Verificado el 2026-08-02; coincide con PROJECT_CONTEXT §5. Un botón que
+ *    aparenta funcionar y falla es peor que no tenerlo.
+ *
+ * 2. Etiquetas en español y atajos remnemonizados: b/s/r/a. Los originales
+ *    eran l/u/r/s (lock/suspend/reboot/shutdown), que con etiquetas en
+ *    castellano no guían a nada.
+ *
+ * 3. ORDEN DE MENOS A MÁS DESTRUCTIVO, de izquierda a derecha. Bloquear no
+ *    pierde nada; apagar cierra todo. El gesto más peligroso queda en el
+ *    extremo, donde no se pulsa por inercia, y es el único en rojo.
+ *
+ * `Bloquear` usa `loginctl lock-session`, la misma vía dbus que Super+L, el
+ * listener de 600 s y before_sleep_cmd: un único camino al bloqueo.
+ *
+ * Los flags de disposición (-b, -T, -B, -s) NO están aquí ni en `layout`:
+ * wlogout solo los acepta por línea de comandos, así que viven en el
+ * `on-click` del módulo custom/power de Waybar.
+ * ─────────────────────────────────────────────────────────────────────────
+ *
+ * MISMA PALETA QUE WAYBAR, y ya no a mano. La versión anterior de este archivo
+ * avisaba: "los valores están duplicados a mano porque GTK no comparte
+ * @define-color entre aplicaciones... este es uno de los sitios a centralizar".
+ * Eso es justo lo que hace esta plantilla: los colores salen del fondo de
+ * pantalla vía matugen y el resto de theme/tokens.toml, así que retocar la
+ * paleta ya no obliga a tocar dos archivos.
+ *
+ * HiDPI: escala 1.60, espacio lógico de 1600x1000. Todo en píxeles lógicos.
+ */
+
+@define-color bg        #0c141b;
+@define-color surface   #1d252c;
+@define-color surface2  #283037;
+@define-color fg        #edf6ff;
+@define-color muted     #6d757e;
+@define-color accent    #58b4ef;
+@define-color crit      #f7768e;
+
+* {
+    background-image: none;
+    box-shadow: none;
+    font-family: "JetBrainsMono Nerd Font", monospace;
+    font-size: 15px;
+}
+
+/* Fondo translúcido: se sigue viendo el escritorio detrás, que ayuda a
+ * situarse y a recordar que esto es un diálogo, no una pantalla de arranque. */
+window {
+    /* La opacidad sale de theme/tokens.toml → [opacity].overlay, que existe
+     * precisamente para esto: es el único velo a pantalla completa del
+     * escritorio, y por eso no comparte valor con [opacity].surface. */
+    background-color: alpha(@bg, 0.88);
+}
+
+/* Botones grises sólidos, ligeramente redondeados y separados entre sí.
+ *
+ * EL TAMAÑO NO SE FIJA AQUÍ. wlogout monta los botones en una rejilla GTK que
+ * los estira para llenar el espacio disponible, y desde CSS no se puede
+ * impedir (GTK3 no expone halign/valign a la hoja de estilos). Lo que decide
+ * cuánto miden son los márgenes de la línea de comandos, en el `on-click` del
+ * módulo custom/power de Waybar: al recortar el área, los botones encogen.
+ * Si algún día se ven estirados otra vez, se toca allí, no aquí.
+ *
+ * El `margin` de abajo sí es cosa del CSS: es la separación ENTRE botones. */
+button {
+    color: @fg;
+    /* TRANSLÚCIDOS sobre el velo: el fondo de pantalla se intuye a través de
+     * los botones, no solo alrededor. La opacidad sale de [opacity].button, más
+     * baja que la de las superficies flotantes porque aquí no hay texto largo
+     * que leer, solo un icono y una etiqueta. */
+    background-color: alpha(@surface, 0.55);
+    border: 1px solid alpha(@fg, 0.08);
+    /* radius_lg, no el radio normal: estos botones miden 180x180 y con 10 px
+     * parecían cuadrados. */
+    border-radius: 26px;
+    margin: 10px;
+
+    /* CUADRADOS. Los dos valores son iguales a propósito: sin esto, la rejilla
+     * de GTK reparte el ancho sobrante y el último botón sale más ancho que los
+     * demás (medido el 2026-08-28). Ver [metrics].button_size. */
+    min-width: 150px;
+    min-height: 150px;
+
+    /* LOS ICONOS SON PNG Y EL CSS NO PUEDE RECOLOREARLOS. Los que trae el
+     * paquete en /usr/share/wlogout/icons son lila (#d3bdf7), un color que no
+     * sale de ninguna parte del tema y que cantaba sobre el azul.
+     *
+     * Como GTK3 no sabe teñir una imagen de fondo, `theme-apply.sh` genera
+     * copias recoloreadas con el acento en ~/.config/wlogout/icons/ y estas
+     * reglas apuntan allí. Es el único sitio del tema donde se generan binarios
+     * en vez de texto.
+     *
+     * NO ESCRIBIR COMODINES DE RUTA EN LOS COMENTARIOS DE ESTE ARCHIVO.
+     * Escribir un directorio seguido de barra y asterisco (por ejemplo, al
+     * citar "todos los png de una carpeta") produce la secuencia de apertura
+     * de comentario. El parser de GTK la toma por comentario anidado, aborta
+     * la lectura y DESCARTA EN SILENCIO todas las reglas posteriores.
+     * Ocurrió el 2026-08-02: los botones se quedaron con el estilo de fábrica
+     * sin ningún error visible: el aviso solo aparece lanzando wlogout desde
+     * una terminal. Cita los directorios sin comodín. */
+    background-repeat: no-repeat;
+    background-position: center 34%;
+    background-size: 36%;
+}
+
+/* RATÓN: relleno completo. Solo aparece al pasar por encima. */
+button:hover {
+    color: @accent;
+    /* Al señalarlo gana cuerpo, pero sigue dejando pasar algo de fondo. */
+    background-color: alpha(@surface2, 0.8);
+    border-color: @accent;
+}
+
+/* TECLADO: solo un anillo, y deliberadamente NO un cambio de fondo.
+ *
+ * Al abrir, GTK da el foco al primer botón (Bloquear) sin que hayas hecho
+ * nada, y cualquier estilo de `:focus` expresado como fondo o borde se pinta
+ * de inmediato: parece preseleccionado. GTK3 no tiene `:focus-visible` —eso
+ * es de GTK4—, así que desde CSS no se puede distinguir ese foco inicial del
+ * que llega al pulsar las flechas.
+ *
+ * La vuelta: GTK dibuja las propiedades `outline` SOLO cuando el foco es
+ * "visible", o sea tras navegar con el teclado. Al abrir no las pinta. Por eso
+ * el indicador de teclado va aquí y no en `background-color`, y por eso NO
+ * debe ponerse `outline-style: none` (que es lo que había antes y anulaba
+ * justo este mecanismo).
+ *
+ * Contrapartida asumida: navegando con flechas verás un anillo, no el relleno
+ * del hover. Es lo único que GTK3 pinta de forma condicional. */
+button:focus {
+    /* ⚠️ EL RADIO DEL ANILLO ES UNA PROPIEDAD APARTE, y con prefijo: GTK 3.24
+     * NO aplica `border-radius` al outline. Sin esta línea el anillo se dibuja
+     * CUADRADO dentro de un botón redondeado y sus esquinas se salen del borde.
+     * Comprobado en las cadenas de libgtk-3: existe `-gtk-outline-radius`, no
+     * `outline-radius` a secas.
+     *
+     * EL RADIO ES EL MISMO DEL BOTÓN, a propósito. La geometría diría otra cosa:
+     * como el anillo va 8 px hacia DENTRO, para que su curva fuera paralela a la
+     * del botón habría que restarle ese desfase (26 − 8 = 18). Se probó y se ve
+     * corto — el anillo queda visiblemente menos redondeado que la esquina que
+     * acompaña. Con el radio completo la curva es algo más cerrada de lo que
+     * pide el compás, pero es lo que se ve bien. */
+    outline: 2px solid alpha(@accent, 0.65);
+    outline-offset: -8px;
+    -gtk-outline-radius: 26px;
+    border-radius: 26px;
+}
+
+/* APAGAR EN ROJO al señalarlo. Es la única acción del menú que no tiene
+ * vuelta atrás sin volver a arrancar la máquina, y está en el extremo donde
+ * puede pulsarse por inercia. El color es el aviso. */
+#shutdown:hover {
+    color: @crit;
+    /* Era un tono rojizo fijo (#3a2a30). Ahora es el propio rojo de estado a
+     * baja opacidad, la misma que usa el workspace activo de Waybar: así el
+     * tinte sigue al color de aviso en vez de ser un valor suelto. */
+    background-color: alpha(@crit, 0.15);
+    border-color: @crit;
+}
+
+#shutdown:focus {
+    outline-color: alpha(@crit, 0.65);
+}
+
+#lock {
+    background-image: image(url("/home/elok/.config/wlogout/icons/lock.png"),
+                            url("/usr/share/wlogout/icons/lock.png"));
+}
+
+#suspend {
+    background-image: image(url("/home/elok/.config/wlogout/icons/suspend.png"),
+                            url("/usr/share/wlogout/icons/suspend.png"));
+}
+
+#reboot {
+    background-image: image(url("/home/elok/.config/wlogout/icons/reboot.png"),
+                            url("/usr/share/wlogout/icons/reboot.png"));
+}
+
+#shutdown {
+    background-image: image(url("/home/elok/.config/wlogout/icons/shutdown.png"),
+                            url("/usr/share/wlogout/icons/shutdown.png"));
+}

@@ -1,0 +1,269 @@
+/* rofi-theme.rasi — PLANTILLA del tema de rofi (arch-msi)
+ * Fecha: 2026-08-28 · Tarea 3.2.
+ *
+ * Fuente:  dotfiles/matugen/.config/matugen/templates/rofi-theme.rasi (esto)
+ * Salida:  ~/.config/rofi/theme.rasi                                  (artefacto)
+ *
+ * ⚠️ NO EDITAR la salida: la reescribe matugen en cada arranque. Se edita este
+ * archivo, o theme/tokens.toml para los valores y theme/strings.toml para los
+ * textos.
+ *
+ * config.rasi sigue enlazado por Stow y lo cierra con `?import "theme"`. Mismo
+ * patrón que dunst, hyprlock y kitty: la config de comportamiento se versiona,
+ * el tema se genera al lado. Funciona porque el lenguaje .rasi tiene variables
+ * reutilizables, a diferencia de GTK CSS, que obligó a generar entera la hoja
+ * de Waybar.
+ *
+ * TODAS LAS DISTANCIAS EN PÍXELES LÓGICOS. Medido, no supuesto: ver el bloque
+ * "Lanzador (rofi)" de theme/tokens.toml, que explica por qué el `-h` de rofi
+ * anuncia otros números y por qué no hay que hacerle caso.
+ */
+
+/* --- Textos ------------------------------------------------------------------
+ * Los rótulos de modo viajan AQUÍ y no en config.rasi porque los textos de la
+ * interfaz se declaran una sola vez, en theme/strings.toml. Verificado el
+ * 2026-08-28 que rofi honra un bloque `configuration` que le llega por
+ * `?import`: tras importarlo, `rofi -dump-config` devuelve la clave puesta y
+ * sin comentar. Si el artefacto falta, rofi cae a sus rótulos en inglés. */
+configuration {
+    display-drun:        "Aplicaciones";
+    display-window:      "Ventanas";
+    display-filebrowser: "Archivos";
+}
+
+/* --- Paleta ------------------------------------------------------------------
+ * Superficies y texto con ROLES del esquema (ahí Material garantiza el
+ * contraste). El acento con un TONO de paleta, que es lo que evita el pastel:
+ * ver accent_tone en theme/tokens.toml.
+ *
+ * ⚠️ .rasi NO TIENE LA FUNCIÓN `alpha()` DE GTK CSS. Waybar escribe
+ * `alpha(@accent, opacity_active)`; aquí hay que pegar el alfa al color como
+ * sufijo hexadecimal de dos dígitos. Los calcula theme-apply.sh para TODAS las
+ * opacidades de tokens.toml, así que los números siguen declarados una sola vez
+ * y en un solo sitio: cambiar `[opacity]` mueve la barra y el lanzador a la vez.
+ *
+ * El reparto es deliberadamente el MISMO que el de las píldoras de workspace de
+ * Waybar, para que «lo seleccionado» se vea igual en toda la sesión:
+ *
+ *   superficie flotante   fondo al 0.80   (opacity.surface)
+ *   fila seleccionada     acento al 0.15  (opacity.active)   <- workspace en uso
+ *   campo de búsqueda     texto al 0.08   (opacity.separator) <- hover/divisor
+ *   barra de scroll       acento al 0.35  (opacity.hint)
+ */
+* {
+    bg:       #0c141bCC;
+    bg-solid: #0c141b;
+    fg:       #edf6ff;
+    muted:    #6d757e;
+    accent:   #58b4ef;
+
+    /* Fondos translúcidos, con el alfa pegado. */
+    field:    #edf6ff14;
+    sel-bg:   #58b4ef26;
+    hint:     #58b4ef59;
+    urgent-bg: #f7768e26;
+
+    /* FIJO, fuera de matugen: una entrada urgente tiene que leerse como
+     * urgente con cualquier fondo de pantalla (ver colors.state). */
+    urgent:   #f7768e;
+
+    background-color: transparent;
+    text-color:       @fg;
+
+    /* ⚠️ EL SUFIJO px NO SOBRA Y NO ES DECORATIVO. Sin él, Pango lee el número
+     * como PUNTOS y el tamaño acaba dependiendo del DPI que rofi se calcula
+     * solo: 2560 dividido entre la escala ENTERA que ve (2, porque redondea el
+     * 1.6 de Hyprland) y entre los 340 mm del panel, o sea 96 dpi. Medido el
+     * 2026-08-28: hoy "13px" y "10" dan exactamente la misma altura de
+     * ventana, 146 px lógicos con cinco filas. Pero ese 96 es frágil — si la
+     * escala del panel bajara a 1.0, la escala entera pasaría a 1, el DPI
+     * derivado saltaría a ~191 y los PUNTOS casi duplicarían la letra. Los
+     * píxeles no se mueven, y además son la misma unidad que el resto del
+     * archivo. */
+    font: "JetBrainsMono Nerd Font 13px";
+}
+
+/* --- La ventana --------------------------------------------------------------
+ * Centrada y flotante, con el mismo radio y el mismo borde de 2 px que las
+ * ventanas de Hyprland y el marco de dunst. */
+window {
+    location:         center;
+    anchor:           center;
+    width:            700px;
+
+    background-color: @bg;
+    border:           2px;
+    border-color:     @accent;
+    border-radius:    10px;
+    padding:          0;
+
+    children:         [ mainbox ];
+}
+
+mainbox {
+    /* `message` va en medio aunque casi nunca se vea: es donde rofi escribe
+     * los errores (un directorio ilegible en filebrowser, por ejemplo). Sin
+     * declararlo, esos avisos no se pintan en ninguna parte. */
+    children: [ inputbar, message, listview ];
+    spacing:  6px;
+    padding:  12px;
+}
+
+/* --- Campo de búsqueda -------------------------------------------------------
+ * Una píldora sobre el fondo, como los módulos de la barra. */
+inputbar {
+    children:         [ prompt, entry ];
+    spacing:          8px;
+    padding:          8px 10px;
+    background-color: @field;
+    border-radius:    10px;
+}
+
+/* El rótulo del modo activo: "Aplicaciones", "Ventanas" o "Archivos". Va en el
+ * acento porque es lo único que dice en qué modo estás al ciclar con Ctrl+Tab. */
+prompt {
+    text-color:     @accent;
+    vertical-align: 0.5;
+}
+
+entry {
+    placeholder:       "Escribe para buscar…";
+    placeholder-color: @muted;
+    vertical-align:    0.5;
+    cursor:            text;
+}
+
+/* --- Lista -------------------------------------------------------------------
+ * Una columna. Con 700 px de ancho y los iconos, dos columnas obligarían a
+ * cortar los nombres largos con puntos suspensivos. */
+listview {
+    lines:        10;
+    columns:      1;
+    spacing:      2px;
+    padding:      4px 0px 0px 0px;
+
+    /* `fixed-height: false` encoge la ventana cuando hay menos resultados que
+     * filas, en vez de dejar el hueco vacío al filtrar. */
+    fixed-height: false;
+    scrollbar:    true;
+}
+
+/* Fina y discreta: marca posición, no compite con el contenido. */
+scrollbar {
+    handle-width:     4px;
+    handle-color:     @hint;
+    background-color: transparent;
+    border-radius:    10px;
+}
+
+element {
+    spacing:       10px;
+    padding:       8px 10px;
+    border-radius: 10px;
+    cursor:        pointer;
+
+    /* Borde reservado en la BASE para que el de la fila seleccionada no
+     * desplace nada al aparecer: el hueco ya está siempre ahí. Es el mismo
+     * truco que evita el salto en las píldoras de Waybar.
+     *
+     * ⚠️ EL COLOR VA APARTE, EN `border-color`. La propiedad `border` de .rasi
+     * es `{Distancia} {Estilo}` y NO admite un color detrás: escribir
+     * `border: 2px solid transparent` aborta el tema con
+     *     syntax error, unexpected Transparent, expecting property close (';')
+     * Y ese error NO lo enseña `rofi -dump-theme`, que devuelve stderr vacío
+     * tan campante: solo sale al abrir rofi de verdad, en una ventana de aviso.
+     * Para comprobarlo sin abrir nada:
+     *     rofi -no-config -theme ~/.config/rofi/theme.rasi -dump-theme
+     * que sí avisa con "Failed to parse theme". Pasó el 2026-08-28. */
+    border:        2px solid;
+    border-color:  transparent;
+}
+
+/* ⚠️ LA MATRIZ VA COMPLETA, Y NO ES REDUNDANCIA. rofi combina tres estados de
+ * fila (normal / alternate / selected) con tres de entrada (normal / urgent /
+ * active), y RELLENA CON SU TEMA DE FÁBRICA todo lo que la plantilla no
+ * sobrescriba — un tema CLARO. Al declarar solo `text-color` y olvidar
+ * `alternate.*`, el resultado del 2026-08-28 fue una lista con el fondo beige
+ * del tema por defecto y el texto casi blanco encima: filas alternas legibles
+ * y filas normales invisibles. Corregido fijando fondo Y texto en los nueve
+ * estados. Si algún día se añade un color aquí, se añade en los nueve. */
+
+/* Sin ventana / sin estado: el fondo del lanzador se ve tal cual. Y SIN rayado
+ * de filas alternas — no se usa en ninguna otra parte de la sesión. */
+element normal.normal    { background-color: transparent; text-color: @fg;     }
+element alternate.normal { background-color: transparent; text-color: @fg;     }
+
+/* `active` en drun marca la app que YA está corriendo. Mismo tratamiento que
+ * un workspace con ventanas en la barra: acento, sin fondo. */
+element normal.active    { background-color: transparent; text-color: @accent; }
+element alternate.active { background-color: transparent; text-color: @accent; }
+
+element normal.urgent    { background-color: transparent; text-color: @urgent; }
+element alternate.urgent { background-color: transparent; text-color: @urgent; }
+
+/* LA FILA SELECCIONADA, exactamente como el workspace en uso de Waybar: acento
+ * al 15 %, texto de acento y contorno sólido. Ya no es un relleno azul macizo
+ * con texto oscuro — ese era el único punto del lanzador que no se parecía a
+ * nada más del escritorio. */
+element selected.normal {
+    background-color: @sel-bg;
+    text-color:       @accent;
+    border-color:     @accent;
+}
+element selected.active {
+    background-color: @sel-bg;
+    text-color:       @accent;
+    border-color:     @accent;
+}
+/* ⚠️ NO SE PUEDE CONCATENAR `@variable` CON UN SUFIJO DE ALFA. Escribir
+ * `@urgent` seguido del alfa hace que .rasi lea TODO como un nombre de
+ * variable, y rofi arranca con el aviso
+ *     Validating the theme failed: the variable 'urgent26' ... failed to resolve
+ * Los colores translúcidos se declaran ya con su alfa ahí arriba, en el bloque
+ * `*`, donde la plantilla los compone antes de que rofi vea nada. Pasó el
+ * 2026-08-28, y NO lo detecta ni `-dump-theme` ni `-theme ... -dump-theme`:
+ * solo se ve al abrir rofi. */
+element selected.urgent {
+    background-color: @urgent-bg;
+    text-color:       @urgent;
+    border-color:     @urgent;
+}
+
+element-icon {
+    size:             28px;
+    vertical-align:   0.5;
+    background-color: transparent;
+}
+
+element-text {
+    vertical-align:   0.5;
+    background-color: transparent;
+
+    /* `inherit` es lo que hace que el texto se vuelva oscuro al seleccionar la
+     * fila. Sin esto conservaría el color normal y desaparecería sobre el
+     * relleno de acento. */
+    text-color:       inherit;
+
+    /* Resalta en negrita el trozo que coincide con lo tecleado. Sin color
+     * propio a propósito: uno fijo sería ilegible en uno de los dos estados. */
+    highlight:        bold;
+}
+
+/* --- Avisos ------------------------------------------------------------------ */
+message {
+    padding:          8px 10px;
+    background-color: @field;
+    border-radius:    10px;
+}
+
+textbox {
+    text-color:       @fg;
+    vertical-align:   0.5;
+}
+
+error-message {
+    padding:          12px;
+    background-color: @field;
+    border-radius:    10px;
+    text-color:       @urgent;
+}

@@ -644,6 +644,15 @@ un único listener es justamente lo que permite garantizar el orden.
   - **bin** → `dotfiles/bin/` (enlaza `theme-apply` en `~/.local/bin`, que está
     en el PATH de la sesión: así Hyprland lo invoca por nombre y no depende de
     dónde esté clonado el repo).
+- **Paquete Stow añadido por la tarea 3.2** (2026-08-28):
+  - **rofi** → `dotfiles/rofi/` (`config.rasi`). Décimo paquete. Nace dentro del
+    tema: no llega a tener colores propios. **No añade ningún requisito a
+    `install/services.sh`** (ver 6.1 del roadmap): no tiene servicio ni
+    activación D-Bus, lo invoca un bind de `hyprland.lua` —que se versiona— y
+    todo lo demás cae dentro de paquetes Stow. Es el segundo componente del
+    proyecto, tras dunst, cuyo autoarranque se restaura solo. `rofi` ya
+    figuraba en `packages/pacman-explicit.txt`, así que los inventarios no
+    cambian.
 - **Paquetes que dejaron de enlazar parte de su config**, porque su formato no
   admite incluir un fragmento y se genera entera (§18): `waybar` (conserva solo
   `claude-usage.sh`), `wlogout` (conserva solo `layout`) y `fastfetch` (que por
@@ -1264,7 +1273,21 @@ regenerar el tema.**
 ⚠️ Dos paquetes estaban enlazados como DIRECTORIO COMPLETO (`wlogout` y
 `fastfetch`), con lo que cualquier artefacto habría caído dentro del repo. Se
 reconvirtieron a enlaces por archivo con `stow -D X && stow --no-folding X`.
-`swappy` sigue plegado, pero no genera nada; si algún día lo hiciera, mismo paso.
+
+**Siguen plegados DOS, no uno** (corregido el 2026-08-28: aquí antes solo se
+citaba `swappy`, y era una omisión, no un descuido inocuo — quien leyera esto
+buscando dónde podía filtrarse un artefacto se habría dejado el más importante):
+
+- **`swappy`** — no genera nada.
+- **`matugen`** — `~/.config/matugen` es un enlace al directorio del repositorio.
+  Es lo que hace que una plantilla nueva se vea sin volver a ejecutar Stow, y hoy
+  es inofensivo porque matugen **lee** de ahí y no escribe nunca dentro: sus
+  salidas van a los `output_path`, que apuntan a otros directorios. Pero es el
+  paquete con más papeletas de romper la regla de oro si algún día se le
+  configurase una salida relativa a su propio directorio.
+
+Si cualquiera de los dos empezara a generar algo, mismo paso: `stow -D X &&
+stow --no-folding X`.
 
 ### Reparto: quién conserva su config y quién se genera entera
 
@@ -1276,6 +1299,7 @@ No es una preferencia, lo decide **lo que cada formato permite**:
 | hyprlock | `source =` de hyprlang | Config en Stow + fragmento generado |
 | Hyprland | `dofile` de Lua | Config en Stow + tabla generada |
 | Kitty | `include` | Config en Stow + fragmento generado |
+| rofi | `?import` de rasi | Config en Stow + fragmento generado |
 | **Waybar** | GTK CSS | **Config generada entera** |
 | **wlogout** | GTK CSS | **Config generada entera** (el `layout` sí sigue en Stow) |
 | **fastfetch** | JSONC sin `include` | **Config generada entera** |
@@ -1286,12 +1310,103 @@ de `tokens.toml` es generar la hoja completa. Y fastfetch no admite un segundo
 archivo — su ayuda dice que los config "are merged", pero al pasarle dos responde
 `Error: only one config file can be loaded`.
 
+#### rofi: por qué su `?import` no puede leer del repositorio
+
+Se sumó con la tarea 3.2 (2026-08-28) y encaja en el patrón de dunst/kitty, pero
+con dos verificaciones propias que conviene no repetir a ciegas:
+
+- **La interrogante de `?import` no es una errata.** Hace la importación
+  OPCIONAL: si el artefacto no existe —repo recién clonado, Stow hecho y matugen
+  aún sin ejecutar—, rofi arranca con su tema de fábrica en vez de abortar. Es el
+  equivalente del `pcall` de Hyprland. Un error de SINTAXIS dentro del archivo
+  sigue siendo un error, que es lo que se quiere. Rofi **no
+  dependería** de `theme/fallback/` para arrancar —a diferencia de Waybar,
+  wlogout y fastfetch, conserva su config versionada y se degrada solo—, pero
+  entra igualmente en la reserva porque `--save-fallback` la construye a partir
+  de los `output_path` del `config.toml`, no de una lista escrita a mano. Es
+  deliberado: así un repo recién clonado abre el lanzador ya con la paleta del
+  proyecto en vez de con el tema CLARO de fábrica.
+- **Un import se resuelve junto al ENLACE, no junto a su destino.** El manual
+  dice que se busca primero «en el directorio del archivo que lo incluye», y
+  `config.rasi` es un enlace de Stow que apunta al repositorio. Comprobado el
+  2026-08-28 con un montaje de prueba: con el archivo junto al enlace lo
+  encuentra; junto al destino **no lo encuentra y no protesta**. O sea que rofi
+  NO resuelve el enlace — igual que kitty, y al revés que hyprlock, que exigió
+  ruta absoluta. Aquí juega a favor: es imposible que ese import acabe leyendo
+  algo de dentro del repositorio, ni aunque un día apareciera ahí un
+  `theme.rasi`.
+
+⚠️ **Y una cuarta, que costó dos intentos: en rofi hay que declarar los NUEVE
+estados de fila, no solo los que quieres cambiar.** rofi cruza tres estados de
+fila (`normal` / `alternate` / `selected`) con tres de entrada (`normal` /
+`urgent` / `active`), y **rellena con su tema de fábrica —que es CLARO— todo lo
+que la plantilla no sobrescriba**. En el primer intento se declaró solo
+`text-color` y se olvidaron los `alternate.*`: el resultado fue una lista con el
+fondo beige del tema por defecto y encima el texto casi blanco del tema propio,
+o sea filas alternas legibles y filas normales invisibles. No es un fallo de
+color, es un fallo de COBERTURA. Si se añade un color, se añade en los nueve.
+
+⚠️ **Dos trampas de sintaxis del .rasi, las dos silenciosas para las
+comprobaciones obvias:**
+
+1. `border` es `{Distancia} {Estilo}` y **no admite el color detrás**:
+   `border: 2px solid transparent` aborta el tema entero con
+   `unexpected Transparent, expecting property close (';')`. El color va en
+   `border-color`.
+2. **No se puede concatenar `@variable` con un sufijo de alfa.** `@urgent` más
+   `26` se lee como el nombre de variable `urgent26` y rofi arranca avisando de
+   que no resuelve. Los colores translúcidos se declaran ya con su alfa en el
+   bloque `*`, donde los compone la plantilla.
+
+**Y ninguna de las dos la enseña `rofi -dump-theme`, que devuelve stderr vacío**;
+la primera la caza `rofi -no-config -theme ~/.config/rofi/theme.rasi
+-dump-theme`, y la segunda **solo se ve abriendo rofi**. La verificación buena
+de un cambio de tema en rofi es abrirlo y mirarlo.
+
+### Las transparencias de rofi son las de Waybar, a propósito
+
+`.rasi` **no tiene la función `alpha()` de GTK CSS**, así que donde Waybar
+escribe `alpha(@accent, opacity_active)` aquí hay que pegar el alfa al color como
+sufijo hexadecimal. Desde la tarea 3.2, `theme-apply.sh` calcula ese sufijo para
+**todas** las opacidades de `tokens.toml` y no solo para `surface`
+(`opacity_surface_hex` conserva su nombre, así que las plantillas anteriores no
+se enteran). El reparto copia el de las píldoras de workspace de la barra, para
+que «lo seleccionado» se vea igual en toda la sesión:
+
+| Papel | Opacidad | Equivalente en Waybar |
+|---|---|---|
+| Superficie flotante | `surface` (0.80) | la isla de la barra |
+| Fila seleccionada | `active` (0.15) | workspace en uso |
+| Campo de búsqueda | `separator` (0.08) | hover / divisores |
+| Barra de scroll | `hint` (0.35) | contorno de workspace con ventanas |
+
+La fila seleccionada lleva además texto y borde de acento, exactamente como el
+workspace en uso — que es el único elemento de la barra con fondo propio.
+
+Y una tercera, que es la razón de que su fragmento lleve un bloque
+`configuration { }` además de colores: **rofi honra la configuración que le
+llega por `?import`**, verificado porque tras importarlo `rofi -dump-config`
+devuelve la clave puesta y sin comentar. Eso permite que los rótulos de los
+modos («Aplicaciones», «Ventanas», «Archivos») salgan de `theme/strings.toml`
+como los de hyprlock, en vez de quedarse escritos a mano en un segundo sitio.
+
+⚠️ **La unidad de la fuente de rofi es el PÍXEL, no el punto, y a propósito.**
+Pango lee un número suelto como puntos, y el DPI que usaría rofi se lo calcula
+él solo: divide los 2560 px del panel entre la escala ENTERA que ve —2, porque
+redondea el 1.60 de Hyprland— y entre los 340 mm, lo que da 96 dpi. Hoy da igual
+(medido: `13px` y `10` producen exactamente la misma altura, 146 px lógicos con
+cinco filas), pero ese 96 es frágil: si la escala del panel bajara a 1.0, la
+escala entera pasaría a 1, el DPI derivado saltaría a ~191 y los PUNTOS casi
+duplicarían la letra. Los píxeles no se mueven, y además son la misma unidad que
+las distancias del `.rasi`. Ver el bloque «Lanzador (rofi)» de `tokens.toml`.
+
 ### Artefactos (ninguno se versiona)
 
 ```
 ~/.config/waybar/style.css · config.jsonc      ~/.config/hypr/theme.conf · theme.lua
 ~/.config/dunst/dunstrc.d/50-theme.conf        ~/.config/kitty/theme.conf
 ~/.config/wlogout/style.css · icons/*.png      ~/.config/fastfetch/config.jsonc
+~/.config/rofi/theme.rasi
 ```
 
 `~/.config/wlogout/icons/` es **el único punto del tema que genera binarios**:
@@ -1312,7 +1427,24 @@ canal alfa y por tanto el recorte.
 artefactos (`--save-fallback` la actualiza, `--fallback` la instala). Existe
 porque Waybar, wlogout y fastfetch NO tienen config versionada: un repo recién
 clonado, con Stow hecho y matugen aún sin ejecutar, se quedaría sin barra y sin
-menú de apagado. Hyprland tiene además su propio respaldo en un `pcall`, porque
+menú de apagado.
+
+> ⚠️ **La reserva se queda vieja en silencio si nadie la regenera.** Al añadir
+> rofi (3.2, 2026-08-28) se descubrió que el `MANIFEST` **no incluía `wlogout`**
+> —añadido en su día sin volver a ejecutar `--save-fallback`— y que la copia de
+> fastfetch ya no coincidía con el artefacto. Nada avisaba: el fallo solo se
+> habría visto el día de una restauración, que es justo el día en que no quieres
+> descubrirlo. **Al añadir o cambiar una plantilla, toca `--save-fallback`.**
+
+> ⚠️ **La reserva CONGELA rutas absolutas, y eso es inherente a lo que es.** Un
+> artefacto puede llevar `/home/elok` dentro —`hypr__theme.conf` guarda la ruta
+> del fondo, y `wlogout__style.css` las de sus cuatro iconos, porque GTK no
+> expande `~` dentro de un `url()`—. En una restauración con otro nombre de
+> usuario esas rutas no existirían: el fondo del bloqueo caería a color liso y
+> los botones de apagado saldrían sin icono. **No se arregla, se sobrescribe**:
+> a la primera ejecución de `theme-apply` los artefactos se regeneran con el
+> home correcto. La reserva es un puente hasta esa primera ejecución, no una
+> config portable. Hyprland tiene además su propio respaldo en un `pcall`, porque
 si a él le falta el tema no te quedas sin colores: te quedas sin gestor de
 ventanas configurado.
 

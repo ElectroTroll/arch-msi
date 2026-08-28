@@ -1,0 +1,139 @@
+/* config.rasi — rofi · MSI Summit E16 AI Studio (arch-msi)
+ * Fecha: 2026-08-28 · Tarea 3.2, sobre la arquitectura de tema de la 3.0.
+ * Verificado con rofi 2.0.0-1 (repositorio `extra`).
+ *
+ * AQUÍ VA EL COMPORTAMIENTO; el aspecto viene generado.
+ *
+ * Colores, tipografía y medidas los pone matugen en `theme.rasi`, que es un
+ * ARTEFACTO: archivo real junto a este enlace, fuera del repositorio y fuera de
+ * Stow. La plantilla que lo genera sí está versionada, en
+ * dotfiles/matugen/.config/matugen/templates/rofi-theme.rasi, y los valores
+ * salen de theme/tokens.toml y theme/strings.toml.
+ *
+ * ⚠️ ESTA NO ES LA rofi 1.7 DE LA MAYORÍA DE LOS TUTORIALES. La 2.0 fusionó río
+ * arriba el soporte Wayland del fork de lbonn, así que `rofi-wayland` ya no
+ * existe como paquete aparte y esto corre en layer-shell NATIVO
+ * (`zwlr_layer_shell_v1`), sin XWayland. De ahí que no haga falta ni un solo
+ * apaño de los que circulan para «rofi borroso en Hyprland».
+ */
+
+configuration {
+    /* --- Modos ---------------------------------------------------------
+     * Tres, y se ciclan DENTRO de la ventana con Ctrl+Tab (o Shift+→ /
+     * Shift+←) sin salir ni volver a pulsar el atajo. Por eso Hyprland
+     * mantiene un único bind, `Super + R`, igual que antes de esta tarea:
+     * ver hyprland.lua y docs/keybindings.md.
+     *
+     *   drun         aplicaciones instaladas, desde los .desktop (~30 aquí)
+     *   window       ventanas abiertas en cualquier workspace
+     *   filebrowser  archivos desde ~, abriendo con xdg-open
+     *
+     * ⚠️ `window` FUNCIONA en Wayland, en contra de lo que sugiere el valor
+     * por defecto de `window-command` (`wmctrl -i -R {window}`, que es X11 y
+     * ni siquiera está instalado en este equipo). rofi 2.0 implementa
+     * `zwlr_foreign_toplevel_manager_v1` y Hyprland lo expone; ese default
+     * solo se usaría para ejecutar un comando SOBRE la ventana, no para
+     * saltar a ella. El binario trae incluso el error explícito
+     *     "Unable to initialize Window mode: Wayland compositor does not
+     *      support wlr-foreign-toplevel-management protocol"
+     * que es justo lo que NO ocurre aquí.
+     *
+     * Descartados a propósito: `run` (2.882 binarios del PATH, casi todo
+     * ruido, y con `Super + Q` hay terminal a un golpe de tecla), `ssh` (no
+     * hay uso, y sacaría los hosts de ~/.ssh/known_hosts a un lanzador) y
+     * `recursivebrowser` (recorre el árbol entero; lento en un $HOME real).
+     * `keys` —la chuleta de atajos internos de rofi— se deja FUERA del ciclo
+     * para no meter una cuarta parada entre drun, window y filebrowser;
+     * sigue disponible a demanda con `rofi -show keys`. */
+    modes: "drun,window,filebrowser";
+
+    /* --- Iconos --------------------------------------------------------
+     * papirus-icon-theme, ya instalado. La variante Dark es la que tiene
+     * contraste sobre el fondo oscuro del tema; la clara se pierde. */
+    show-icons: true;
+    icon-theme: "Papirus-Dark";
+
+    /* Icono para las .desktop que no declaran ninguno, en vez de dejar el
+     * hueco vacío y desalinear la columna de texto. */
+    application-fallback-icon: "application-x-executable";
+
+    /* --- Búsqueda ------------------------------------------------------
+     * `normalize-match` es lo que hace que "configuracion" encuentre
+     * "Configuración". En un escritorio en castellano no es un lujo: sin
+     * esto hay que teclear las tildes. */
+    normalize-match: true;
+
+    /* Coincidencia difusa + ordenación por parecido: escribir "ffx" o "frfx"
+     * sigue encontrando Firefox. `sort` sin `sorting-method` ordenaría
+     * alfabéticamente, que con matching difuso deja lo más relevante abajo. */
+    matching: "fuzzy";
+    sort: true;
+    sorting-method: "fzf";
+
+    /* Distingue mayúsculas SOLO si tú las escribes. */
+    case-smart: true;
+
+    /* --- Terminal ------------------------------------------------------
+     * ⚠️ RUTA FRÁGIL CERRADA A PROPÓSITO. Las .desktop con `Terminal=true`
+     * (3 en este equipo) las lanza `rofi-sensible-terminal`, que recorre una
+     * lista fija: $TERMINAL, x-terminal-emulator, urxvt, rxvt, st, …, xterm,
+     * …, konsole, alacritty y solo entonces kitty. Hoy acierta por accidente,
+     * porque kitty es el único instalado; el día que algo arrastre `xterm`
+     * como dependencia, esas apps se abrirían en xterm SIN UN SOLO AVISO.
+     * Fijarlo aquí lo vuelve determinista. Es el mismo `terminal = "kitty"`
+     * de hyprland.lua, y si algún día se cambia hay que cambiarlo en los dos. */
+    terminal: "kitty";
+
+    /* --- Formato de las filas ------------------------------------------
+     * El nombre genérico entre paréntesis y en pequeño ayuda a distinguir
+     * apps con nombres opacos. Es el formato de fábrica, sin la cursiva. */
+    drun-display-format: "{name} [<span size='small' weight='light'>({generic})</span>]";
+
+    /* En el modo `window`, clase y título. Se quita el `{w}` (workspace) del
+     * formato de fábrica: esa columna llega vacía por wlr-foreign-toplevel,
+     * que no expone el workspace, y dejaría una sangría fantasma. */
+    window-format: "{c}   {t}";
+
+    /* --- Comportamiento ------------------------------------------------ */
+    /* Al llegar al final de la lista, vuelve al principio. */
+    cycle: true;
+
+    /* El ratón NO cambia la selección al pasar por encima: con el teclado ya
+     * navegando, mover el ratón sin querer robaría la fila seleccionada. */
+    hover-select: false;
+
+    /* Un clic fuera de la ventana la cierra. */
+    click-to-exit: true;
+
+    /* Historial de lo más usado, para que lo de siempre suba solo. El archivo
+     * vive en ~/.cache/rofi, que no se versiona. */
+    disable-history: false;
+    max-history-size: 25;
+
+    filebrowser {
+        directories-first: true;
+        sorting-method:    "name";
+    }
+}
+
+/* --- Tema -------------------------------------------------------------------
+ * VA AL FINAL a propósito: rofi aplica en orden, así que lo generado tiene la
+ * última palabra sobre el aspecto y este archivo puede quedarse solo con el
+ * comportamiento. (Al revés que kitty, donde el `include` va primero porque
+ * allí interesaba poder pisar el tema desde la config.)
+ *
+ * `?import` con interrogante, no `@import`: la interrogante hace la importación
+ * OPCIONAL. Si el artefacto no existe —repo recién clonado, Stow hecho y
+ * matugen todavía sin ejecutar—, rofi arranca con su tema de fábrica en vez de
+ * abortar. Es el equivalente del `pcall` que protege a Hyprland. Un error de
+ * SINTAXIS dentro del archivo sí sigue siendo un error, que es lo que se quiere.
+ *
+ * ⚠️ Y SE RESUELVE JUNTO A ESTE ENLACE, NO JUNTO A SU DESTINO. El manual dice
+ * que un import se busca primero «en el directorio del archivo que lo incluye»,
+ * y este archivo es un enlace de Stow que apunta al repositorio. Comprobado el
+ * 2026-08-28 con un montaje de prueba en /tmp: con el archivo junto al ENLACE
+ * lo encuentra; con el archivo junto al DESTINO no lo encuentra y no protesta.
+ * O sea que rofi NO resuelve el enlace — se comporta como kitty y al revés que
+ * hyprlock, que exigió ruta absoluta. Aquí eso juega a favor: es imposible que
+ * este import acabe leyendo algo de dentro del repositorio. */
+?import "theme"

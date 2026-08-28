@@ -36,3 +36,29 @@ fail = "Contraseña incorrecta · intento $ATTEMPTS"
 
 # Mientras PAM comprueba la contraseña.
 verifying = "Comprobando…"
+
+
+# --- Lanzador (rofi) ---------------------------------------------------------
+#
+# Rótulo de cada modo, que rofi pinta a la izquierda del campo de búsqueda, y el
+# texto gris del campo vacío. Están aquí y no en `config.rasi` por la misma
+# razón que los de hyprlock: los textos de la interfaz se declaran UNA vez, en
+# este archivo, y llegan a las plantillas con el prefijo `str_`.
+#
+# ⚠️ Eso obliga a que viajen en el ARTEFACTO generado, no en la config enlazada
+# por Stow, así que el fragmento de tema de rofi lleva un pequeño bloque
+# `configuration { }` además de los colores. Verificado el 2026-08-28 que rofi
+# honra un `configuration` que llega por `?import`: `rofi -dump-config` devuelve
+# la clave puesta y sin comentar.
+#
+# Consecuencia asumida: en un repo recién clonado, con Stow hecho pero matugen
+# todavía sin ejecutar, rofi cae a sus rótulos de fábrica en inglés ("drun",
+# "window", "filebrowser") en vez de fallar. Es la misma degradación elegante
+# que el `?import` da a los colores.
+[rofi]
+prompt_drun        = "Aplicaciones"
+prompt_window      = "Ventanas"
+prompt_filebrowser = "Archivos"
+
+# Texto del campo de búsqueda mientras está vacío.
+placeholder = "Escribe para buscar…"

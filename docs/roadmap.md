@@ -161,7 +161,7 @@ validado.
 |---|-------|----------|--------|
 | 3.0 | ~~**Tema centralizado** con matugen~~ **[OK] Completada** | Alto | Medio |
 | 3.1 | ~~**Kitty** — tema, fuente, opacidad~~ **[OK] Completada** | Bajo | Nulo |
-| 3.2 | **Rofi** — tema y comportamiento | Bajo | Nulo |
+| 3.2 | ~~**Rofi** — tema y comportamiento~~ **[OK] Completada** | Bajo | Nulo |
 | 3.3 | **yazi** — atajos, previsualizaciones | Bajo | Nulo |
 | 3.4 | **Dolphin** — solo archivos versionables | Medio | Bajo |
 | 3.5 | **Theming GTK/Qt coherente** con `nwg-look` | Medio | Bajo |
@@ -181,13 +181,40 @@ textos), y los colores que siguen al fondo de pantalla los pone **matugen**.
 Arquitectura completa, trampas incluidas, en `docs/PROJECT_CONTEXT.md` §18.
 
 **Con esto, TODO el escritorio está dentro del tema**: Waybar, dunst, hyprlock,
-Hyprland, Kitty, fastfetch y wlogout.
+Hyprland, Kitty, fastfetch y wlogout — y desde la 3.2, también Rofi.
 
 **3.1 Kitty.** **[OK] Completada (2026-08-27).** Config propia como noveno
 paquete Stow, y nace ya dentro del tema: nunca llega a tener colores cableados.
 Los 16 colores ANSI sí son fijos, y por una medición: la paleta base16 de matugen
 devuelve ocho azules casi negros indistinguibles entre sí, con lo que `ls` y
 `git diff` serían ilegibles. Detalle en §18.
+
+**3.2 Rofi.** **[OK] Completada (2026-08-28).** Décimo paquete Stow, y como
+Kitty nace ya dentro del tema: nunca llega a tener colores cableados. Tres modos
+en un solo bind —`drun`, `window` y `filebrowser`, ciclados con `Ctrl+Tab`—,
+centrada, una columna, iconos de Papirus-Dark a 28 px. Detalle en
+`docs/PROJECT_CONTEXT.md` §18.
+
+> **No es la rofi 1.7 de los tutoriales, y eso ahorra trabajo.** La 2.0 fusionó
+> río arriba el soporte Wayland del fork de lbonn, así que `rofi-wayland` ya no
+> existe como paquete aparte: esto corre en layer-shell NATIVO, sin XWayland, y
+> ninguno de los apaños que circulan para «rofi borroso en Hyprland» hace falta.
+> Tampoco despierta la dGPU: no enlaza EGL/GL/gbm, dibuja por software sobre
+> `wl_shm`.
+
+> ⚠️ **El `-h` de rofi miente sobre el tamaño de la pantalla.** Anuncia
+> `scale: 2 · size: 2560,1600 · dpi: 96,92`, y ninguno de esos números es la
+> unidad del tema: rofi 2.0 solo enlaza `wl_output`, ni `xdg-output` ni escala
+> fraccional, así que ve el modo físico y la escala ENTERA (Hyprland redondea
+> 1.6 a 2). Lo real se midió con `hyprctl layers`: **1 px del `.rasi` = 1 px
+> lógico**, y los porcentajes son sobre los 1600×1000 lógicos. Misma unidad que
+> Waybar. De ahí que la fuente se declare en `px` y no en puntos — ver §18.
+
+> **El modo `window` SÍ funciona en Wayland**, en contra de lo que sugiere su
+> `window-command` por defecto (`wmctrl`, que es X11 y ni siquiera está
+> instalado). rofi implementa `zwlr_foreign_toplevel_manager_v1` y Hyprland lo
+> expone; ese default solo se usaría para ejecutar un comando SOBRE la ventana,
+> no para saltar a ella.
 
 **3.8 fastfetch.** **[OK] Completada (2026-08-27).** Config propia, dentro del
 tema, y con el ASCII de Arch dejando de romperse al estrechar la terminal: la
@@ -200,10 +227,12 @@ Ya está instalada la fuente `ttf-jetbrains-mono-nerd` y el tema de iconos
 En 3.4, cuidado: Dolphin genera muchos archivos de estado y cachés. Versionar
 solo lo relevante (`dolphinrc`, atajos), nunca el directorio completo.
 
-Rofi (3.2) y yazi (3.3) heredan la ventaja de la 3.0: cuando se configuren,
-nacerán con plantilla y no llegarán a tener colores propios. Rofi admite
-`@import` y yazi no, así que el primero conservará su config enlazada por Stow y
-el segundo se generará entero — el mismo reparto que explica §18.
+Rofi (3.2) y yazi (3.3) heredan la ventaja de la 3.0: se configuran con
+plantilla y no llegan a tener colores propios. Rofi admite `@import` y yazi no,
+así que el primero conserva su config enlazada por Stow y el segundo se generará
+entero — el mismo reparto que explica §18. **Confirmado al hacer la 3.2**: rofi
+usa además la variante OPCIONAL, `?import`, que si el artefacto falta le deja
+arrancar con el tema de fábrica en vez de abortar.
 
 **3.6 Spotify.** Instalado desde AUR (`paru -S spotify`) el 2026-08-02. El
 2026-08-03 se creó a mano `~/.config/spotify-flags.conf` para forzar Wayland

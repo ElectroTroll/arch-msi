@@ -17,6 +17,14 @@
 | Super + E  | Abrir gestor de archivos (`dolphin`)                  |
 | Super + R  | Abrir lanzador de aplicaciones (`rofi -show drun`)    |
 
+> **`Super + R` sigue siendo un único bind, pero desde la tarea 3.2 lleva a tres
+> modos.** Rofi abre en `drun` (aplicaciones) y dentro de la ventana se cicla a
+> `window` (ventanas abiertas en cualquier workspace) y `filebrowser` (archivos,
+> desde `~`) con **`Ctrl + Tab`** — o `Shift + →` / `Shift + ←`—, sin cerrar ni
+> volver a pulsar el atajo. Son atajos INTERNOS de rofi, no binds de Hyprland,
+> así que no aparecen en `hyprctl binds`. La lista completa de teclas de rofi se
+> consulta con `rofi -show keys`.
+
 ## Gestión de ventanas
 
 | Atajo               | Acción                                                        |
