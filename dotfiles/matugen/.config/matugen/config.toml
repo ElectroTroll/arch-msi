@@ -62,3 +62,14 @@ output_path = "~/.config/hypr/theme.lua"
 [templates.fastfetch]
 input_path  = "~/.config/matugen/templates/fastfetch-config.jsonc"
 output_path = "~/.config/fastfetch/config.jsonc"
+
+# wlogout: como Waybar, GTK CSS no tiene variables numéricas, así que se genera
+# la hoja entera y `style.css` sale de Stow. El `layout` no es temático y sigue
+# enlazado.
+#
+# ⚠️ Su ~/.config/wlogout estaba enlazado como DIRECTORIO COMPLETO, con lo que
+# este artefacto habría acabado dentro del repositorio. Se reconvirtió a enlaces
+# por archivo el 2026-08-28 con `stow -D wlogout && stow --no-folding wlogout`.
+[templates.wlogout]
+input_path  = "~/.config/matugen/templates/wlogout-style.css"
+output_path = "~/.config/wlogout/style.css"

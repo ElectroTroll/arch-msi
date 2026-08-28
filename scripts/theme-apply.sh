@@ -144,6 +144,11 @@ for k in list(flat):
     if isinstance(v, str) and v.startswith("#") and len(v) == 7:
         flat[f"{k}_stripped"] = v[1:]
 
+#   GTK no expande `~` dentro de las url() de una hoja de estilos, así que las
+#   plantillas necesitan la ruta absoluta del home.
+import os
+flat["home"] = os.path.expanduser("~")
+
 json.dump(flat, open(sys.argv[2], "w"), ensure_ascii=False)
 PY
 
@@ -280,6 +285,27 @@ for o in "${OUTPUTS[@]}"; do
     cp "$src" "$dest"
     echo "theme-apply: escrito $dest"
 done
+
+# --- 5b. Iconos de wlogout ----------------------------------------------------
+# Los iconos que trae el paquete son PNG de color lila (#d3bdf7), un tono que no
+# sale de ninguna parte del tema. GTK3 NO sabe teñir una imagen de fondo desde
+# CSS, así que la única vía es generar copias recoloreadas.
+#
+# Es el único punto de todo el tema que produce un BINARIO en vez de texto. Van
+# a ~/.config/wlogout/icons/, que no existe en el repositorio, así que la regla
+# de oro se sigue cumpliendo.
+WL_ICONS="$HOME/.config/wlogout/icons"
+if command -v magick >/dev/null && [ -d /usr/share/wlogout/icons ]; then
+    mkdir -p "$WL_ICONS"
+    for icono in lock suspend reboot shutdown logout hibernate; do
+        origen="/usr/share/wlogout/icons/$icono.png"
+        [ -f "$origen" ] || continue
+        # -colorize 100 sustituye el color conservando el canal alfa, que es lo
+        # que mantiene el icono recortado en vez de un cuadrado de color.
+        magick "$origen" -fill "$ACCENT" -colorize 100 "$WL_ICONS/$icono.png" 2>/dev/null || true
+    done
+    echo "theme-apply: iconos de wlogout teñidos con $ACCENT"
+fi
 
 # --- 6. Recargas -------------------------------------------------------------
 # Cada aplicación necesita un trato distinto.

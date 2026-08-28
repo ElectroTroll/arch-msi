@@ -63,6 +63,23 @@ border = 2
 # gráfico con peso propio, que es justo lo contrario de lo que hacen.
 border_hairline = 1
 
+# RADIO GRANDE, para superficies grandes. El radio de 10 está pensado para
+# elementos de barra (píldoras de 26 px, tooltips, notificaciones); en los
+# botones del menú de apagado, que miden 180x180, se queda tan corto que
+# parecen cuadrados. Este es el que usan ellos.
+radius_lg = 26
+
+# LADO DEL BOTÓN del menú de apagado, en píxeles lógicos.
+#
+# ⚠️ ESTO ES LO QUE LOS HACE CUADRADOS. wlogout los monta en una rejilla GTK que
+# los estira para llenar el hueco, y el reparto no sale simétrico: medido el
+# 2026-08-28, los tres primeros salían ~180 de ancho y el de apagar bastante
+# más, con lo que ese quedaba claramente rectangular. Fijando `min-width` y
+# `min-height` al MISMO valor, los cuatro miden igual pase lo que pase con el
+# reparto. Si algún día se ven cortados, hay que subir el margen del `on-click`
+# de Waybar (-m), no bajar esto.
+button_size = 150
+
 # Espaciado interno. Los valores de hoy ya eran coherentes entre sí; se nombran
 # para que dejen de ser números sueltos repartidos por cinco archivos.
 pad_2xs = 2   # separación entre las píldoras de workspace
@@ -107,6 +124,16 @@ bar_margin = 6
 # la plantilla como `opacity_surface_dunst`. Aquí se declara una sola vez y en
 # una sola unidad; que cada aplicación tenga su capricho es problema del script.
 surface   = 0.80
+
+# Botones del menú de apagado. Más transparentes que las superficies flotantes
+# (0.80) a propósito: se dibujan SOBRE el velo de pantalla completa, que ya
+# oscurece el escritorio, así que aquí la transparencia no compite con ningún
+# texto que haya que leer — solo con un icono y una etiqueta.
+button    = 0.55
+
+# Anillo de foco del teclado en el menú de apagado. Se ve, pero sin gritar: es
+# una guía de navegación, no un estado que haya que vigilar.
+focus     = 0.65
 
 faint     = 0.25   # contorno de los workspaces vacíos: presente, pero apenas
 separator = 0.08   # líneas divisorias y hover de los workspaces
