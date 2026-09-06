@@ -101,6 +101,22 @@ hl.on("hyprland.start", function ()
     -- ~/.local/bin, que está en el PATH de la sesión (verificado en el entorno
     -- del propio Hyprland). Así esto no depende de dónde esté clonado el repo.
     hl.exec_cmd("theme-apply")
+
+    -- CONECTA PROTONVPN al servidor más rápido. Réplica del comportamiento que
+    -- el cliente de Windows trae de serie y que el de Linux NO tiene: no existe
+    -- ningún ajuste de auto-conexión en `settings.json` ni en
+    -- `protonvpn config set` (comprobado el 2026-09-06), y la conexión que crea
+    -- el cliente vive en /run/NetworkManager/, o sea en tmpfs, así que no
+    -- sobrevive al reinicio y NM no tiene nada que autoconectar.
+    --
+    -- NO conecta a ciegas: el script espera a que NetworkManager declare
+    -- conectividad `full`, y si detecta un PORTAL CAUTIVO se aparta y avisa por
+    -- notificación. Conectar antes de pasar el portal dejaría la sesión sin red
+    -- y sin poder autenticarse. Detalle completo en el propio script.
+    --
+    -- Igual que theme-apply, se invoca POR NOMBRE: lo enlaza el paquete Stow
+    -- `bin` en ~/.local/bin, que está en el PATH de la sesión.
+    hl.exec_cmd("vpn-autoconnect")
 end)
 
 
