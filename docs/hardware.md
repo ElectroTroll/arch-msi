@@ -34,6 +34,22 @@ equipo real. Salvo donde se indica, todos los datos provienen de `hostnamectl`,
   · driver `nvidia` (open) · 8 GB VRAM
 - Audio HDMI/DP NVIDIA `[10de:22be]` (`snd_hda_intel`)
 
+### Reparto de salidas de vídeo
+
+Verificado el 2026-09-06 con un monitor externo conectado.
+
+| Nodo DRM | GPU | Conectores |
+|----------|-----|------------|
+| `card1` / `renderD128` | Intel Arc (`i915`) | `eDP-1` (panel interno) · `DP-1`, `DP-2`, `DP-3` (Type-C, **sin verificar**) |
+| `card2` / `renderD129` | NVIDIA RTX 4060 (`nvidia`) | `HDMI-A-1` |
+
+> ⚠️ **El puerto HDMI está cableado a la NVIDIA**, no a la Intel. No es
+> configurable —ni módulo, ni BIOS, ni variables de entorno—: usar el HDMI
+> despierta la dGPU y la deja **fuera de Runtime D3** (~2,1–2,3 W extra, 45 °C)
+> mientras el cable esté puesto. El renderizado del escritorio sigue
+> haciéndose en la Intel; la NVIDIA solo hace el *scanout*. Medidas y detalle
+> en [`PROJECT_CONTEXT.md`](PROJECT_CONTEXT.md) §6.
+
 ## Acelerador de IA
 
 - **NPU Intel** (Meteor Lake) `[8086:7d1d]` · driver `intel_vpu`
@@ -96,6 +112,21 @@ Verificado con `hyprctl monitors` y `hyprctl devices` (2026-07-22).
 - **Lápiz activo:** soportado vía tablet `elan9024:00-04f3:4297-stylus`.
 - **Touchpad:** `elan0305:00-04f3:31fd-touchpad` · **natural scrolling
   activado** (scroll factor `-1.00`).
+
+### Monitor externo
+
+Verificado con `hyprctl monitors` (2026-09-06).
+
+- **Salida:** `HDMI-A-1` — **conector de la dGPU NVIDIA** (ver el aviso en
+  «Reparto de salidas de vídeo»).
+- **Monitor de prueba:** LG UltraGear, serie `310NTCZ9V555` · 600×340 mm.
+- **En uso:** 2560×1440 a **143.93 Hz** · escala 1 · posición `1600x0` · sRGB ·
+  VRR desactivado.
+- **Máximos admitidos:** 3840×2160@59.94 Hz · 2560×1440@120 Hz ·
+  1920×1080@119.88 Hz.
+- Lo recoge la regla genérica `output = ""` de `hyprland.lua`
+  (`mode = preferred`, `position = auto`, `scale = 1`); no tiene entrada propia
+  ni la necesita.
 
 ## Firmware / BIOS
 

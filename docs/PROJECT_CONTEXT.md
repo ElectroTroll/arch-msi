@@ -1,7 +1,10 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-08-28 (**tema centralizado con matugen** — §18 nueva,
+Última actualización: 2026-09-06 (**monitor externo por HDMI** — §6 documenta que
+el puerto HDMI cuelga de la dGPU y qué le cuesta eso al RTD3, §15 la ruta USB-C
+sin comprobar; medidas en `history/2026-09-06-monitor-externo-hdmi.md`). Antes:
+2026-08-28 (**tema centralizado con matugen** — §18 nueva,
 y §13 al día con los paquetes Stow que entran y salen; trampas del proceso en
 `history/2026-08-28-trampas-del-tema.md`). Antes: 2026-08-27 (**corrección de las
 vías de rescate**: tres
@@ -199,6 +202,79 @@ antes y después de la actualización de 221 paquetes).
 > despierta la GPU y falsea la lectura. Usar sysfs
 > (`/sys/bus/pci/devices/0000:01:00.*/power/`) y
 > `/proc/driver/nvidia/gpus/*/power`.
+
+### Monitor externo por HDMI: el puerto cuelga de la NVIDIA
+
+Verificado el 2026-09-06 con un LG UltraGear conectado por HDMI.
+
+**El reparto de conectores lo decide la placa, no el software:**
+
+| Nodo DRM | GPU | Conectores |
+|---|---|---|
+| `card1` / `renderD128` | Intel Arc (`i915`) `00:02.0` | `eDP-1` (panel interno) + `DP-1`, `DP-2`, `DP-3` |
+| `card2` / `renderD129` | NVIDIA RTX 4060 (`nvidia`) `01:00.0` | `HDMI-A-1` |
+
+`HDMI-A-1` **solo existe bajo `card2`**. No hay MUX ni opción de BIOS que lo
+reencamine a la iGPU: es una pista de PCB. Conectar un monitor por HDMI obliga a
+despertar la dGPU y **la mantiene fuera de RTD3 mientras el cable esté puesto**.
+
+**Lo que NO cambia: el renderizado sigue siendo Intel.** Hyprland compone los
+dos monitores en la iGPU y solo delega el *scanout* del HDMI en la NVIDIA. Del
+log de aquamarine:
+
+```
+drm: gpu /dev/dri/card1 becomes primary drm
+drm: Starting backend for /dev/dri/card2, with driver nvidia-drm with primary /dev/dri/card1
+CDRMRenderer(drm): Using device /dev/dri/card1     <- composición (Mesa Intel Arc)
+GBM: Buffer is marked as multigpu, forcing linear  <- copia entre GPUs
+CDRMRenderer(drm): Using device /dev/dri/card2     <- scanout del HDMI
+```
+
+`glxinfo -B` sigue devolviendo `Mesa Intel(R) Arc(tm) Graphics (MTL)`: PRIME
+offload intacto, sin variables de entorno forzadas. El precio de la pantalla
+externa es la copia lineal entre GPUs, no un cambio de GPU de render.
+
+**Coste medido:**
+
+| Estado | Consumo dGPU | Estado PCI |
+|---|---|---|
+| Sin HDMI (RTD3) | 0 W | `suspended` · `D3cold` |
+| Con HDMI, escritorio en reposo | **~2,1–2,3 W** | `active` · `D0` · P8 · 210 MHz · 45 °C |
+
+Los contadores de la propia sesión lo confirman sin ambigüedad: sobre 42 min de
+uptime, `runtime_suspended_time` marcaba 27,0 min (todo el rato antes de
+enchufar el cable) y `runtime_active_time` 15,8 min (desde que se enchufó). La
+correlación es exacta.
+
+`/proc/driver/nvidia/gpus/*/power` pasa de `Video Memory: Off` a
+`Video Memory: Active`. La función de audio `01:00.1` **sí** sigue suspendida
+(`D3hot`) mientras no se use el audio por HDMI.
+
+Sobre una batería de 71 Wh son ~2 W extra permanentes: perceptible en autonomía
+a lo largo de una jornada, irrelevante enchufado a la corriente. Temperaturas
+sin novedad (dGPU 45 °C, CPU package 55 °C, ventiladores 2774 RPM, que son el
+perfil por defecto de MSI y no una respuesta a la dGPU). **No es un problema que
+merezca tocar la configuración.**
+
+**[VER] Posible ruta por la iGPU: USB-C.** `card1` expone `DP-1`, `DP-2` y
+`DP-3` desconectados, que apuntan a las salidas DisplayPort alt-mode de los
+puertos Type-C (`port0` y `port1` en `/sys/class/typec/`, más un dominio
+Thunderbolt). Si el monitor entrase por uno de ellos y apareciese como
+`card1-DP-N`, la NVIDIA volvería a D3cold y desaparecería la copia entre GPUs.
+**Sin comprobar** — no se descarta que alguno de los Type-C esté también
+cableado a la dGPU. Ver §15.
+
+> **La trampa de `nvidia-smi` se reprodujo el 2026-09-06.** La primera lectura
+> del comando dio `9,49 W` y `24 %` de uso; un muestreo sostenido justo después
+> (26 lecturas en 32 s) dejó el valor real en `2,1 W` y `0 %`. El pico es el
+> propio `nvidia-smi` despertando y consultando la GPU. Con el HDMI conectado el
+> comando ya no impide medir —la GPU está despierta de todas formas—, pero **la
+> primera lectura sigue sin servir**: hay que muestrear varios segundos, o
+> quedarse en sysfs como dice el aviso de arriba.
+
+**Configuración de Hyprland:** el monitor externo lo recoge la regla genérica
+`output = ""` (`mode = preferred`, `position = auto`, `scale = 1`) de
+`hyprland.lua`. No tiene entrada propia y no hace falta que la tenga.
 
 ## 7. Entorno gráfico
 
@@ -787,6 +863,14 @@ Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
   que se sabe que `Ctrl+Alt+F3` funciona con Fn Lock, la prueba es fácil de
   hacer la próxima vez que ocurra.
 - Estado de autenticación de Claude Code (no comprobado; no exponer credenciales).
+- **[VER] Si algún puerto USB-C saca vídeo por la iGPU.** `card1` (Intel) expone
+  `DP-1`, `DP-2` y `DP-3`, que deberían corresponder a las salidas DisplayPort
+  alt-mode de los Type-C, pero **no se ha conectado nada por ahí**. Si
+  funcionan, un monitor externo por USB-C→DisplayPort evitaría despertar la
+  NVIDIA y ahorraría los ~2 W del HDMI (§6). Prueba: conectar y mirar si sale
+  como `card1-DP-N` o `card2-DP-N` en `/sys/class/drm/card*-*/status`, y si
+  `/sys/bus/pci/devices/0000:01:00.0/power/runtime_status` se queda en
+  `suspended` (2026-09-06).
 - **[VER]** hyprlock registra `Starting fade in` pese a tener
   `animations { enabled = false }` en `hyprlock.conf`. Cosmético: no se ha
   observado efecto sobre el bloqueo ni sobre el desbloqueo. Sin resolver
