@@ -229,6 +229,15 @@ tooltip label {
     color: @crit;
 }
 
+/* Indicador de VPN (módulo `network#vpn`). Waybar convierte el id que va tras
+ * la almohadilla en una CLASE CSS, no en otro id: el selector es
+ * `#network.vpn`, no `#network-vpn`. Se pinta en verde de estado porque es una
+ * confirmación de que el túnel está levantado, y el módulo solo existe cuando
+ * lo está (ver `format-disconnected` vacío en config.jsonc). */
+#network.vpn {
+    color: @ok;
+}
+
 /* --- Batería ------------------------------------------------------------ */
 
 #battery.charging,

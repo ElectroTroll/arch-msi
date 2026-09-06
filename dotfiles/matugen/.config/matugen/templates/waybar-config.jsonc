@@ -40,13 +40,18 @@
     // tenerlo todo en un sitio.
     "spacing": 0,
 
-    "modules-left": ["hyprland/workspaces"],
+    // `custom/claude` vive a la IZQUIERDA desde el 2026-09-06. Va detrás de los
+    // workspaces, no delante, por dos motivos: los workspaces siguen anclados
+    // al borde (es la referencia de navegación y la posición que tiene hecha la
+    // muscle memory), y así el módulo conserva su sitio relativo de antes —era
+    // el más interior del grupo derecho, ahora es el más interior del izquierdo.
+    "modules-left": ["hyprland/workspaces", "custom/claude"],
     "modules-center": ["clock"],
     "modules-right": [
-        "custom/claude",
         "wireplumber",
         "bluetooth",
         "network",
+        "network#vpn",
         "battery",
         "power-profiles-daemon",
         "custom/power"
@@ -188,13 +193,30 @@
     },
 
     // --- Red --------------------------------------------------------------
-    // NO se fija `interface`. Podría ponerse "wlp44s0f0", pero sería la misma
-    // clase de fragilidad que `ADP1` en hypridle.conf: un nombre de dispositivo
-    // que depende de la enumeración del kernel y que al reinstalar puede
-    // cambiar, dejando el módulo mudo sin avisar. Sin `interface`, Waybar sigue
-    // a la interfaz de la ruta por defecto y funciona igual con WiFi o cable.
+    // ⚠️ SE FIJA `interface`, Y ES UN CAMBIO DE CRITERIO. Hasta el 2026-09-06
+    // aquí NO se fijaba, con este razonamiento: un nombre de dispositivo
+    // depende de la enumeración del kernel y al reinstalar puede cambiar,
+    // dejando el módulo mudo sin avisar (la misma fragilidad que `ADP1` en
+    // hypridle.conf). Sin `interface`, Waybar sigue a la ruta por defecto y
+    // funciona igual con WiFi o cable.
+    //
+    // Lo que rompió esa premisa: ProtonVPN. Al conectar, levanta una interfaz
+    // dummy anti-fugas IPv6 (`ipv6leakintrf0`) que instala una ruta por defecto
+    // IPv6 EN LA TABLA `main`, mientras el tráfico real sale por `proton0` en
+    // una tabla de política aparte. Waybar se engancha a la dummy, que no tiene
+    // IPv4, cae en `format-linked` y la barra se queda con el icono y SIN IP.
+    // Verificado el 2026-09-06 con una barra de prueba: la autodetección
+    // devolvía `LINKED:ipv6leakintrf0` mientras `wlp*` y `proton0` daban su IP
+    // correctamente al anclarlas.
+    //
+    // El comodín `wlp*` conserva casi toda la protección del criterio viejo:
+    // sobrevive a un renombrado dentro de la familia `wlp` (que es lo que la
+    // enumeración del kernel cambia en la práctica). Lo que se pierde es el
+    // soporte automático de cable; si algún día hace falta, se añade un
+    // `network#eth` anclado a `en*`, no se quita este comodín.
     "network": {
         "interval": 5,
+        "interface": "wlp*",
 
         // La IP siempre a la vista, junto al icono. Lo que se mostraba antes
         // era {signalStrength}: la CALIDAD DE SEÑAL del enlace WiFi en tanto
@@ -214,6 +236,30 @@
         // depende del escalado HiDPI ni del tema GTK, así que no puede
         // desalinearse. Cubre conectar, desconectar y editar conexiones.
         "on-click": "kitty -e nmtui"
+    },
+
+    // --- VPN ---------------------------------------------------------------
+    // Indicador del túnel de ProtonVPN. Anclado a `proton0`, el nombre que crea
+    // el cliente oficial (`proton-vpn-gtk-app`) para su interfaz WireGuard.
+    //
+    // Con `format-disconnected` vacío el módulo DESAPARECE cuando no hay túnel,
+    // en vez de ocupar sitio con un icono apagado: la barra solo habla del VPN
+    // cuando hay algo que decir. Comprobado el 2026-09-06 — un módulo anclado a
+    // una interfaz inexistente con este formato no se renderiza en absoluto.
+    //
+    // `format-ethernet` y `format-wifi` llevan lo mismo a propósito: `proton0`
+    // es de tipo wireguard, no es ninguna de las dos cosas, y depender de cuál
+    // elija Waybar sería frágil.
+    "network#vpn": {
+        "interval": 5,
+        "interface": "proton0",
+        "format-ethernet": "󰦝 {ipaddr}",
+        "format-wifi": "󰦝 {ipaddr}",
+        "format-linked": "󰦝",
+        "format-disconnected": "",
+        "tooltip-format-ethernet": "ProtonVPN · {ifname}\n{ipaddr}",
+        "tooltip-format-wifi": "ProtonVPN · {ifname}\n{ipaddr}",
+        "on-click": "protonvpn-app"
     },
 
     // --- Batería ----------------------------------------------------------
