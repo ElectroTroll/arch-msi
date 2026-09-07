@@ -58,10 +58,11 @@
     ],
 
     // --- Workspaces -------------------------------------------------------
-    // Los 10 SIEMPRE visibles. Hyprland por su cuenta solo crea el workspace
-    // cuando tiene ventanas, así que sin `persistent-workspaces` la barra
-    // mostraría únicamente los ocupados y los números bailarían al abrir y
-    // cerrar cosas. Declarándolos persistentes, las posiciones son fijas.
+    // Los de cada pantalla SIEMPRE visibles en su barra. Hyprland por su cuenta
+    // solo crea el workspace cuando tiene ventanas, así que sin
+    // `persistent-workspaces` la barra mostraría únicamente los ocupados y los
+    // números bailarían al abrir y cerrar cosas. Declarándolos persistentes,
+    // las posiciones son fijas.
     //
     // Tres estados, distinguidos SOLO por CSS (ver style.css):
     //   button.active      → el que estás usando   (acento + fondo + subrayado)
@@ -96,15 +97,34 @@
     "hyprland/workspaces": {
         "format": "{id}",
 
-        // "*": 10 → diez en cualquier monitor. Si algún día se conecta una
-        // pantalla externa, también saldrán los diez ahí.
+        // Cada escritorio declarado en SU pantalla, con el mismo reparto que
+        // las workspace_rule de hyprland.lua (1–5 portátil, 6–10 externo).
+        //
+        // ⚠️ NO volver a `{"*": 10}`. Esa forma no significa "diez en total":
+        // Waybar crea diez persistentes POR SALIDA y los numera por índice de
+        // monitor, así que con dos pantallas conectadas la barra del externo
+        // enseñaba del 11 al 20 —números que ningún atajo alcanza, porque
+        // Super+N solo llega al 10— más los que existieran de verdad abajo.
+        // Verificado el 2026-09-07 con el LG por HDMI: salían 1–3 y 11–20.
+        //
+        // La clave es el NOMBRE DE LA SALIDA y el valor la lista de escritorios
+        // que van en ella (waybar-hyprland-workspaces(5), EXAMPLES). No al
+        // revés: con las claves puestas como números, Waybar los lee como
+        // nombres de monitor, no casan con ninguno y la barra se queda sin
+        // persistentes —solo salen los que tienen ventanas—.
         "persistent-workspaces": {
-            "*": 10
+            "eDP-1":    [1, 2, 3, 4, 5],
+            "HDMI-A-1": [6, 7, 8, 9, 10]
         },
 
-        // Un solo monitor hoy, pero con `true` la barra sigue mostrando todos
-        // los workspaces si algún día se conecta una pantalla externa.
-        "all-outputs": true,
+        // `false`: cada barra enseña SOLO los escritorios de su pantalla. Con
+        // `true` las dos listaban los diez y el número dejaba de decir dónde
+        // está la ventana, que es justo para lo que se mira la barra.
+        //
+        // Con el HDMI desenchufado, la barra del portátil sigue mostrando sus
+        // 1–5 persistentes más los 6–10 que traigan ventanas, porque Hyprland
+        // los recoge aquí mientras no vuelva el monitor.
+        "all-outputs": false,
 
         // El workspace especial (scratchpad `magic`, Super+S) NO se lista:
         // es un contenedor de paso, no un destino de navegación.

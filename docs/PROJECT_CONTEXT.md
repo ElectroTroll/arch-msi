@@ -1,7 +1,10 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-09-06 (**monitor externo por HDMI** — §6 documenta que
+Última actualización: 2026-09-07 (**dos pantallas** — §7 documenta el reparto de
+escritorios 1–5 / 6–10, la colocación del externo a la izquierda y las dos
+trampas de `persistent-workspaces`). Antes: 2026-09-06 (**monitor externo por
+HDMI** — §6 documenta que
 el puerto HDMI cuelga de la dGPU y qué le cuesta eso al RTD3, §15 la ruta USB-C
 sin comprobar; medidas en `history/2026-09-06-monitor-externo-hdmi.md`). Antes:
 2026-08-28 (**tema centralizado con matugen** — §18 nueva,
@@ -331,6 +334,82 @@ cableado a la dGPU. Ver §15.
 > carpetas de `kitty`, `rofi` y `yazi` siguen **vacías o inexistentes** (usan
 > defaults).
 > Ver §13 (Dotfiles y estado del repositorio).
+
+### Dos pantallas: reparto de escritorios y colocación  **[OK]**
+
+Hecho el **2026-09-07** con el LG UltraGear por HDMI conectado, validado por
+captura de las dos barras.
+
+| | Salida | Escritorios | Atajos |
+|---|---|---|---|
+| Principal | `eDP-1` (portátil) | **1–5** | `Super+1..5` |
+| Secundaria | `HDMI-A-1` (externo) | **6–10** | `Super+6..9`, `Super+0` |
+
+El reparto lo fijan diez `hl.workspace_rule` en `hyprland.lua` (`monitor`, y
+`default` en el 1 y el 6). Los binds `Super+N` no cambiaron: como cada número
+tiene ya su pantalla, el atajo salta de monitor además de escritorio y no hace
+falta un bind aparte para moverse entre pantallas.
+
+Las reglas **no** son `persistent`: con el HDMI desenchufado, del 6 al 10 solo
+existen los que tengan ventanas y Hyprland los recoge en el portátil. Los diez
+botones fijos los pone Waybar.
+
+**Colocación:** `HDMI-A-1` tiene entrada propia con
+`position = "auto-center-left"` — a la izquierda del portátil y centrado en
+vertical. Antes lo recogía la regla genérica `output = ""` con
+`position = "auto"`, que encadena hacia la **derecha**, así que el puntero salía
+por el borde contrario al físico.
+
+El `-center-` es la segunda mitad del arreglo. Con `auto-left` a secas la Y
+queda clavada en 0 —alineados por el borde **superior**—, y como el externo es
+mucho más alto en píxeles lógicos el ratón no cruzaba a la misma altura:
+
+| | Alto lógico | Banda vertical | |
+|---|---|---|---|
+| | | `auto-left` | `auto-center-left` |
+| `eDP-1` | 1000 px | 0 … 1000 | 0 … 1000 |
+| `HDMI-A-1` | 1440 px | 0 … 1440 | −220 … 1220 |
+
+Todo relativo **a propósito**: la regla es del **puerto**, no de este LG.
+`position = "-2560x-220"` da hoy el mismo resultado exacto —comprobado— pero ata
+la regla a un externo de 2560×1440. Las direcciones válidas salen del propio
+binario: `auto`, `auto-{up,down,left,right}`, `auto-center-{up,down,left,right}`.
+
+> ⚠️ **Para calibrar un monitor en vivo NO vale `hyprctl keyword`.** Con config
+> Lua responde `keyword can't work with non-legacy parsers. Use eval.` La vía
+> buena es `hyprctl eval`, que sí acepta la llamada entera y aplica al instante:
+>
+> ```bash
+> hyprctl eval 'hl.monitor({ output = "HDMI-A-1", mode = "preferred", position = "-2560x-220", scale = 1 })'
+> ```
+>
+> No persiste nada: `hyprctl reload` lo deshace. Es el modo de tantear valores
+> sin editar `hyprland.lua` en cada intento. Encaja con el aviso general de
+> arriba sobre los dispatchers clásicos por IPC.
+
+#### Dos trampas de `persistent-workspaces` (Waybar)
+
+1. **`{"*": 10}` no son diez en total.** Waybar crea diez persistentes **por
+   salida** y los numera por índice de monitor: con dos pantallas, la barra del
+   externo mostraba **11–20** —números que ningún atajo alcanza, porque
+   `Super+N` llega al 10— más los que existieran de verdad. Ese era el síntoma
+   original: *1–3 y 11–20*.
+2. **La clave del mapa es el NOMBRE DE LA SALIDA, no el escritorio.** Escrito al
+   revés (`"1": ["eDP-1"]`) Waybar lee `"1"` como nombre de monitor, no casa con
+   ninguno y la barra se queda **sin persistentes**: solo salen los que tienen
+   ventanas. Falla en silencio, sin nada en el journal. La forma buena está en
+   los EXAMPLES de `waybar-hyprland-workspaces(5)`:
+
+```jsonc
+"persistent-workspaces": {
+    "eDP-1":    [1, 2, 3, 4, 5],
+    "HDMI-A-1": [6, 7, 8, 9, 10]
+},
+"all-outputs": false
+```
+
+`all-outputs` pasó a `false`: cada barra enseña solo lo suyo. Con `true` las dos
+listaban los diez y el número dejaba de decir en qué pantalla está la ventana.
 
 ### Aplicaciones bajo XWayland y escalado fraccional
 

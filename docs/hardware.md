@@ -120,13 +120,16 @@ Verificado con `hyprctl monitors` (2026-09-06).
 - **Salida:** `HDMI-A-1` — **conector de la dGPU NVIDIA** (ver el aviso en
   «Reparto de salidas de vídeo»).
 - **Monitor de prueba:** LG UltraGear, serie `310NTCZ9V555` · 600×340 mm.
-- **En uso:** 2560×1440 a **143.93 Hz** · escala 1 · posición `1600x0` · sRGB ·
-  VRR desactivado.
+- **En uso:** 2560×1440 a **143.93 Hz** · escala 1 · sRGB · VRR desactivado.
 - **Máximos admitidos:** 3840×2160@59.94 Hz · 2560×1440@120 Hz ·
   1920×1080@119.88 Hz.
-- Lo recoge la regla genérica `output = ""` de `hyprland.lua`
-  (`mode = preferred`, `position = auto`, `scale = 1`); no tiene entrada propia
-  ni la necesita.
+- **Colocación:** a la IZQUIERDA del portátil y **centrada en vertical**. Desde
+  el 2026-09-07 `HDMI-A-1` tiene entrada propia en `hyprland.lua` con
+  `position = "auto-center-left"`, que hoy resuelve a `-2560x-220`; antes lo
+  recogía la regla genérica `output = ""`, que encadena hacia la derecha y
+  dejaba el puntero saliendo por el borde contrario.
+- **Escritorios:** 6–10, fijados a esta salida por `workspace_rule`
+  (los 1–5 son del portátil).
 
 ## Firmware / BIOS
 

@@ -29,6 +29,39 @@ hl.monitor({
     scale    = "1.6",
 })
 
+-- Monitor externo por HDMI (LG UltraGear, 2560x1440@143.93). El puerto cuelga de
+-- la dGPU NVIDIA: ver docs/PROJECT_CONTEXT.md §6 y el coste que tiene en RTD3.
+--
+-- `position = "auto-center-left"` lo coloca A LA IZQUIERDA del portátil, que es
+-- donde está físicamente, y alinea los dos por el CENTRO vertical. Antes lo
+-- recogía la regla genérica de abajo con `position = "auto"`, que encadena los
+-- monitores hacia la DERECHA: el puntero salía por el borde equivocado.
+--
+-- El `-center-` es la segunda mitad del arreglo (2026-09-07). Con `auto-left` a
+-- secas la Y queda clavada en 0, o sea alineados por el borde SUPERIOR, y como
+-- el externo es mucho más alto en píxeles lógicos (1440 frente a 1000) el ratón
+-- no cruzaba a la misma altura. Centrados, sí.
+--
+-- Todo relativo A PROPÓSITO: la regla es del PUERTO, no de este LG. Escribir
+-- `position = "-2560x-220"` da hoy el mismo resultado exacto —comprobado— pero
+-- ata la regla a un externo de 2560x1440. Con `auto-center-left` y
+-- `mode = "preferred"` el cálculo lo rehace Hyprland con cualquier monitor.
+--
+-- Las cuatro direcciones válidas están en el propio binario:
+--   auto · auto-{up,down,left,right} · auto-center-{up,down,left,right}
+--
+-- ⚠️ Para calibrar esto NO vale `hyprctl keyword`: con config Lua responde
+-- "keyword can't work with non-legacy parsers". Se prueba en vivo con
+--   hyprctl eval 'hl.monitor({ output = "HDMI-A-1", mode = "preferred", ... })'
+-- y se deshace con `hyprctl reload`.
+hl.monitor({
+    output   = "HDMI-A-1",
+    mode     = "preferred",
+    position = "auto-center-left",
+    scale    = 1,
+})
+
+-- Cualquier otra salida (USB-C/DP, proyectores): encadenada a la derecha.
 hl.monitor({
     output = "",
     mode = "preferred",
@@ -279,6 +312,29 @@ hl.animation({ leaf = "zoomFactor",    enabled = true,  speed = 7,    bezier = "
 --     border_size = 0,
 --     rounding    = 0,
 -- })
+
+-- Reparto fijo de escritorios entre pantallas (2026-09-07):
+--   1–5   → eDP-1      (portátil, pantalla principal)
+--   6–10  → HDMI-A-1   (monitor externo)
+--
+-- Sin estas reglas el escritorio se creaba en la pantalla que tuviera el foco,
+-- así que el mismo número caía un rato en una y un rato en otra y Super+N no
+-- era un destino fijo. Con el reparto, Super+1..5 va siempre al portátil y
+-- Super+6..0 salta al externo: el atajo cambia de pantalla además de escritorio
+-- y no hace falta un bind aparte para moverse entre monitores.
+--
+-- NO son `persistent`: si se desenchufa el HDMI, del 6 al 10 solo existen los
+-- que tengan ventanas, que se recogen en el portátil hasta que vuelva. La
+-- persistencia visual de los diez botones la pone Waybar, no Hyprland.
+--
+-- `default` marca en qué escritorio aterriza cada pantalla al aparecer.
+for i = 1, 10 do
+    hl.workspace_rule({
+        workspace = tostring(i),
+        monitor   = i <= 5 and "eDP-1" or "HDMI-A-1",
+        default   = i == 1 or i == 6,
+    })
+end
 
 -- See https://wiki.hypr.land/Configuring/Layouts/Dwindle-Layout/ for more
 hl.config({
