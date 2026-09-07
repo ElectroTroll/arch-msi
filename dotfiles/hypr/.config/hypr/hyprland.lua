@@ -328,8 +328,23 @@ hl.config({
 
 hl.config({
     input = {
-        kb_layout  = "es",
-        kb_variant = "",
+        -- DOS distribuciones cargadas en todos los teclados, en este orden:
+        -- índice 0 = es, índice 1 = us. El portátil tiene serigrafía española,
+        -- así que arranca en la primera. El teclado USB externo invierte el
+        -- orden más abajo, en su `hl.device`.
+        --
+        -- Las dos tienen que estar en la lista para que Super+Espacio pueda
+        -- alternar: `switchxkblayout next` ROTA entre las ya cargadas, no
+        -- carga distribuciones nuevas.
+        kb_layout  = "es,us",
+
+        -- Las variantes van POSICIONALMENTE emparejadas con `kb_layout`: la
+        -- primera está vacía (es, sin variante) y la segunda es `intl`, o sea
+        -- US International con teclas muertas. Así la distribución americana
+        -- da tildes, ñ y ç, y es la misma tanto aquí como en el teclado
+        -- externo — un solo comportamiento que recordar. El porqué de `intl`
+        -- y no `altgr-intl`, en el `hl.device` de abajo.
+        kb_variant = ",intl",
         kb_model   = "",
         kb_options = "",
         kb_rules   = "",
@@ -357,6 +372,44 @@ hl.gesture({
 -- `elan0305:00-04f3:31fd-mouse` y `elan0305:00-04f3:31fd-touchpad`
 -- (`hyprctl devices`), así que ese bloque no se aplicaba a nada.
 
+-- Teclado USB externo (SEMITEK USB-HID Gaming Keyboard, 1EA7:0907), de
+-- distribución AMERICANA (2026-09-07). Orden invertido respecto al global:
+-- índice 0 = us, índice 1 = es. Así cada teclado arranca en SU serigrafía.
+--
+-- Son DOS entradas porque el teclado expone dos endpoints HID y los dos emiten
+-- teclas (`grep -A6 -i semitek /proc/bus/input/devices`: `input0` alfanumérico
+-- e `input2`, que además hace de ratón; ambos con handler `kbd`). Poniéndolo
+-- solo en el primero, parte de las teclas seguiría interpretándose en es.
+--
+-- El nombre es el de `hyprctl devices`, no el del USB: Hyprland lo pasa a
+-- minúsculas y sustituye los espacios por guiones.
+--
+-- `us` va con variante `intl` (US International CON TECLAS MUERTAS), para poder
+-- escribir tildes, ñ y ç desde la distribución americana. Emparejamiento
+-- posicional otra vez, e invertido respecto al global porque aquí `us` va
+-- primero: "intl," = us→intl, es→sin variante.
+--
+-- ⚠️ NO es `altgr-intl`, y es una decisión tomada PROBANDO LAS DOS el
+-- 2026-09-07. La disyuntiva es qué se pone en el nivel base y qué en AltGr:
+--
+--   intl        ' " ` ~ ^ muertas en el base; tilde = ' + vocal
+--   altgr-intl  ' " ` ~ ^ literales en el base; tilde = AltGr + ' + vocal
+--
+-- Gana `intl` porque los acentos se escriben mucho más a menudo que las
+-- comillas, y porque **el nivel de AltGr de `intl` sigue dando el carácter
+-- literal**: AltGr + ' = ', AltGr + Shift + ' = ", AltGr + ` = `,
+-- AltGr + Shift + ` = ~, AltGr + Shift + 6 = ^. O sea que con `intl` no se
+-- pierde nada, solo cambia qué cuesta una pulsación y qué cuesta dos. Con
+-- `altgr-intl` sería al revés, y lo caro serían las tildes.
+-- Ver /usr/share/X11/xkb/symbols/us; AltGr es el Alt DERECHO
+-- (`include "level3(ralt_switch)"`).
+for _, teclado in ipairs({
+    "semitek-usb-hid-gaming-keyboard",
+    "semitek-usb-hid-gaming-keyboard-1",
+}) do
+    hl.device({ name = teclado, kb_layout = "us,es", kb_variant = "intl," })
+end
+
 
 ---------------------
 ---- KEYBINDINGS ----
@@ -378,6 +431,13 @@ hl.bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mainMod .. " + R", hl.dsp.exec_cmd("rofi -show drun"))
 hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
 hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"))    -- dwindle only
+
+-- Alterna es/us EN EL TECLADO QUE PULSA EL ATAJO, sin tocar el otro: el estado
+-- de xkb es por dispositivo. Ver scripts/kb-layout.sh.
+-- Se resuelve por CÓDIGO de tecla, no por símbolo (`resolve_binds_by_sym` está
+-- en su valor por defecto), así que el atajo sigue en la misma tecla física en
+-- ambas distribuciones.
+hl.bind(mainMod .. " + space", hl.dsp.exec_cmd("kb-layout"))
 
 -- Notificaciones (dunst, tarea 2.2).
 -- `history-pop` recupera la última notificación cerrada; con

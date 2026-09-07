@@ -95,6 +95,42 @@ la sesión bloqueada.
 | XF86AudioPlay              | Pausar/reanudar reproducción (`playerctl`)          |
 | XF86AudioPrev              | Pista anterior (`playerctl`)                        |
 
+## Distribución de teclado
+
+| Atajo          | Acción                                                                     |
+|----------------|----------------------------------------------------------------------------|
+| Super + Espacio | Alterna es ↔ us **solo en el teclado que pulsa el atajo** (`kb-layout`)   |
+
+Cada teclado guarda su propia distribución, así que el portátil (serigrafía
+española) y el teclado USB externo (americana) pueden estar en distinta a la vez
+y arrancan ya en la suya. `kb-layout --status` dice en cuál está cada uno.
+
+La distribución americana es **US International con teclas muertas**
+(`us(intl)`), así que también escribe tildes, ñ y ç. **AltGr es el Alt derecho**:
+
+| Carácter | Cómo |
+|----------|------|
+| á é í ó ú | `'` , luego la vocal |
+| à è ì ò ù | `` ` `` , luego la vocal |
+| â ê î ô û | Shift + `6` , luego la vocal |
+| ñ | Shift + `` ` `` , luego `n` · o AltGr + `n` |
+| ç | `'` , luego `c` · o AltGr + `,` |
+| ü | `"` , luego `u` |
+| ¿ ¡ | AltGr + `/` , AltGr + `1` |
+| € § | AltGr + `5` , AltGr + `;` |
+
+`'` `"` `` ` `` `~` `^` son **teclas muertas**: esperan a la siguiente tecla. Para
+escribirlas sueltas, **AltGr** (o pulsar espacio detrás):
+
+| Carácter | Cómo |
+|----------|------|
+| `'` | AltGr + `'` |
+| `"` | AltGr + Shift + `'` |
+| `` ` `` | AltGr + `` ` `` |
+| `~` | AltGr + Shift + `` ` `` |
+| `^` | AltGr + Shift + `6` |
+Detalle en `docs/PROJECT_CONTEXT.md` §20.
+
 ## Notificaciones (dunst)
 
 | Atajo             | Acción                                                                          |

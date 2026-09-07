@@ -1961,3 +1961,130 @@ caché sin verse en pantalla.
 - **No se redefine ningún `[opener]`.** Redefinir uno obliga a copiar al repo
   una lista del preset, que se quedaría vieja en silencio cuando yazi la cambie
   río arriba. Es justo el patrón que este proyecto evita.
+
+
+---
+
+## 20. Distribución de teclado por dispositivo  **[OK]**
+
+Añadido el 2026-09-07, al conectar un teclado USB externo con serigrafía
+**americana** a un equipo cuyo teclado integrado es **español**. Cada teclado se
+queda en su distribución, y `Super + Espacio` alterna la del teclado que pulsa
+el atajo sin tocar la del otro.
+
+- **Config**: `dotfiles/hypr/.config/hypr/hyprland.lua` (bloque `input`,
+  `hl.device` de los endpoints del Semitek, y el bind).
+- **Script**: `scripts/kb-layout.sh`, enlazado como `kb-layout` en
+  `~/.local/bin` por el paquete Stow `bin`.
+- **Atajo**: `docs/keybindings.md` → «Distribución de teclado».
+
+### El estado de xkb es por dispositivo, no de la sesión
+
+Esta es la pieza que lo hace posible y la que no se parece a X11. En Wayland
+cada teclado lleva su propio índice de distribución activa, así que basta con
+cargar la MISMA lista en todos y darle a cada uno un punto de partida distinto:
+
+| Ámbito                        | `kb_layout` | `kb_variant` | Arranca en |
+|-------------------------------|-------------|--------------|------------|
+| Global (portátil incluido)    | `es,us`     | `,intl`      | es         |
+| `semitek-usb-hid-gaming-keyboard` y `-1` | `us,es` | `intl,` | us    |
+
+Las dos distribuciones tienen que estar en ambas listas: `switchxkblayout next`
+**rota entre las ya cargadas**, no carga ninguna nueva. Con `kb_layout = "es"` a
+secas el atajo no tendría a dónde ir.
+
+`kb_variant` se empareja **posicionalmente** con `kb_layout`, de ahí que las dos
+listas estén invertidas la una respecto a la otra: en ambos casos `us` lleva
+`intl` y `es` va sin variante.
+
+### `intl` vs `altgr-intl`: se probaron las dos
+
+`us` a secas no da tildes, ñ ni ç, así que hace falta una variante
+International. Hay dos, y **lo único que las separa es qué va en el nivel base y
+qué detrás de AltGr** — `altgr-intl` hace literalmente `include "us(intl)"` en su
+definición y solo mueve cinco teclas muertas:
+
+| | `intl` | `altgr-intl` |
+|---|---|---|
+| Nombre xkb | English (US, intl., with dead keys) | English (intl., with AltGr dead keys) |
+| `' " ` ~ ^` en el nivel base | **muertas** | literales |
+| Tilde | `'` + vocal | AltGr + `'` + vocal |
+| Carácter literal `'` | AltGr + `'` | `'` |
+
+El 2026-09-07 se pasó por las dos, en este orden: `intl` → `altgr-intl` (al
+perder las comillas) → **`intl`, que es lo que queda**. La decisión final es
+deliberada y se apoya en un detalle que no salta a la vista:
+
+> **En `intl` el nivel de AltGr sigue dando el carácter literal.** No se pierde
+> ninguna tecla, solo cambia cuál cuesta una pulsación y cuál dos.
+
+```
+AltGr + '          '        AltGr + `          `
+AltGr + Shift + '  "        AltGr + Shift + `  ~        AltGr + Shift + 6  ^
+```
+
+Como los acentos se escriben más a menudo que las comillas, sale a cuenta que lo
+barato sean los acentos. Con `altgr-intl` sería justo al revés. La comparación
+está en `/usr/share/X11/xkb/symbols/us`; ambas terminan con
+`include "level3(ralt_switch)"`, o sea que **AltGr es el Alt DERECHO**.
+
+| Carácter | Cómo se escribe en `us(intl)` |
+|----------|-------------------------------|
+| á é í ó ú | `'` y luego la vocal        |
+| à è ì ò ù | `` ` `` y luego la vocal    |
+| â ê î ô û | Shift + `6` y luego la vocal |
+| ñ        | Shift + `` ` `` y luego `n`, o AltGr + `n` |
+| ç        | `'` y luego `c`, o AltGr + `,` |
+| ü        | `"` y luego `u`               |
+| ¿ ¡      | AltGr + `/` y AltGr + `1`     |
+| € §      | AltGr + `5` y AltGr + `;`     |
+
+Para el carácter suelto de una tecla muerta también sirve pulsar **espacio**
+detrás, además del AltGr de arriba.
+
+### ⚠️ Un teclado USB puede ser VARIOS teclados
+
+El Semitek expone dos endpoints HID y Hyprland los ve como dos teclados con
+estado xkb independiente:
+
+```
+$ grep -A6 -i "Name=.*semitek" /proc/bus/input/devices
+N: Name="SEMITEK USB-HID Gaming Keyboard"   ...input0   H: Handlers=sysrq kbd leds event29
+N: Name="SEMITEK USB-HID Gaming Keyboard"   ...input2   H: Handlers=sysrq kbd event30 mouse4
+```
+
+Los dos llevan handler `kbd`, o sea que los dos emiten teclas. De ahí las dos
+consecuencias del diseño:
+
+1. **La `kb_layout` va en los dos** `hl.device`. Solo en el primero, parte de
+   las teclas se seguiría interpretando en es.
+2. **`hyprctl switchxkblayout current next` a secas NO vale.** `current` alterna
+   solo el endpoint que mandó la pulsación y los DESINCRONIZA (comprobado:
+   `-keyboard` en Spanish y `-keyboard-1` en English (US) a la vez). Por eso
+   `kb-layout` compara el `active_layout_index` de antes y después, deduce qué
+   dispositivo cambió y alinea a sus hermanos —los `<nombre>-N`— al mismo
+   índice.
+
+### Por qué el script no se fía de `main`
+
+`hyprctl devices` marca un teclado como `main`, y la tentación es usarlo para
+saber cuál acaba de cambiar. **No son lo mismo**: durante las pruebas `main` era
+el Semitek mientras `current` resolvía a `at-translated-set-2-keyboard`, el
+teclado del portátil. Comparar las dos instantáneas es lo único que identifica
+con certeza el dispositivo afectado.
+
+### Detalles que se comprobaron
+
+- **El atajo se resuelve por código de tecla**, no por símbolo
+  (`resolve_binds_by_sym` sigue en su valor por defecto), así que `Super +
+  Espacio` cae en la misma tecla física en es y en us. `Super + Espacio` no
+  estaba ocupado por ningún otro bind.
+- **`switchxkblayout` acepta un índice numérico** además de `next`/`prev`; es lo
+  que usa el script para alinear los hermanos.
+- **No se usa la opción xkb `grp:win_space_toggle`**, que haría lo mismo sin
+  script. Se descartó porque no resuelve el problema de los endpoints
+  desincronizados, no puede avisar por notificación y deja el atajo invisible
+  desde `hyprland.lua`, escondido en una cadena de opciones de xkb.
+- El teclado externo declara también un endpoint de ratón
+  (`semitek-usb-hid-gaming-keyboard-2`), que no aparece en la lista de teclados
+  y no se toca.
