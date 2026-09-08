@@ -1,7 +1,10 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-09-07 (**dos pantallas** — §7 documenta el reparto de
+Última actualización: 2026-09-08 (**Minecraft en la dGPU** — §13 añade el
+paquete Stow `minecraft`: una entrada de escritorio que arranca el launcher
+oficial con `prime-run`, y la trampa de plegado de Stow bajo `~/.local`).
+Antes: 2026-09-07 (**dos pantallas** — §7 documenta el reparto de
 escritorios 1–5 / 6–10, la colocación del externo a la izquierda y las dos
 trampas de `persistent-workspaces`). Antes: 2026-09-06 (**monitor externo por
 HDMI** — §6 documenta que
@@ -838,6 +841,37 @@ un único listener es justamente lo que permite garantizar el orden.
     ⚠️ **La tarea 3.3 toca además el paquete `shell`**, que es la primera vez
     que un componente de la fase 3 sale de su propio paquete: `.bashrc` gana
     `export EDITOR=vim` y la función `y`. Las dos razones, abajo en §19.
+- **Paquete Stow añadido fuera de las tareas de la fase 3** (2026-09-08):
+  - **minecraft** → `dotfiles/minecraft/`
+    (`.local/share/applications/minecraft-launcher.desktop`). Es el primer
+    paquete que no versiona la configuración de una aplicación sino una
+    **entrada de escritorio que oculta a la del paquete de sistema**: misma
+    ruta relativa bajo `~/.local/share`, que gana a `/usr/share` por
+    precedencia XDG. Lo único que cambia frente a la de `minecraft-launcher`
+    es el `Exec`, que antepone `prime-run`: así el proceso `java` del juego
+    hereda `__NV_PRIME_RENDER_OFFLOAD`, `__GLX_VENDOR_LIBRARY_NAME` y
+    `__VK_LAYER_NV_optimus`, y renderiza en la RTX 4060 en vez de en la iGPU
+    (§6). El launcher se autoactualiza y se relanza con `--chainLoad`, pero
+    las variables sobreviven a ese salto: comprobado con `nvidia-smi`, el
+    `java-runtime-epsilon` del juego aparece en la GPU 0.
+    **No añade ningún requisito a `install/services.sh`**: no tiene servicio
+    ni activación D-Bus, lo lanza el menú de aplicaciones.
+    **A `packages/` solo añade `minecraft-launcher`** (AUR 1:2.1.3-3): no hace
+    falta Java del sistema porque el launcher descarga su propio JRE bajo
+    `~/.minecraft/runtime`. Instalar `jre-openjdk` sería además
+    contraproducente — va por Java 26 y el juego no arranca con JRE demasiado
+    nuevo.
+    ⚠️ **Está enlazado por archivo, pero solo porque el directorio destino ya
+    existía.** Aquí funcionó porque `~/.local/share/applications` ya contenía
+    `claude-code-url-handler.desktop`, que no se versiona. **Al restaurar en un
+    equipo limpio hay que crear ese directorio ANTES de invocar a Stow**: Stow
+    pliega en el nivel más alto que no exista en el destino, y sobre un `$HOME`
+    recién creado enlaza `~/.local` ENTERO al repositorio (comprobado: `LINK:
+    .local => .../minecraft/.local`). Un directorio que existe pero está vacío
+    ya basta para evitarlo. Es la misma trampa de `yazi`, `wlogout` y
+    `fastfetch` (§18), y la inversa de la de `~/Wallpapers` (§17), que sí
+    quiere el plegado. Afecta igual a `bin/` e `icons/`, que también cuelgan
+    de `~/.local`.
 - **Paquetes que dejaron de enlazar parte de su config**, porque su formato no
   admite incluir un fragmento y se genera entera (§18): `waybar` (conserva solo
   `claude-usage.sh`), `wlogout` (conserva solo `layout`) y `fastfetch` (que por
