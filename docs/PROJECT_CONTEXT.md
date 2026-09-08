@@ -1,7 +1,10 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-09-08 (**Minecraft en la dGPU** — §13 añade el
+Última actualización: 2026-09-08 (**toolchain C/C++** — §21 nueva: `g++`
+16.2.1 ya estaba instalado como dependencia de `base-devel`, por qué no figura
+en `packages/pacman-explicit.txt` y los defectos verificados C++20 / C23).
+Antes, el mismo día: (**Minecraft en la dGPU** — §13 añade el
 paquete Stow `minecraft`: una entrada de escritorio que arranca el launcher
 oficial con `prime-run`, y la trampa de plegado de Stow bajo `~/.local`).
 Antes: 2026-09-07 (**dos pantallas** — §7 documenta el reparto de
@@ -2201,3 +2204,65 @@ con certeza el dispositivo afectado.
 - El teclado externo declara también un endpoint de ratón
   (`semitek-usb-hid-gaming-keyboard-2`), que no aparece en la lista de teclados
   y no se toca.
+
+## 21. Toolchain de compilación C/C++  **[OK]**
+
+**No hubo nada que instalar.** El 2026-09-08 se pidió instalar `g++` y la
+comprobación previa lo encontró ya presente y funcionando. Se documenta el
+hallazgo en lugar de fabricar una instalación.
+
+| Componente | Versión | Ruta | Motivo de instalación |
+|------------|---------|------|-----------------------|
+| `g++` / `gcc` | 16.2.1 20260810 (`gcc 16.2.1+r23+gd564253eb6c8-1`) | `/usr/bin/g++`, `/usr/bin/gcc` | **dependencia**, no explícito |
+| `binutils`, `make`, `pkgconf` | — | `/usr/bin` | dependencia |
+| `gdb` | 17.2-1 | `/usr/bin/gdb` | dependencia |
+| `clang` | 22.1.8-1 | `/usr/bin/clang` | dependencia |
+
+Target: `x86_64-pc-linux-gnu`. `gcc` se instaló el **2026-08-24**, en la
+actualización completa posterior al incidente de arranque (§3).
+
+**No instalados:** `cmake`, `ninja`, `valgrind`, `ccache`, `lldb`. Si alguno
+hace falta, entra por su propia tarea y **sí** debe quedar explícito en
+`packages/pacman-explicit.txt`.
+
+### ⚠️ `gcc` no aparece en el inventario, y aun así la restauración lo recupera
+
+Buscar `gcc` en `packages/pacman-explicit.txt` no da nada, y eso invita a
+concluir que falta. No falta: el inventario se genera con `pacman -Qqe`, que
+lista **solo lo explícito**, y `gcc` está marcado como dependencia. Quien lo
+arrastra es **`base-devel`** (metapaquete que sí está explícito, y que depende de
+`gcc`, `binutils`, `make`, `pkgconf` y compañía). Reinstalar desde `packages/`
+devuelve el compilador por esa vía.
+
+Esto **no** es uno de los agujeros silenciosos de §14: aquí el paquete sí vuelve.
+Pero conviene no "arreglarlo" añadiendo `gcc` a mano al inventario — el archivo se
+regenera con `scripts/update-inventories.sh` y la línea desaparecería en la
+siguiente pasada. Si algún día se quiere que `gcc` sobreviva por sí mismo a un
+`pacman -Qqe`, el cambio correcto es marcarlo explícito en el sistema
+(`sudo pacman -D --asexplicit gcc`), no editar el `.txt`. Hoy no hace falta.
+
+### Estándares por defecto: C++20 y C23, no C++17
+
+Comprobado imprimiendo las macros, no leído de la documentación:
+
+- `g++` sin `-std`: `__cplusplus` = `202002` → **gnu++20**.
+- `gcc` sin `-std`: `__STDC_VERSION__` = `202311` → **gnu23**.
+
+Los dos son más nuevos que los valores que suele dar por supuestos la
+documentación de terceros (C++17 y C17). Un `-std=` explícito en cualquier
+`Makefile` o `compile_flags.txt` del repositorio evita la sorpresa cuando GCC
+vuelva a mover el defecto.
+
+### Validación observada
+
+```bash
+g++ --version                       # g++ (GCC) 16.2.1 20260810
+pacman -Qo /usr/bin/g++             # gcc 16.2.1+r23+gd564253eb6c8-1
+g++ -std=c++23 -Wall -O2 prueba.cpp -o prueba && ./prueba
+```
+
+El programa de prueba usa `<ranges>` y `std::views::filter` (biblioteca de C++20
+en adelante), compila sin avisos con `-Wall` y se ejecuta con salida correcta y
+código de salida 0. Es decir: se validó el **compilador y la libstdc++**, no solo
+la presencia del binario. El archivo de prueba se escribió fuera del repositorio
+y no se versiona.
