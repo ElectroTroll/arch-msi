@@ -87,7 +87,8 @@ arch-msi/
     ├── theme-apply.sh          # aplica el tema con matugen a todos los componentes (§18)
     ├── vpn-autoconnect.sh      # conecta ProtonVPN al iniciar sesión (§9)
     ├── kb-layout.sh            # alterna es/us en el teclado que pulsa el atajo (§20)
-    └── audio-salida.sh         # alterna la salida de audio interfaz <-> altavoces (§22)
+    ├── audio-salida.sh         # alterna la salida de audio interfaz <-> altavoces (§22)
+    └── waybar-monitor.sh       # CPU/RAM/GPU y temperaturas para la barra (§23)
 ```
 
 **Todo script ejecutable vive en `scripts/` con extensión `.sh`.** Los que
@@ -97,7 +98,8 @@ autostart) NO se duplican: el paquete Stow `bin` contiene un **symlink relativo*
 enlaza eso en `~/.local/bin`. Relativo y no absoluto por dos razones: Stow
 **rechaza los symlinks absolutos dentro de un paquete** («source is an absolute
 symlink») y un enlace absoluto ataría el repo a una ruta de clonado concreta.
-Hoy están así `theme-apply`, `vpn-autoconnect`, `kb-layout` y `audio-salida`;
+Hoy están así `theme-apply`, `vpn-autoconnect`, `kb-layout`, `audio-salida` y
+`waybar-monitor`;
 `update-inventories.sh` y `add-wallpaper.sh` se ejecutan desde el repo y no
 necesitan enlace.
 

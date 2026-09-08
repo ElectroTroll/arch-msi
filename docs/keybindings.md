@@ -182,7 +182,8 @@ inactividad».
 > `on-click` de la PLANTILLA
 > [`dotfiles/matugen/.config/matugen/templates/waybar-config.jsonc`](../dotfiles/matugen/.config/matugen/templates/waybar-config.jsonc),
 > y sin esto la única forma de saber qué hace cada módulo es leerse la config.
-> Verificadas contra `config.jsonc` el 2026-08-02.
+> Verificadas contra `config.jsonc` el 2026-08-02, y las de monitorización el
+> 2026-09-08.
 >
 > ⚠️ El enlace apuntaba a `dotfiles/waybar/.config/waybar/config.jsonc`, que
 > **ya no existe**: desde la tarea 3.0 ese archivo es un artefacto que genera
@@ -198,6 +199,7 @@ inactividad».
 | Perfil de energía | Clic izquierdo | **Rota** entre `performance`, `balanced` y `power-saver`. Es comportamiento nativo del módulo por D-Bus; no hay `on-click` definido. |
 | ⏻ Apagado | Clic izquierdo | Abre **wlogout** (`wlogout -b 4 -m 400 -s`): bloquear (`b`), **suspender** (`s`), reiniciar (`r`), apagar (`a`), según [`dotfiles/wlogout/.config/wlogout/layout`](../dotfiles/wlogout/.config/wlogout/layout). Sin hibernar — este equipo no puede (`PROJECT_CONTEXT.md` §5). |
 | Bluetooth | Clic izquierdo | Abre **blueman-manager**. |
+| CPU / RAM / GPU / Temperaturas | Clic izquierdo | Abre **btop** en una ventana de kitty (`kitty -e btop`). Los cuatro módulos de monitorización llevan el mismo clic. Ver PROJECT_CONTEXT §23. |
 
 **Rueda sobre el volumen** — sube y baja en pasos del **1 %**, con tope al
 100 %. El paso es de 1 y no de 5 a propósito: el touchpad emite muchísimos más

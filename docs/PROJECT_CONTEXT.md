@@ -1,7 +1,10 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-09-08 (**interfaz de audio SSL 2+ Mk II** — §22
+Última actualización: 2026-09-08 (**monitorización en la barra** — §23 nueva:
+CPU, RAM, uso de la dGPU y temperaturas en Waybar, con el guardado de RTD3 que
+impide que el módulo despierte la RTX 4060). Antes, el mismo día:
+(**interfaz de audio SSL 2+ Mk II** — §22
 nueva: la interfaz funciona sin drivers, el script `audio-salida` y el atajo
 `Super+Z` para alternar la salida de todo el sistema, y el aviso de UCM. §13
 gana la convención «dónde vive un script ejecutable», que hasta ahora solo
@@ -811,8 +814,9 @@ un único listener es justamente lo que permite garantizar el orden.
   - **kitty** → `dotfiles/kitty/` (`kitty.conf`; tarea 3.1).
   - **bin** → `dotfiles/bin/` (enlaza en `~/.local/bin`, que está en el PATH de
     la sesión, para que Hyprland invoque por nombre y no dependa de dónde esté
-    clonado el repo: `theme-apply`, `vpn-autoconnect`, `kb-layout` y
-    `audio-salida` —este último añadido el 2026-09-08, §22). **El paquete no
+    clonado el repo: `theme-apply`, `vpn-autoconnect`, `kb-layout`,
+    `audio-salida` (§22) y `waybar-monitor` (§23), los dos últimos añadidos el
+    2026-09-08). **El paquete no
     contiene los scripts, solo symlinks relativos a `scripts/`**: ver la
     convención abajo.
 - **Paquete Stow añadido por la tarea 3.2** (2026-08-28):
@@ -962,9 +966,9 @@ relativos* que apuntan al de `scripts/`, y Stow enlaza esos symlinks en
       -> ../../../../scripts/audio-salida.sh                        (versionado en el repo)
 ```
 
-Estado a 2026-09-08: enlazados `theme-apply`, `vpn-autoconnect`, `kb-layout` y
-`audio-salida`. `update-inventories.sh` y `add-wallpaper.sh` se ejecutan a mano
-desde el repo y no necesitan enlace.
+Estado a 2026-09-08: enlazados `theme-apply`, `vpn-autoconnect`, `kb-layout`,
+`audio-salida` y `waybar-monitor`. `update-inventories.sh` y `add-wallpaper.sh`
+se ejecutan a mano desde el repo y no necesitan enlace.
 
 **Por qué relativo y no absoluto.** Stow **rechaza los symlinks absolutos dentro
 de un paquete** —aborta con «source is an absolute symlink», la misma razón por
@@ -2377,3 +2381,97 @@ desajuste entre el perfil UCM de `alsa-ucm-conf` y la revisión **Mk II**, que
 tiene más canales de los que el perfil declara. **La interfaz funciona igual**;
 el riesgo es que no se expongan todos los canales físicos. Sin investigar a
 fondo (ver §15).
+
+## 23. Monitorización del equipo en Waybar  **[OK]**
+
+Cuatro módulos a la izquierda de la barra, tras el de Claude: uso de CPU, uso de
+RAM, uso de la dGPU y temperaturas de CPU y GPU. Cifra corta en la barra y
+desglose en el tooltip; clic en cualquiera de los cuatro abre **btop**.
+
+| Módulo | Tipo | Barra | Tooltip |
+|--------|------|-------|---------|
+| `cpu` | nativo | `󰻠 11%` | carga 1/5/15 min |
+| `memory` | nativo | `󰘚 33%` | GiB usados/total y disponible |
+| `custom/gpu` | script | `󰢮 25%` | modelo, VRAM usada/total, estado RTD3 |
+| `custom/temps` | script | `󰔏 77°/60°` | CPU (paquete) y GPU por separado |
+
+Intervalo de 5 s en los cuatro, el mismo que red y batería.
+
+### ⚠️ El módulo de GPU no puede despertar la tarjeta
+
+Es la pieza central del diseño, no un detalle. Waybar **no trae módulo de GPU**,
+y el driver propietario de NVIDIA **no expone `hwmon`**: bajo
+`/sys/bus/pci/devices/0000:01:00.0/` no hay temperatura ni un `gpu_busy_percent`
+como el que publican las Radeon. La única fuente de uso, VRAM y temperatura es
+`nvidia-smi` — **y `nvidia-smi` despierta la tarjeta**.
+
+Este equipo va con PRIME offload + Runtime D3 (invariante del proyecto), o sea
+que la RTX 4060 se suspende sola cuando nadie la usa. Un módulo que la sondeara
+cada 5 s la dejaría encendida para siempre y se comería la batería sin que nadie
+estuviera usando la gráfica.
+
+La solución es leer **antes** `power/runtime_status`, que es sysfs puro y no toca
+el hardware, y llamar a `nvidia-smi` solo si ya está `active`. Ese estado es
+exactamente el criterio que se quería: pasa a `active` tanto con el monitor
+externo por HDMI —que cuelga de la dGPU, §6— como en cuanto una aplicación la usa
+con `prime-run`. Dormida, el módulo muestra `󰤄` y las temperaturas `77°/–`;
+el guion, y no un `0`, porque la GPU no está a cero grados: es que no se ha
+preguntado.
+
+### Detalles que no se ven pero sostienen el módulo
+
+- **Una sola consulta por intervalo.** `gpu` y `temps` necesitan los mismos
+  datos y Waybar los invoca por separado, así que el script cachea la salida de
+  `nvidia-smi` 2 s en `$XDG_RUNTIME_DIR` y la escribe de forma atómica. Sin eso
+  serían dos consultas descoordinadas a la tarjeta cada 5 s.
+- **El sensor de CPU se ancla al dispositivo, no a `/sys/class/hwmon/hwmonN`.**
+  Esos números se reparten por orden de registro de los drivers y **cambian de un
+  arranque a otro** (hoy `hwmon5`). La ruta estable es
+  `/sys/devices/platform/coretemp.0/hwmon` + `temp1_input`, que es «Package id
+  0», la del paquete entero; los `temp2..N` son núcleos sueltos. El módulo
+  nativo `temperature` admite justo eso con `hwmon-path-abs` + `input-filename`,
+  pero aquí la temperatura la sirve el script para poder juntarla con la de la
+  GPU sin una segunda consulta.
+- **El icono de RAM es 󰘚, no 󰍛.** Nerd Font llama «memory» al segundo,
+  pero dibuja un chip cuadrado con patillas prácticamente idéntico al 󰻠 de la
+  CPU, y los dos módulos van pegados. Comprobado renderizando ambos con
+  JetBrainsMono Nerd Font al tamaño real de la barra: a 13 px no se distinguen.
+  El DIMM es un rectángulo con bandas y se lee de un vistazo.
+- **Umbrales de aviso**: 85 °C la CPU, 80 °C la GPU. Solo pintan la clase CSS
+  `aviso` (ámbar); no hacen nada más.
+
+### Validación observada
+
+Contrastado con las fuentes, no con la propia barra:
+
+| Barra | Fuente independiente |
+|-------|----------------------|
+| RAM 32 % | `free`: 4,9 GiB de 15 GiB = 32 % |
+| GPU 24 % · VRAM 90 MiB | `nvidia-smi`: 24 %, 90 MiB / 8188 MiB |
+| Temp CPU 71° | `sensors`: `Package id 0: +71.0°C` |
+| Temp GPU 57° | `nvidia-smi`: 57 |
+
+La rama de RTD3 se probó con el `runtime_status` simulado en `suspended`:
+devuelve `󰤄` y `77°/–`, y **la caché de `nvidia-smi` no se toca**, o sea que
+la consulta no llega a ejecutarse.
+
+⚠️ **Falta comprobarlo con la tarjeta realmente dormida**, que requiere
+desconectar el HDMI: con el monitor puesto, la dGPU está `active` de forma
+permanente y esa rama no se alcanza. La prueba es mirar que
+`power/runtime_suspended_time` siga creciendo con la barra en marcha.
+
+### Archivos
+
+- `scripts/waybar-monitor.sh`, enlazado como `waybar-monitor` en `~/.local/bin`
+  por el paquete Stow `bin` (convención en §13).
+- Plantillas `waybar-config.jsonc` y `waybar-style.css` de matugen. **La config
+  de Waybar es un artefacto generado**: no se edita `~/.config/waybar/`, se edita
+  la plantilla y se pasa `theme-apply` (§18).
+- `theme/fallback/` regenerado con `theme-apply --save-fallback`. De paso quedó
+  al día: **conservaba el `persistent-workspaces: {"*": 10}` viejo**, que la
+  plantilla marca como «no volver a esto» desde el 2026-09-07 porque con dos
+  pantallas crea los escritorios 11–20. Un `theme-apply --fallback` habría
+  reintroducido ese fallo.
+
+**A `packages/` no añade nada**: `jq` y `btop` ya estaban explícitos y
+`nvidia-smi` lo trae `nvidia-utils`. Comprobado regenerando el inventario.

@@ -45,7 +45,8 @@
     // al borde (es la referencia de navegación y la posición que tiene hecha la
     // muscle memory), y así el módulo conserva su sitio relativo de antes —era
     // el más interior del grupo derecho, ahora es el más interior del izquierdo.
-    "modules-left": ["hyprland/workspaces", "custom/claude"],
+    "modules-left": ["hyprland/workspaces", "custom/claude",
+                     "cpu", "memory", "custom/gpu", "custom/temps"],
     "modules-center": ["clock"],
     "modules-right": [
         "wireplumber",
@@ -167,6 +168,63 @@
         "interval": 30,
         "format": "󰚩 {}",
         "tooltip": true
+    },
+
+    // --- Monitorización del equipo ----------------------------------------
+    // CPU, RAM, uso de la dGPU y temperaturas. Cifra corta en la barra y el
+    // desglose en el tooltip: la barra ya lleva diez módulos y en la pantalla
+    // del portátil (16") el espacio se acaba.
+    //
+    // CPU y RAM salen de módulos NATIVOS; la GPU no, porque Waybar no tiene
+    // módulo de GPU y el driver propietario de NVIDIA no expone hwmon. Ver
+    // scripts/waybar-monitor.sh, que además evita despertar la tarjeta.
+    //
+    // 5 s en los cuatro, el mismo intervalo que red y batería: es holgado para
+    // vigilar el equipo y no pone a `nvidia-smi` a correr sin parar.
+    "cpu": {
+        "interval": 5,
+        "format": "󰻠 {usage}%",
+        "tooltip": true,
+        "on-click": "kitty -e btop"
+    },
+
+    "memory": {
+        "interval": 5,
+        // 󰘚 (módulo DIMM) y NO 󰍛, aunque Nerd Font llame "memory" al
+        // segundo: a 13 px es casi idéntico al 󰻠 de la CPU —los dos son un
+        // cuadrado con patillas— y los dos módulos van pegados. El DIMM es
+        // un rectángulo con bandas y se distingue de un vistazo. Comprobado
+        // renderizando ambos con la fuente real al tamaño de la barra.
+        "format": "󰘚 {percentage}%",
+        // {used} y {total} son GiB. El tooltip da las cifras absolutas, que es
+        // lo que hace falta para decidir si cerrar algo.
+        "tooltip-format": "{used:0.1f} GiB / {total:0.1f} GiB ({percentage} %)\nDisponible {avail:0.1f} GiB",
+        "on-click": "kitty -e btop"
+    },
+
+    // Uso de la RTX 4060. `return-type: json` para que el script pueda fijar
+    // la clase CSS: `dormida` cuando la tarjeta está en RTD3 y no se la
+    // consulta —entonces el texto es 󰤄, no un 0 % que sería mentira—.
+    "custom/gpu": {
+        "exec": "$HOME/.local/bin/waybar-monitor gpu",
+        "return-type": "json",
+        "interval": 5,
+        "format": "󰢮 {}",
+        "tooltip": true,
+        "on-click": "kitty -e btop"
+    },
+
+    // Temperaturas de CPU y GPU juntas: son dos cifras que se miran a la vez y
+    // separarlas gastaría el doble de barra. La de la GPU sale del mismo script
+    // y de la misma consulta, cacheada, así que este módulo NO añade ninguna
+    // llamada a nvidia-smi.
+    "custom/temps": {
+        "exec": "$HOME/.local/bin/waybar-monitor temps",
+        "return-type": "json",
+        "interval": 5,
+        "format": "󰔏 {}",
+        "tooltip": true,
+        "on-click": "kitty -e btop"
     },
 
     // --- Sonido -----------------------------------------------------------

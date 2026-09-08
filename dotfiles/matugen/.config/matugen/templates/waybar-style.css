@@ -166,6 +166,10 @@ tooltip label {
 
 #clock,
 #custom-claude,
+#cpu,
+#memory,
+#custom-gpu,
+#custom-temps,
 #wireplumber,
 #bluetooth,
 #network,
@@ -210,6 +214,48 @@ tooltip label {
 #custom-claude.viejo {
     color: @warn;
     opacity: 0.65;
+}
+
+/* --- Monitorización del equipo -------------------------------------------
+ * Cuatro módulos que se leen como un grupo, así que van en gris: son cifras
+ * para mirar de reojo, no estados que exijan atención. El acento sigue
+ * reservado al workspace activo. Lo que sí destaca es el aviso por
+ * temperatura, que para eso está. */
+
+#cpu,
+#memory,
+#custom-gpu,
+#custom-temps {
+    color: @muted;
+}
+
+#cpu:hover,
+#memory:hover,
+#custom-gpu:hover,
+#custom-temps:hover {
+    color: @fg;
+}
+
+/* Umbrales del script (85 °C CPU, 80 °C GPU). Mismo ámbar que el resto de
+ * avisos de la barra, sin opacidad: aquí sí interesa que se vea. */
+#custom-gpu.aviso,
+#custom-temps.aviso {
+    color: @warn;
+}
+
+/* dGPU en RTD3. Se pinta MÁS apagada que el resto del grupo a propósito: el
+ * icono 󰤄 no es un dato, es la ausencia de dato, y no debe leerse como una
+ * cifra más. Ver scripts/waybar-monitor.sh. */
+#custom-gpu.dormida {
+    color: @muted;
+    opacity: 0.55;
+}
+
+/* nvidia-smi no respondió con la tarjeta despierta. Raro, pero si pasa hay que
+ * poder distinguirlo de «dormida». */
+#custom-gpu.error,
+#custom-temps.error {
+    color: @warn;
 }
 
 #wireplumber.muted {
