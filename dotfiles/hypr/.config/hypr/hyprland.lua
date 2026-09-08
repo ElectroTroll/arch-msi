@@ -532,6 +532,12 @@ hl.bind(mainMod .. " + mouse_up",   hl.dsp.focus({ workspace = "e-1" }))
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(),   { mouse = true })
 hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
+-- Alterna la salida de audio de TODO el sistema entre la interfaz USB (SSL 2+)
+-- y los altavoces del portátil, sin desenchufar la interfaz. El script mueve
+-- también los flujos que ya estaban sonando, cosa que `pactl set-default-sink`
+-- por sí solo no hace. Ver scripts/audio-salida.sh.
+hl.bind(mainMod .. " + Z", hl.dsp.exec_cmd("audio-salida"))
+
 -- Laptop multimedia keys for volume and LCD brightness
 hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"), { locked = true, repeating = true })
 hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"),      { locked = true, repeating = true })

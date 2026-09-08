@@ -3,8 +3,9 @@
 > Este archivo se genera a partir de
 > [`dotfiles/hypr/.config/hypr/hyprland.lua`](../dotfiles/hypr/.config/hypr/hyprland.lua)
 > y debe actualizarse cada vez que cambien los binds de esa config. Contrastado
-> con `hyprctl binds` el 2026-07-22, el 2026-08-01 (53 binds) y el 2026-08-04
-> (**55 binds**, tras los dos de dunst): todos los atajos documentados coinciden
+> con `hyprctl binds` el 2026-07-22, el 2026-08-01 (53 binds), el 2026-08-04
+> (55 binds, tras los dos de dunst) y el 2026-09-08 (**57 binds**, tras
+> `Super + Espacio` y `Super + Z`): todos los atajos documentados coinciden
 > con los cargados en la sesión actual.
 
 `Super` es la tecla `mainMod` de la config (`SUPER`, la tecla "Windows").
@@ -95,6 +96,13 @@ la sesión bloqueada.
 | XF86AudioPlay              | Pausar/reanudar reproducción (`playerctl`)          |
 | XF86AudioPrev              | Pista anterior (`playerctl`)                        |
 
+El siguiente **no** tiene `locked = true`: con la sesión bloqueada no debe poder
+cambiarse el destino del audio.
+
+| Atajo     | Acción                                                                  |
+|-----------|-------------------------------------------------------------------------|
+| Super + Z | Alternar la salida de audio de todo el sistema entre la interfaz USB (SSL 2+ Mk II) y los altavoces del portátil (`audio-salida`). Arrastra también los flujos que ya estaban sonando. Ver PROJECT_CONTEXT §22. |
+
 ## Distribución de teclado
 
 | Atajo          | Acción                                                                     |
@@ -171,10 +179,15 @@ inactividad».
 > Este documento es de atajos de **teclado**, así que esta sección es una
 > excepción deliberada. Se incluye aquí porque **no hay ningún otro sitio
 > consultable donde consten**: las acciones viven repartidas por las claves
-> `on-click` de
-> [`dotfiles/waybar/.config/waybar/config.jsonc`](../dotfiles/waybar/.config/waybar/config.jsonc),
+> `on-click` de la PLANTILLA
+> [`dotfiles/matugen/.config/matugen/templates/waybar-config.jsonc`](../dotfiles/matugen/.config/matugen/templates/waybar-config.jsonc),
 > y sin esto la única forma de saber qué hace cada módulo es leerse la config.
 > Verificadas contra `config.jsonc` el 2026-08-02.
+>
+> ⚠️ El enlace apuntaba a `dotfiles/waybar/.config/waybar/config.jsonc`, que
+> **ya no existe**: desde la tarea 3.0 ese archivo es un artefacto que genera
+> matugen y el paquete Stow `waybar` solo conserva `claude-usage.sh`
+> (PROJECT_CONTEXT §18). Corregido el 2026-09-08.
 
 | Módulo | Acción | Efecto |
 |---|---|---|

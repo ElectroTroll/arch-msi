@@ -44,8 +44,8 @@ y [`AGENTS.md`](AGENTS.md).
 |---------------|-----------------------------------------------------|
 | Documentación | `docs/` — contexto, hardware, cronología            |
 | Inventarios   | `packages/` — pacman, AUR, npm, servicios           |
-| Dotfiles      | `dotfiles/` — Hyprland y shell primero (pendiente)  |
-| Scripts       | `scripts/` — utilidades de mantenimiento (futuro)   |
+| Dotfiles      | `dotfiles/` — 15 paquetes Stow desplegados          |
+| Scripts       | `scripts/` — mantenimiento y utilidades de sesión   |
 
 ## Restauración (alto nivel)
 
@@ -69,7 +69,7 @@ arch-msi/
 │   ├── roadmap.md
 │   ├── hardware.md
 │   ├── keybindings.md
-│   └── history/chatgpt-arch-installation.md
+│   └── history/       # cronología: incidentes y trampas, un archivo por episodio
 ├── dotfiles/          # paquetes GNU Stow, uno por componente
 │   ├── bin/        claude/     dunst/      hypr/
 │   ├── icons/      kitty/      matugen/    minecraft/
@@ -83,8 +83,23 @@ arch-msi/
 │   └── services-enabled.txt
 └── scripts/
     ├── update-inventories.sh   # regenera los 4 archivos de packages/ con cabecera
-    └── add-wallpaper.sh        # ajusta una imagen a 2560x1600 y la añade a ~/Wallpapers
+    ├── add-wallpaper.sh        # ajusta una imagen a 2560x1600 y la añade a ~/Wallpapers
+    ├── theme-apply.sh          # aplica el tema con matugen a todos los componentes (§18)
+    ├── vpn-autoconnect.sh      # conecta ProtonVPN al iniciar sesión (§9)
+    ├── kb-layout.sh            # alterna es/us en el teclado que pulsa el atajo (§20)
+    └── audio-salida.sh         # alterna la salida de audio interfaz <-> altavoces (§22)
 ```
+
+**Todo script ejecutable vive en `scripts/` con extensión `.sh`.** Los que
+además deben poder invocarse por nombre desde la sesión (bindings de Hyprland,
+autostart) NO se duplican: el paquete Stow `bin` contiene un **symlink relativo**
+`dotfiles/bin/.local/bin/<nombre>` → `../../../../scripts/<nombre>.sh`, y Stow
+enlaza eso en `~/.local/bin`. Relativo y no absoluto por dos razones: Stow
+**rechaza los symlinks absolutos dentro de un paquete** («source is an absolute
+symlink») y un enlace absoluto ataría el repo a una ruta de clonado concreta.
+Hoy están así `theme-apply`, `vpn-autoconnect`, `kb-layout` y `audio-salida`;
+`update-inventories.sh` y `add-wallpaper.sh` se ejecutan desde el repo y no
+necesitan enlace.
 
 Los dotfiles se despliegan desde la raíz del repo, un paquete cada vez:
 

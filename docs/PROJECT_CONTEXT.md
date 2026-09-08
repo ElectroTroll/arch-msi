@@ -1,7 +1,14 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-09-08 (**toolchain C/C++** — §21 nueva: `g++`
+Última actualización: 2026-09-08 (**interfaz de audio SSL 2+ Mk II** — §22
+nueva: la interfaz funciona sin drivers, el script `audio-salida` y el atajo
+`Super+Z` para alternar la salida de todo el sistema, y el aviso de UCM. §13
+gana la convención «dónde vive un script ejecutable», que hasta ahora solo
+existía en la práctica; de paso se corrigen tres desfases de documentación
+—el contenido del paquete Stow `bin`, dos filas caducadas del README y un
+enlace roto de `keybindings.md` a la config de Waybar que dejó de existir con
+matugen—). Antes, el mismo día: (**toolchain C/C++** — §21 nueva: `g++`
 16.2.1 ya estaba instalado como dependencia de `base-devel`, por qué no figura
 en `packages/pacman-explicit.txt` y los defectos verificados C++20 / C23).
 Antes, el mismo día: (**Minecraft en la dGPU** — §13 añade el
@@ -802,9 +809,12 @@ un único listener es justamente lo que permite garantizar el orden.
   - **matugen** → `dotfiles/matugen/` (`config.toml` y las plantillas de todos
     los componentes). Es la fuente del tema.
   - **kitty** → `dotfiles/kitty/` (`kitty.conf`; tarea 3.1).
-  - **bin** → `dotfiles/bin/` (enlaza `theme-apply` en `~/.local/bin`, que está
-    en el PATH de la sesión: así Hyprland lo invoca por nombre y no depende de
-    dónde esté clonado el repo).
+  - **bin** → `dotfiles/bin/` (enlaza en `~/.local/bin`, que está en el PATH de
+    la sesión, para que Hyprland invoque por nombre y no dependa de dónde esté
+    clonado el repo: `theme-apply`, `vpn-autoconnect`, `kb-layout` y
+    `audio-salida` —este último añadido el 2026-09-08, §22). **El paquete no
+    contiene los scripts, solo symlinks relativos a `scripts/`**: ver la
+    convención abajo.
 - **Paquete Stow añadido por la tarea 3.2** (2026-08-28):
   - **rofi** → `dotfiles/rofi/` (`config.rasi`). Décimo paquete. Nace dentro del
     tema: no llega a tener colores propios. **No añade ningún requisito a
@@ -939,6 +949,36 @@ un único listener es justamente lo que permite garantizar el orden.
   Stow propio. De la fase 3 quedan Dolphin (3.4), el theming GTK/Qt (3.5),
   Spotify (3.6) y npm (3.7).
 
+### Dónde vive un script ejecutable (convención del repositorio)
+
+**Todo script ejecutable vive en `scripts/`, con extensión `.sh`, y solo ahí.**
+El paquete Stow `bin` **no contiene ningún script**: contiene *symlinks
+relativos* que apuntan al de `scripts/`, y Stow enlaza esos symlinks en
+`~/.local/bin`. La cadena queda en dos saltos:
+
+```
+~/.local/bin/audio-salida
+  -> ../../Projects/arch-msi/dotfiles/bin/.local/bin/audio-salida   (lo crea Stow)
+      -> ../../../../scripts/audio-salida.sh                        (versionado en el repo)
+```
+
+Estado a 2026-09-08: enlazados `theme-apply`, `vpn-autoconnect`, `kb-layout` y
+`audio-salida`. `update-inventories.sh` y `add-wallpaper.sh` se ejecutan a mano
+desde el repo y no necesitan enlace.
+
+**Por qué relativo y no absoluto.** Stow **rechaza los symlinks absolutos dentro
+de un paquete** —aborta con «source is an absolute symlink», la misma razón por
+la que el icono de `icons` se copió en vez de enlazarse— y un enlace absoluto
+ataría el repositorio a una ruta de clonado concreta, que es justo lo que la
+restauración no puede dar por hecho.
+
+**Por qué un script no se guarda directamente en `dotfiles/bin/`.** Funcionaría,
+pero partiría el repositorio en dos sitios donde buscar código ejecutable, y la
+documentación quedaría citando rutas de las dos formas. Pasó el 2026-09-08 con
+`audio-salida`, creado primero como archivo regular dentro del paquete Stow y
+movido después a `scripts/`. Si un script nuevo aparece en `dotfiles/bin/` y no
+es un symlink, está mal colocado.
+
 ## 14. Tareas pendientes (fases futuras)
 
 Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
@@ -987,6 +1027,14 @@ Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
   como `card1-DP-N` o `card2-DP-N` en `/sys/class/drm/card*-*/status`, y si
   `/sys/bus/pci/devices/0000:01:00.0/power/runtime_status` se queda en
   `suspended` (2026-09-06).
+- **[VER] El perfil UCM de la SSL 2+ declara menos canales de los que tiene la
+  revisión Mk II.** WirePlumber avisa en cada arranque
+  (`PlaybackChannels=4 < avail 6`, `CaptureChannels=4 < avail 8`) y el
+  dispositivo aparece como `SSL 2+ Mk II [ALSA UCM error]`. La interfaz funciona
+  —salidas y entradas verificadas— pero **no se ha comprobado si quedan canales
+  físicos sin exponer**. Prueba pendiente: contrastar los sinks/sources visibles
+  con las conexiones reales del panel trasero, y mirar si el perfil «Pro Audio»
+  de pavucontrol (que ignora UCM) saca más canales que `HiFi` (2026-09-08, §22).
 - **[VER]** hyprlock registra `Starting fade in` pese a tener
   `animations { enabled = false }` en `hyprlock.conf`. Cosmético: no se ha
   observado efecto sobre el bloqueo ni sobre el desbloqueo. Sin resolver
@@ -2266,3 +2314,66 @@ en adelante), compila sin avisos con `-Wall` y se ejecuta con salida correcta y
 código de salida 0. Es decir: se validó el **compilador y la libstdc++**, no solo
 la presencia del binario. El archivo de prueba se escribió fuera del repositorio
 y no se versiona.
+
+## 22. Interfaz de audio USB (SSL 2+ Mk II)  **[OK]**
+
+Solid State Logic SSL 2+ Mk II conectada por USB (`ID 31e9:0009`), tarjeta ALSA
+`1 [II]`. **No hizo falta instalar ni un solo controlador**: es *class-compliant*
+(USB Audio Class 2) y la maneja `snd-usb-audio`, que ya viene en el kernel.
+Comprobado el 2026-09-08 con la interfaz enchufada y sonando.
+
+**No existe SSL 360° para Linux y no se echa en falta.** `amixer -c 1 scontrols`
+devuelve **cero controles**: esta interfaz no expone mezclador por software, todo
+el control (ganancia, +4K, MONITOR MIX, 48V, auriculares) es físico y vive en el
+panel frontal. Lo que en Windows haría el software aquí ya lo hacen los mandos.
+
+### Salidas del sistema
+
+| Sink | Descripción |
+|------|-------------|
+| `alsa_output.usb-Solid_State_Logic_SSL_2__Mk_II-00.HiFi__Line1__sink` | SSL, Line Outputs 1/L + 2/R (**el que usa WirePlumber por defecto**) |
+| `alsa_output.usb-...HiFi__Line2__sink` | SSL, Line Outputs 3 + 4 |
+| `alsa_output.pci-0000_00_1f.3-platform-skl_hda_dsp_generic.HiFi__Speaker__sink` | Altavoces del portátil |
+| `...HiFi__HDMI1/2/3__sink` | HDMI/DP del iGPU Intel |
+| `alsa_output.pci-0000_01_00.1.hdmi-stereo` | HDMI de la RTX 4060 (§6) |
+
+Los **siete** sinks se pusieron al **100% y sin mute** el 2026-09-08 (venían
+dispares: 40%, 60%, 85%, y HDMI2 al 125%).
+
+### Alternar la salida: `audio-salida` + `Super+Z`
+
+Script `scripts/audio-salida.sh`, enlazado como `audio-salida` en
+`~/.local/bin` por el paquete Stow `bin`; atajo en `hyprland.lua`. Alterna entre la interfaz USB y los
+altavoces internos sin desenchufar nada; `audio-salida --status` lista las
+salidas y marca la activa.
+
+- **Por qué no basta `pactl set-default-sink`**: cambiar el predeterminado solo
+  afecta a los flujos nuevos y a los que no tengan destino fijado. Una app que ya
+  esté sonando se queda donde estaba. El script mueve además todos los
+  `sink-inputs` vivos, y por eso el atajo vale para *todo el sistema*.
+- **Identificación por nombre, no por ID**: los IDs de `wpctl`/`pactl` se
+  reasignan en cada arranque y en cada reconexión de la interfaz.
+- **Los HDMI quedan fuera a propósito**: este equipo expone cuatro sinks HDMI/DP
+  que aparecen aunque no haya nada enchufado; incluirlos convertiría un atajo de
+  dos posiciones en uno de seis, casi todas mudas. Para esos casos, pavucontrol
+  (clic izquierdo en el icono de volumen de Waybar).
+- El destino se **desmutea** al cambiar —puede venir silenciado de otra sesión—
+  pero **el volumen no se toca**, para respetar el nivel de cada salida.
+
+Verificado el 2026-09-08 en ambos sentidos: con Firefox reproduciendo, el flujo
+saltó de la SSL a los altavoces y de vuelta.
+
+### Aviso de UCM (cosmético)
+
+WirePlumber registra al arrancar:
+
+```
+spa.alsa: Error in ALSA UCM profile for _ucm0003.hw:II,0 (HiFi: Line2: sink): PlaybackChannels=4 < avail 6
+spa.alsa: Error in ALSA UCM profile for _ucm0003.hw:II,0 (HiFi: Mic2: source): CaptureChannels=4 < avail 8
+```
+
+Por eso el dispositivo aparece como `SSL 2+ Mk II [ALSA UCM error]`. Es un
+desajuste entre el perfil UCM de `alsa-ucm-conf` y la revisión **Mk II**, que
+tiene más canales de los que el perfil declara. **La interfaz funciona igual**;
+el riesgo es que no se expongan todos los canales físicos. Sin investigar a
+fondo (ver §15).
