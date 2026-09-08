@@ -55,24 +55,45 @@
     min-height: 0;
 }
 
-/* La VENTANA es transparente: lo que se pinta es la isla de dentro. Sin esto,
- * el margen dejaría ver un rectángulo de fondo en vez del wallpaper. */
+/* La VENTANA es transparente: lo que se pinta son las cajas de dentro. Sin
+ * esto, el margen dejaría ver un rectángulo de fondo en vez del wallpaper. */
 window#waybar {
     background: transparent;
     color: @fg;
 }
 
-/* LA ISLA. Flota separada de los tres bordes de la pantalla, con las cuatro
- * esquinas redondeadas y el fondo de pantalla visible alrededor.
+/* LAS CAJAS (2026-09-08). Antes esto era UNA isla de lado a lado: el fondo lo
+ * pintaba `window#waybar > box` y todos los módulos vivían dentro. Ahora la
+ * barra entera es transparente y el fondo lo lleva CADA BLOQUE por separado, de
+ * forma que se ven varias cajas flotando sobre el fondo de pantalla.
  *
- * Ya no hay `border-bottom`: esa línea existía para separar una barra pegada al
- * borde del contenido de debajo. Flotando no hace falta — el propio margen
- * separa —, y encima cortaría la esquina redondeada. */
+ * El contenedor exterior solo aporta el margen respecto a los bordes de la
+ * pantalla. Sin fondo, sin borde y sin radio: si conservara el fondo, las cajas
+ * se dibujarían encima de una isla y no se separarían de nada. */
 window#waybar > box {
+    background: transparent;
+    margin: {{metrics_bar_margin}}px;
+}
+
+/* La caja en sí. Todos los bloques comparten fondo, radio y altura para que se
+ * lean como piezas de lo mismo; lo único que cambia entre ellos es el ancho.
+ *
+ * ⚠️ El padding vertical va aquí y NO en los módulos de dentro. Si cada módulo
+ * lo llevara, las cajas de un solo módulo y las de cuatro acabarían con
+ * alturas distintas. */
+#workspaces,
+#custom-claude,
+#monitor,
+#clock,
+#sistema,
+#custom-power {
     background: alpha(@bg, {{opacity_surface}});
     border-radius: {{metrics_radius}}px;
-    margin: {{metrics_bar_margin}}px;
     padding: 0 {{metrics_pad_xs}}px;
+    /* `pad_xs` por lado = 8 px entre cajas. Con `pad_2xs` (la separación de las
+     * píldoras de workspace) los bloques se tocaban y volvían a leerse como una
+     * isla partida en vez de como cajas sueltas. */
+    margin: 0 {{metrics_pad_xs}}px;
 }
 
 /* --- Tooltips ------------------------------------------------------------
@@ -82,22 +103,36 @@ window#waybar > box {
  * detrás — ilegible, y así se vio en la primera prueba con el calendario.
  * Si algún día se quita el reset, esto puede revisarse; mientras esté, no. */
 
+/* Un tooltip es una NOTIFICACIÓN, no un trozo de barra: mismo papel —un bloque
+ * de texto que aparece encima de lo demás y se va— y por eso copia punto por
+ * punto el estilo de dunst con urgencia normal (ver la plantilla
+ * dunst-theme.conf, que sale de los mismos tokens):
+ *
+ *   fondo   surface + alfa `surface`  →  el mismo `alpha(@bg, …)`
+ *   radio   corner_radius = radius    →  el mismo `radius`
+ *   marco   frame_width = border,     →  `border` de acento OPACO
+ *           frame_color = accent
+ *   relleno padding / horizontal_pad  →  `pad_lg` vertical, `pad_xl` horizontal
+ *
+ * ⚠️ El marco va OPACO a propósito, igual que en dunst: allí los fondos llevan
+ * alfa y los marcos no, porque un borde translúcido se lee peor y el marco es
+ * justo lo que delimita la pieza sobre el fondo de pantalla. */
 tooltip {
-    background: @bg;
-    border: {{metrics_border_hairline}}px solid alpha(@fg, {{opacity_outline}});
+    background: alpha(@bg, {{opacity_surface}});
+    border: {{metrics_border}}px solid @accent;
     border-radius: {{metrics_radius}}px;
 }
 
 tooltip label {
     color: @fg;
-    padding: {{metrics_pad_sm}}px {{metrics_pad_md}}px;
+    padding: {{metrics_pad_lg}}px {{metrics_pad_xl}}px;
 }
 
 /* --- Workspaces --------------------------------------------------------- */
 
-#workspaces {
-    margin-left: {{metrics_pad_xs}}px;
-}
+/* `#workspaces` ya no lleva margen propio: desde que es una CAJA, el margen se
+ * lo da la regla común de arriba. Mantener aquí un `margin-left` extra dejaba
+ * su caja desalineada respecto a las demás. */
 
 /* Los diez workspaces están siempre presentes, así que lo que comunica el
  * estado es el CONTRASTE entre ellos. De menos a más peso visual:

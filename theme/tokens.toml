@@ -92,8 +92,10 @@ gap    = 6    # separación entre notificaciones apiladas · gaps_in de Hyprland
 gaps_out = 20 # hueco entre las ventanas y el borde de la pantalla (Hyprland)
 
 # --- Barra (Waybar) ---
-# La barra NO está pegada a los bordes: flota como una isla, con el fondo de
-# pantalla visible alrededor y las cuatro esquinas redondeadas (radius).
+# La barra NO está pegada a los bordes: flota, con el fondo de pantalla visible
+# alrededor y las esquinas redondeadas (radius). Desde el 2026-09-08 no es una
+# superficie única sino VARIAS CAJAS —una por bloque de módulos—, así que el
+# fondo de pantalla se ve también ENTRE ellas. Ver PROJECT_CONTEXT §18.
 #
 # ⚠️ LOS DOS VALORES VAN JUNTOS, y la cuenta es
 #       bar_height = contenido + 2 × bar_margin
@@ -103,8 +105,8 @@ gaps_out = 20 # hueco entre las ventanas y el borde de la pantalla (Hyprland)
 #
 # Si te quedas corto, Waybar no falla: avisa en el journal
 #     Requested height: 40 is less than the minimum height: 42 required by the modules
-# y agranda la superficie por su cuenta, con lo que la isla deja de estar
-# centrada. Medido el 2026-08-27 al poner 40 aquí.
+# y agranda la superficie por su cuenta, con lo que las cajas dejan de estar
+# centradas. Medido el 2026-08-27 al poner 40 aquí.
 bar_height = 46
 bar_margin = 6
 

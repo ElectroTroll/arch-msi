@@ -1,7 +1,11 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-09-08 (**monitorización en la barra** — §23 nueva:
+Última actualización: 2026-09-08 (**la barra en cajas** — §18 documenta que
+Waybar deja de ser una isla de lado a lado y pasa a seis cajas con `group/`, y
+que los tooltips pasan a llevar el estilo exacto de las notificaciones de
+dunst: fondo translúcido, marco de acento de 2 px y el mismo relleno).
+Antes, el mismo día: (**monitorización en la barra** — §23 nueva:
 CPU, RAM, uso de la dGPU y temperaturas en Waybar, con el guardado de RTD3 que
 impide que el módulo despierte la RTX 4060). Antes, el mismo día:
 (**interfaz de audio SSL 2+ Mk II** — §22
@@ -1707,7 +1711,7 @@ que «lo seleccionado» se vea igual en toda la sesión:
 
 | Papel | Opacidad | Equivalente en Waybar |
 |---|---|---|
-| Superficie flotante | `surface` (0.80) | la isla de la barra |
+| Superficie flotante | `surface` (0.80) | las cajas de la barra y los tooltips |
 | Fila seleccionada | `active` (0.15) | workspace en uso |
 | Campo de búsqueda | `separator` (0.08) | hover / divisores |
 | Barra de scroll | `hint` (0.35) | contorno de workspace con ventanas |
@@ -1731,6 +1735,74 @@ cinco filas), pero ese 96 es frágil: si la escala del panel bajara a 1.0, la
 escala entera pasaría a 1, el DPI derivado saltaría a ~191 y los PUNTOS casi
 duplicarían la letra. Los píxeles no se mueven, y además son la misma unidad que
 las distancias del `.rasi`. Ver el bloque «Lanzador (rofi)» de `tokens.toml`.
+
+### La barra son CAJAS, no una isla (2026-09-08)
+
+Hasta esta fecha la barra era **una isla** de lado a lado: el fondo lo pintaba
+`window#waybar > box` y todos los módulos vivían dentro. Ahora ese contenedor es
+transparente y **el fondo lo lleva cada bloque**, así que sobre el fondo de
+pantalla flotan seis cajas:
+
+```
+[ workspaces ] [ Claude ] [ CPU RAM GPU temp ]   [ reloj ]   [ sonido bt red vpn batería perfil ] [ ⏻ ]
+```
+
+Los módulos que comparten caja se agrupan con **`group/`** en `config.jsonc`
+(`group/monitor` y `group/sistema`). Un `group/` no cambia el comportamiento de
+sus módulos: solo los envuelve en un contenedor con id propio —`#monitor`,
+`#sistema`— al que el CSS puede darle fondo y esquinas. Sin `drawer`, o sea que
+se ven siempre desplegados; no son menús.
+
+Dos detalles que costaron un intento cada uno:
+
+- **El padding vertical va en la caja, no en los módulos de dentro.** Si lo
+  llevara cada módulo, las cajas de un módulo y las de cuatro acabarían con
+  alturas distintas.
+- **La separación entre cajas es `pad_xs` (8 px entre dos), no `pad_2xs`.** Con
+  `pad_2xs` —que es la separación de las píldoras de workspace— los bloques se
+  tocaban y el conjunto volvía a leerse como una isla partida. Comprobado en
+  captura.
+- `#workspaces` **perdió su `margin-left` propio**: desde que es una caja, el
+  margen se lo da la regla común, y mantener el suyo la dejaba desalineada
+  respecto a las demás.
+
+### Un tooltip es una notificación, y se estila como tal
+
+Los tooltips de Waybar copian **punto por punto** el estilo de una notificación
+de dunst con urgencia normal. No es parecido «a ojo»: los dos salen de los
+mismos tokens, así que un cambio en `tokens.toml` los mueve a la vez.
+
+| | dunst (`urgency_normal`) | tooltip (GTK CSS) |
+|---|---|---|
+| Fondo | `surface` + alfa `opacity_surface` | `alpha(@bg, opacity_surface)` |
+| Radio | `corner_radius = radius` | `border-radius: radius` |
+| Marco | `frame_width = border`, `frame_color = accent` | `border: border px solid @accent` |
+| Relleno | `padding = pad_lg`, `horizontal_padding = pad_xl` | `padding: pad_lg pad_xl` |
+
+El razonamiento es que cumplen el mismo papel —un bloque de texto que aparece
+encima de todo y se va—, así que no había motivo para que se vieran distintos.
+Antes el tooltip era `@bg` **opaco** con un filete de 1 px a `alpha(@fg, 0.18)`:
+ni la transparencia ni el marco de acento de las notificaciones.
+
+⚠️ **El marco va OPACO a propósito**, igual que en dunst: allí los fondos llevan
+alfa y los marcos no, porque un borde translúcido se lee peor y el marco es lo
+que delimita la pieza sobre el fondo de pantalla.
+
+Sigue siendo obligatorio que el bloque `tooltip` exista: el `all: unset` del
+reset borra también el estilo por defecto de GTK, incluido el fondo.
+
+⚠️ **Pendiente de comprobación visual, y no por falta de intentos.** No hay
+forma de provocar un tooltip desde el terminal en esta sesión: `hyprctl dispatch
+movecursor` teletransporta el puntero sin generar los eventos de hover que GTK
+necesita —probado con el reloj y con los módulos de monitorización, con
+movimientos escalonados y esperas de hasta 3 s, capturando la pantalla
+completa—, y no hay `wtype` ni `ydotool` instalados. Lo que sí se comprobó es
+que el CSS generado en `~/.config/waybar/style.css` es exactamente
+`background: alpha(@bg, 0.8)`, `border: 2px solid @accent`, `border-radius:
+10px` y `padding: 12px 14px`, o sea los mismos valores que el artefacto de
+dunst. **Queda verlo con el ratón.** Si el fondo saliera oscuro en vez de
+translúcido, la causa sería que GTK3 no da ventana RGBA a los tooltips, y la
+salida es volver a un fondo opaco.
 
 ### Artefactos (ninguno se versiona)
 

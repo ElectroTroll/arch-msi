@@ -32,8 +32,9 @@
     // Altura fija en lugar de automática: evita que la barra "salte" cuando un
     // módulo cambia de ancho o aparece un icono más alto.
     //
-    // Es la altura de la SUPERFICIE, no la de la isla visible: el margen del CSS
-    // se descuenta por dentro. Ver `bar_height` y `bar_margin` en tokens.toml.
+    // Es la altura de la SUPERFICIE que reserva Waybar, no la de las cajas
+    // visibles: el margen del CSS se descuenta por dentro. Ver `bar_height` y
+    // `bar_margin` en tokens.toml.
     "height": {{metrics_bar_height}},
 
     // Separación 0: el espaciado se hace con padding en CSS, no aquí, para
@@ -45,18 +46,35 @@
     // al borde (es la referencia de navegación y la posición que tiene hecha la
     // muscle memory), y así el módulo conserva su sitio relativo de antes —era
     // el más interior del grupo derecho, ahora es el más interior del izquierdo.
-    "modules-left": ["hyprland/workspaces", "custom/claude",
-                     "cpu", "memory", "custom/gpu", "custom/temps"],
+    // Cada entrada de estas tres listas es una CAJA de la barra (ver style.css):
+    // el fondo ya no lo pinta la barra entera sino cada bloque por separado. Por
+    // eso los módulos que van juntos se agrupan con `group/`, que es lo que
+    // Waybar ofrece para meter varios módulos en un contenedor propio.
+    "modules-left": ["hyprland/workspaces", "custom/claude", "group/monitor"],
     "modules-center": ["clock"],
-    "modules-right": [
-        "wireplumber",
-        "bluetooth",
-        "network",
-        "network#vpn",
-        "battery",
-        "power-profiles-daemon",
-        "custom/power"
-    ],
+    "modules-right": ["group/sistema", "custom/power"],
+
+    // --- Grupos = cajas ---------------------------------------------------
+    // Un `group/` no cambia nada del comportamiento de los módulos que
+    // contiene: solo los envuelve en un contenedor con id propio —`#monitor`,
+    // `#sistema`— al que el CSS puede darle fondo y esquinas. Sin `drawer`, así
+    // que se ven siempre desplegados; no son menús.
+    "group/monitor": {
+        "orientation": "horizontal",
+        "modules": ["cpu", "memory", "custom/gpu", "custom/temps"]
+    },
+
+    "group/sistema": {
+        "orientation": "horizontal",
+        "modules": [
+            "wireplumber",
+            "bluetooth",
+            "network",
+            "network#vpn",
+            "battery",
+            "power-profiles-daemon"
+        ]
+    },
 
     // --- Workspaces -------------------------------------------------------
     // Los de cada pantalla SIEMPRE visibles en su barra. Hyprland por su cuenta
