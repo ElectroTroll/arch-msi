@@ -46,6 +46,7 @@ y [`AGENTS.md`](AGENTS.md).
 | Inventarios   | `packages/` — pacman, AUR, npm, servicios           |
 | Dotfiles      | `dotfiles/` — 15 paquetes Stow desplegados          |
 | Scripts       | `scripts/` — mantenimiento y utilidades de sesión   |
+| Sistema       | `system/` — lo que va fuera de `$HOME` (SDDM)       |
 
 ## Restauración (alto nivel)
 
@@ -81,6 +82,9 @@ arch-msi/
 │   ├── aur.txt
 │   ├── npm-global.txt
 │   └── services-enabled.txt
+├── system/            # lo que NO vive en $HOME: se COPIA, no se enlaza
+│   ├── sddm/arch-msi/     # tema del greeter -> /usr/share/sddm/themes/
+│   └── etc/sddm.conf.d/   # drop-in que lo activa -> /etc/sddm.conf.d/
 └── scripts/
     ├── update-inventories.sh   # regenera los 4 archivos de packages/ con cabecera
     ├── add-wallpaper.sh        # ajusta una imagen a 2560x1600 y la añade a ~/Wallpapers
@@ -88,7 +92,8 @@ arch-msi/
     ├── vpn-autoconnect.sh      # conecta ProtonVPN al iniciar sesión (§9)
     ├── kb-layout.sh            # alterna es/us en el teclado que pulsa el atajo (§20)
     ├── audio-salida.sh         # alterna la salida de audio interfaz <-> altavoces (§22)
-    └── waybar-monitor.sh       # CPU/RAM/GPU y temperaturas para la barra (§23)
+    ├── waybar-monitor.sh       # CPU/RAM/GPU y temperaturas para la barra (§23)
+    └── greeter-apply.sh        # instala el tema del greeter de SDDM (§24) — con sudo
 ```
 
 **Todo script ejecutable vive en `scripts/` con extensión `.sh`.** Los que
@@ -102,6 +107,12 @@ Hoy están así `theme-apply`, `vpn-autoconnect`, `kb-layout`, `audio-salida` y
 `waybar-monitor`;
 `update-inventories.sh` y `add-wallpaper.sh` se ejecutan desde el repo y no
 necesitan enlace.
+
+**`system/` es la excepción a Stow.** Guarda lo que va fuera de `$HOME` —hoy, el
+tema del greeter de SDDM— con la ruta de destino reflejada en su estructura. No
+se enlaza: lo **copia** `greeter-apply` con sudo. Un enlace al repositorio
+dentro de `/usr/share` dejaría al sistema dependiendo de que el home esté
+montado y de una ruta de clonado concreta. Ver PROJECT_CONTEXT §24.
 
 Los dotfiles se despliegan desde la raíz del repo, un paquete cada vez:
 

@@ -46,6 +46,19 @@ output_path = "~/.config/dunst/dunstrc.d/50-theme.conf"
 input_path  = "~/.config/matugen/templates/hyprlock-theme.conf"
 output_path = "~/.config/hypr/theme.conf"
 
+# SDDM: el greeter NO lee de aquí. Este artefacto es un paso intermedio que
+# `greeter-apply` copia luego a /usr/share/sddm/themes/arch-msi/ CON SUDO,
+# porque el usuario `sddm` no puede leer /home/elok (drwx------). Por eso el
+# greeter es el único componente del tema que no se actualiza solo. Ver
+# PROJECT_CONTEXT §24.
+#
+# ⚠️ El directorio de salida es NUEVO y no existe en el repositorio, que es lo
+# que mantiene la regla de oro: ninguna salida puede caer sobre un enlace de
+# Stow.
+[templates.sddm]
+input_path  = "~/.config/matugen/templates/sddm-theme.conf"
+output_path = "~/.config/sddm-arch-msi/theme.conf"
+
 # kitty conserva su kitty.conf enlazado por Stow y hace `include theme.conf`.
 [templates.kitty]
 input_path  = "~/.config/matugen/templates/kitty-theme.conf"

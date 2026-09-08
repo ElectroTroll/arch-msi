@@ -22,6 +22,16 @@
 
 
 # --- Pantalla de bloqueo -----------------------------------------------------
+[greeter]
+# Pantalla de inicio de sesión (SDDM). Solo lleva el mensaje de fallo: el
+# marcador de posición y el "Comprobando…" se reutilizan de [lock], para que las
+# dos pantallas digan lo mismo.
+#
+# ⚠️ NO puede llevar $ATTEMPTS como el de [lock]: esa variable la resuelve
+# hyprlock al dibujar y SDDM no la tiene, así que el greeter enseñaría el texto
+# literal "$ATTEMPTS".
+fail = "Contraseña incorrecta"
+
 [lock]
 # Texto del campo de contraseña cuando está vacío.
 placeholder = "Introduce la contraseña"

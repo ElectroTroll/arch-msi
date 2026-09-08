@@ -308,6 +308,50 @@ clock_font      = "JetBrainsMono NF ExtraBold"
 #
 # Todo lo de abajo está MEDIDO sobre el fondo actual con `--dry-run` el
 # 2026-08-27, no copiado de la documentación.
+# --- Greeter (SDDM) ---
+# Pantalla de inicio de sesión, a juego con hyprlock (PROJECT_CONTEXT §24). El
+# resto de sus valores —colores, fuente, tamaño del reloj y del campo— NO se
+# declaran aquí: se reutilizan los de [lock], que es justo lo que hace que las
+# dos pantallas se vean iguales.
+[greeter]
+# ⚠️ NO son las `blur_passes`/`blur_size` de hyprlock. Allí el desenfoque lo
+# hace el compositor encadenando pasadas; aquí lo hace ImageMagick sobre la
+# imagen ANTES de instalarla, con una sola gaussiana, así que la unidad es otra:
+# esto es el sigma de `-blur 0xSIGMA`.
+#
+# El 20 se eligió comparando tres renders (12, 20, 28) contra el criterio que ya
+# fijaba [lock]: "el paisaje se reconoce pero no se distingue un detalle". Con
+# 12 aún se distinguían los picos y los reflejos; con 28 la imagen se volvía
+# abstracta.
+blur_sigma = 20
+
+# Brillo en PORCENTAJE (`-modulate`), no la fracción 0..1 de hyprlock:
+# [lock].brightness = 0.75 es este 75. Se repite el valor en vez de derivarlo
+# porque son unidades distintas y derivarlo escondería la conversión.
+brightness = 75
+
+# ⚠️ EL PESO DEL RELOJ VA APARTE, y no es un capricho. [lock].clock_font es
+# "JetBrainsMono NF ExtraBold", y FONTCONFIG lo resuelve bien —comprobado con
+# `fc-match`: familia "JetBrainsMono Nerd Font", estilo ExtraBold—, que es como
+# lo aplica hyprlock. **Qt no consulta fontconfig de esa forma**: busca una
+# familia que se llame literalmente así, no la encuentra y cae a otra fuente sin
+# avisar. Por eso el reloj del greeter no se parecía al del bloqueo.
+#
+# La solución es dar la FAMILIA por un lado y el PESO por otro. Este número es
+# la escala de Qt5 (Font.ExtraBold = 81), no la de CSS ni la de Qt6, que va de
+# 100 a 900: el greeter es Qt5 (§24).
+clock_weight = 81
+
+# Separación entre el nombre de usuario y el campo de contraseña, en px lógicos.
+# Se subió de 12 a 28 el 2026-09-08: pegado al campo el nombre parecía parte de
+# la caja en vez de una etiqueta suya.
+name_gap = 28
+
+# Separación entre los puntos de la contraseña (`font.letterSpacing`). Los
+# círculos de JetBrainsMono salen muy juntos a este tamaño y se leen como una
+# mancha en vez de como caracteres contados.
+password_spacing = 6
+
 [matugen]
 
 # scheme-content | scheme-expressive | scheme-fidelity | scheme-fruit-salad |

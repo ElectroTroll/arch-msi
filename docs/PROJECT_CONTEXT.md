@@ -1,7 +1,10 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-09-08 (**la barra en cajas** — §18 documenta que
+Última actualización: 2026-09-08 (**greeter de SDDM a juego con hyprlock** —
+§24 nueva: el primer componente del repositorio que vive fuera de `$HOME`, con
+su convención `system/` y el instalador que hay que ejecutar con sudo).
+Antes, el mismo día: (**la barra en cajas** — §18 documenta que
 Waybar deja de ser una isla de lado a lado y pasa a seis cajas con `group/`, y
 que los tooltips pasan a llevar el estilo exacto de las notificaciones de
 dunst: fondo translúcido, marco de acento de 2 px y el mismo relleno).
@@ -2547,3 +2550,263 @@ permanente y esa rama no se alcanza. La prueba es mirar que
 
 **A `packages/` no añade nada**: `jq` y `btop` ya estaban explícitos y
 `nvidia-smi` lo trae `nvidia-utils`. Comprobado regenerando el inventario.
+
+## 24. Greeter de SDDM  **[OK]**
+
+La pantalla de inicio de sesión, a juego con hyprlock: mismo fondo desenfocado,
+mismo reloj blanco arriba, mismo campo con contorno de acento y la misma fuente.
+
+**Punto de partida (2026-09-08): no existía NINGUNA configuración de SDDM.** Ni
+`/etc/sddm.conf` ni `/etc/sddm.conf.d/`, y `Current=` vacío, o sea el greeter de
+fábrica desde la instalación. Es el estado que describía el usuario y se
+confirmó antes de tocar nada.
+
+| | |
+|---|---|
+| Gestor | SDDM 0.21.0-7. ⚠️ El daemon lanza **`sddm-greeter` (Qt5)**, no el binario Qt6 que también trae el paquete |
+| Sesión del greeter | **Xorg** en `tty2` (§9), aunque la sesión de usuario sea Wayland |
+| Tema | `arch-msi`, Theme-API 2.0 |
+| Instalado en | `/usr/share/sddm/themes/arch-msi/` (root) |
+| Activado por | `/etc/sddm.conf.d/10-arch-msi.conf` |
+
+### Por qué estrena el directorio `system/`
+
+Es **el primer componente que no vive en `$HOME`**, así que no puede ir por
+Stow. `system/` guarda la copia versionada de lo que va fuera del home, con la
+ruta de destino reflejada en su estructura:
+
+```
+system/sddm/arch-msi/{Main.qml, metadata.desktop}   → /usr/share/sddm/themes/arch-msi/
+system/etc/sddm.conf.d/10-arch-msi.conf             → /etc/sddm.conf.d/
+```
+
+Nada de ahí se enlaza: lo **copia** `scripts/greeter-apply.sh` con sudo. Un
+enlace a un archivo del repositorio dentro de `/usr/share` sería peor que una
+copia: dejaría al greeter dependiendo de que el home esté montado y de una ruta
+de clonado concreta.
+
+### El reparto: estructura versionada, valores generados
+
+Es el mismo patrón que hyprlock, y funciona porque **SDDM expone las claves de
+`theme.conf` al QML como `config.<clave>`** (Theme-API 2.0). Así que no hace
+falta generar el QML entero como la hoja de Waybar:
+
+- `Main.qml` — versionado, no cambia al cambiar el fondo.
+- `theme.conf` — plantilla de matugen → artefacto en `~/.config/sddm-arch-msi/`.
+- `background.jpg` — lo genera el instalador a partir del fondo en uso.
+
+### ⚠️ El único componente del tema que NO se actualiza solo
+
+`theme-apply` deja el artefacto en el home y **ahí se queda**. Para que el
+greeter cambie hay que ejecutar, a mano y con sudo:
+
+```bash
+theme-apply          # sin sudo, como siempre
+sudo greeter-apply   # y esto, que es lo que llega al greeter
+```
+
+Dos hechos lo obligan: el tema tiene que estar en `/usr/share/sddm/themes/`, que
+es de root, y **el usuario `sddm` (uid 965) no puede leer `/home/elok`**, que es
+`drwx------`, así que ni el QML ni la imagen pueden quedarse en el home.
+
+La alternativa era dejar el directorio del tema a nombre del usuario para que
+`theme-apply` lo reescribiera solo. **Se descartó a propósito**: ese QML lo
+ejecuta el greeter ANTES del login, así que hacerlo escribible sin root
+convertiría la pantalla de acceso en algo modificable por cualquier cosa que
+corra como el usuario. Consecuencia asumida: al cambiar de fondo, el greeter se
+queda con el anterior hasta el siguiente `sudo greeter-apply`.
+
+### ⚠️ Con sudo hay que dar la RUTA COMPLETA
+
+`sudo greeter-apply` responde **`command not found`** aunque `greeter-apply`
+funcione en la sesión. No es un fallo del enlace: sudo no hereda el PATH del
+usuario, usa el `secure_path` de `/etc/sudoers`, que trae `/usr/bin` y compañía
+pero **no `~/.local/bin`**. Hay que invocarlo así:
+
+```bash
+sudo /home/elok/Projects/arch-msi/scripts/greeter-apply.sh
+```
+
+Es el primer script del repositorio que se ejecuta como root, así que ninguno de
+los otros se topa con esto. Desde el 2026-09-08 el propio script lo dice: al
+llamarlo sin root imprime el comando con la ruta ya resuelta en vez de un «hace
+falta root» a secas.
+
+### Tres trampas que costaron un intento cada una
+
+1. **El desenfoque NO se hace en el QML.** La primera versión usaba
+   `MultiEffect` de `QtQuick.Effects` y la imagen **solo cubría 1600x1000 de una
+   ventana de 2560x1600**: MultiEffect resuelve la textura de origen en píxeles
+   LÓGICOS y la pinta sin escalarla por el `devicePixelRatio`, así que en un
+   panel HiDPI el fondo se quedaba en un rectángulo en la esquina. Ahora la
+   imagen se procesa con ImageMagick al instalar: sin shader, sin depender del
+   DPI, y el greeter arranca sin trabajo de GPU. El coste —que el desenfoque se
+   congela con la imagen— aquí da igual, porque el tema ya se refresca a mano.
+
+2. **Las medidas del QML son proporcionales, no píxeles.** hyprlock dibuja en
+   píxeles LÓGICOS (escala 1.6: 1600x1000) y el greeter va en FÍSICOS
+   (2560x1600). Copiar el `clock_size = 160` tal cual habría dado un reloj
+   mucho menor de lo esperado. `Main.qml` define `u = height / 1000` y expresa
+   todo en múltiplos de esa unidad, así que los valores de `[lock]` se
+   reutilizan sin conversión.
+
+3. **El blur de hyprlock no se traduce multiplicando.** `blur_passes × blur_size`
+   = 21 px de radio, imperceptible a lo ancho de 2560 px: la primera prueba salió
+   con el paisaje nítido. hyprlock encadena pasadas —cada una sobre el resultado
+   de la anterior—, así que su efecto crece mucho más rápido que una sola
+   gaussiana equivalente. El `blur_sigma = 20` de `[greeter]` se eligió
+   comparando tres renders (12, 20, 28) contra el criterio que ya fijaba
+   `[lock]`: «el paisaje se reconoce pero no se distingue un detalle».
+
+### ⚠️ Qt no resuelve las fuentes como fontconfig
+
+El reloj salía con otra tipografía que el de hyprlock aunque los dos leen el
+MISMO token. `[lock].clock_font` es `"JetBrainsMono NF ExtraBold"`, y eso
+**fontconfig lo resuelve bien** —comprobado con `fc-match`: familia
+`JetBrainsMono Nerd Font`, estilo `ExtraBold`, archivo
+`JetBrainsMonoNerdFont-ExtraBold.ttf`—, que es como lo aplica hyprlock.
+
+**Qt no consulta fontconfig de esa forma**: busca una familia que se llame
+literalmente así, no la encuentra y cae a otra fuente **sin avisar**. El
+resultado era un reloj en Regular donde el bloqueo enseña ExtraBold.
+
+La solución es mandar la FAMILIA y el PESO por separado:
+
+```
+fontClock=JetBrainsMono Nerd Font     ← familia de verdad
+fontClockWeight=81                    ← Font.ExtraBold en la escala de Qt5
+```
+
+⚠️ Ese 81 es la escala de **Qt5** (Thin 0 … Bold 75, ExtraBold 81, Black 87), no
+la de CSS ni la de Qt6, que va de 100 a 900. Si algún día el daemon pasara a
+lanzar el greeter de Qt6, este número habría que traducirlo.
+
+Es la misma clase de trampa que ya avisaba `tokens.toml` para el nombre de la
+fuente de Waybar: pegar el peso al nombre de la familia funciona en unos sitios
+y en otros no, y cuando no funciona **falla en silencio**.
+
+### Tres valores propios del greeter
+
+hyprlock no tiene equivalentes, así que viven en `[greeter]` y no se derivan de
+`[lock]`:
+
+| Token | Valor | Qué hace |
+|---|---|---|
+| `clock_weight` | 81 | el peso de arriba, para el reloj y el nombre |
+| `name_gap` | 28 | separación entre el nombre y el campo. Con los 12 iniciales el nombre parecía parte de la caja en vez de una etiqueta suya |
+| `password_spacing` | 6 | `font.letterSpacing` de los puntos: los círculos de JetBrainsMono salen pegados a ese tamaño y se leen como una mancha |
+
+El nombre de usuario comparte tipografía con el reloj —familia y peso— y no con
+el campo: los dos se dibujan sobre la foto y forman un bloque, mientras que el
+campo es un control.
+
+### Se prueba SIN arriesgar el login
+
+El greeter acepta `--test-mode`, así que el tema se puede abrir como una ventana
+más en la sesión actual, sin tocar SDDM ni reiniciar:
+
+```bash
+sddm-greeter --test-mode --theme /usr/share/sddm/themes/arch-msi
+```
+
+⚠️ **`sddm-greeter`, nunca `sddm-greeter-qt6`.** Es el error que dejó pasar un
+tema roto hasta el primer arranque: el binario de Qt6 acepta imports sin
+versión, tiene `QtQuick.Controls` y trae `QtQuick.Effects`, así que da por bueno
+lo que el greeter real rechaza.
+
+Es la vía por la que se validó todo lo de arriba. En modo de prueba no hay
+logind detrás, así que `sddm.canPowerOff` y compañía son `false` y `lastUser`
+está vacío: por eso el QML atenúa esos botones en vez de ocultarlos, y el
+nombre de usuario cae a un texto de relleno.
+
+### Estado
+
+### ⚠️⚠️ El primer arranque con el tema puesto FALLÓ, y por qué
+
+El tema se instaló, se activó y aun así el arranque enseñó el greeter de fábrica
+con varios errores en rojo. **La validación previa no valía**: se había probado
+con `sddm-greeter-qt6 --test-mode`, y ese no es el binario que usa el daemon.
+El journal lo dijo claro:
+
+```
+Starting X11 session: "/usr/bin/sddm-greeter --theme /usr/share/sddm/themes/arch-msi"
+Loading file:///usr/share/sddm/themes/arch-msi/Main.qml...
+file:///usr/share/sddm/themes/arch-msi/Main.qml: Library import requires a version
+Fallback to embedded theme
+```
+
+Tres cosas encadenadas, todas invisibles con el binario de Qt6:
+
+1. **El daemon usa el greeter de Qt5.** El paquete `sddm` trae los dos
+   (`sddm-greeter` y `sddm-greeter-qt6`) y **no hay ninguna opción para
+   elegir**: `/usr/lib/sddm/sddm.conf.d/default.conf` no expone nada al
+   respecto. Qt5 exige la VERSIÓN en cada import (`import QtQuick 2.15`) y sin
+   ella aborta con «Library import requires a version».
+2. **`QtQuick.Controls` no está instalado para Qt5.** Solo hay `qt5-base`,
+   `qt5-declarative`, `qt5-translations` y `qt5-wayland`, y
+   `/usr/lib/qt/qml/QtQuick/` no contiene `Controls`. El greeter lo dijo en
+   rojo: `module "QtQuick.Controls" is not installed`. En vez de instalar
+   `qt5-quickcontrols2` (8,9 MB) se reescribió el campo de contraseña con
+   `TextInput` + `Rectangle`, que es QtQuick puro. **A `packages/` sigue sin
+   añadirse nada.**
+3. **Los iconos de apagado estaban VACÍOS.** Los glifos Nerd Font escritos como
+   carácter literal se perdieron en una de las reescrituras del archivo y
+   quedaron cadenas vacías, así que los tres botones desaparecían de la pantalla
+   **sin un solo error en el log**: no fallaban, es que no tenían nada que
+   dibujar. Ahora van como escapes `\uF011`, `\uF021` y `\uF186`, que
+   sobreviven a cualquier copia.
+
+**Regla que queda:** este tema se prueba con `sddm-greeter --test-mode`, **nunca
+con `sddm-greeter-qt6`**. El de Qt6 acepta imports sin versión, tiene Controls y
+trae `QtQuick.Effects`; o sea que da por bueno un tema que el greeter real
+rechaza.
+
+### Estado
+
+**Instalado y activo el 2026-09-08**, comprobado con `greeter-apply --status`
+y contra el sistema:
+
+```
+tema instalado : sí (/usr/share/sddm/themes/arch-msi)
+drop-in        : sí (/etc/sddm.conf.d/10-arch-msi.conf)
+tema activo    : arch-msi
+```
+
+El drop-in instalado es idéntico al versionado, los cuatro archivos del tema
+están en su sitio y `sddm.service` siguió `active` durante todo el proceso: no
+se reinició el servicio, así que la sesión abierta nunca estuvo en riesgo.
+
+**Verificado en arranques reales el 2026-09-08**, incluidos los ajustes de
+tipografía. Hicieron falta tres arranques y quedan en el journal:
+
+| Arranque | Qué llevaba | Resultado |
+|---|---|---|
+| 17:39 | primera versión (imports sin versión, `QtQuick.Controls`) | **falló**: `Fallback to embedded theme` |
+| 17:49 | versión Qt5 corregida | greeter con su tema, login correcto |
+| 17:57 | + tipografía (peso, `name_gap`, `password_spacing`) | greeter con su tema, sin fallback ni errores QML |
+
+El tercero se comprueba por las fechas: el tema con la tipografía nueva se
+instaló a las **17:56:59** y ese arranque empezó a las **17:57:22**, 22 segundos
+después, con `Loading theme configuration from
+"/usr/share/sddm/themes/arch-msi/theme.conf"` y **ningún** mensaje de fallback ni
+error QML en el journal.
+
+⚠️ Para juzgar la tipografía en modo de prueba hay que **simular el nombre y la
+contraseña**: `userModel.lastUser` viene vacío sin logind detrás y el campo
+arranca sin texto, así que ni el nombre ni los puntos se ven. Se hace sobre una
+COPIA del tema, nunca sobre el versionado.
+
+⚠️ **La instalación se hizo dos veces, y la primera se quedó a medias.** Quedó
+el tema completo pero sin drop-in, y la causa no fue el script: se ejecutó en el
+mismo segundo (17:29:03) en que el archivo se estaba reescribiendo (17:29:02).
+Bash lee los scripts por bloques guardando un desplazamiento, así que al cambiar
+el tamaño del archivo bajo sus pies continuó desde un offset que ya no
+correspondía y terminó antes de los dos `install` finales. **No editar un script
+mientras se ejecuta**; si pasa, basta con repetirlo: esto es idempotente.
+
+**Reversión**: `sudo greeter-apply --revert` borra el drop-in y SDDM vuelve solo
+a su greeter de fábrica. Si el tema fallara al cargar, SDDM también cae al de
+fábrica por su cuenta, así que no hay riesgo de quedarse sin login.
+
+**A `packages/` no añade nada**: `sddm`, `qt6-declarative` e `imagemagick` ya
+estaban.

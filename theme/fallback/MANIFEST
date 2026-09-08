@@ -4,6 +4,7 @@ waybar__style.css  waybar/style.css
 waybar__config.jsonc  waybar/config.jsonc
 dunst__dunstrc.d__50-theme.conf  dunst/dunstrc.d/50-theme.conf
 hypr__theme.conf  hypr/theme.conf
+sddm-arch-msi__theme.conf  sddm-arch-msi/theme.conf
 kitty__theme.conf  kitty/theme.conf
 hypr__theme.lua  hypr/theme.lua
 fastfetch__config.jsonc  fastfetch/config.jsonc

@@ -1,0 +1,11 @@
+[SddmGreeterTheme]
+Name=arch-msi
+Description=Greeter a juego con hyprlock (arch-msi)
+Author=elok
+License=MIT
+Type=sddm-theme
+Version=1.0
+MainScript=Main.qml
+ConfigFile=theme.conf
+Theme-Id=arch-msi
+Theme-API=2.0
