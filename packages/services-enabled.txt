@@ -1,5 +1,5 @@
 # Servicios y timers habilitados
-# Fuente: auditoría 2026-08-28 en elok-archmsi
+# Fuente: auditoría 2026-09-08 en elok-archmsi
 # Regenerar con:
 #   systemctl list-unit-files --state=enabled
 #   systemctl --user list-unit-files --state=enabled
@@ -13,6 +13,7 @@ NetworkManager-dispatcher.service
 NetworkManager-wait-online.service
 NetworkManager.service
 power-profiles-daemon.service
+proton.VPN.service
 sddm.service
 systemd-oomd.service
 systemd-timesyncd.service

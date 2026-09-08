@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Minecraft Launcher
+GenericName=Minecraft Launcher
+Comment=Official Minecraft Launcher (RTX 4060 via PRIME offload)
+Exec=prime-run /usr/bin/minecraft-launcher.sh
+Icon=minecraft-launcher
+Terminal=false
+Categories=Game;Application;
+StartupNotify=true

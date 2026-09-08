@@ -1,5 +1,5 @@
 # Paquetes instalados explícitamente (pacman -Qqe)
-# Fuente: auditoría 2026-08-28 en elok-archmsi
+# Fuente: auditoría 2026-09-08 en elok-archmsi
 # Regenerar con: pacman -Qqe > packages/pacman-explicit.txt
 # AVISO: al regenerar, esta cabecera se pierde. Debe volver a añadirse a mano
 # (o usar scripts/update-inventories.sh, que la conserva).
@@ -62,6 +62,7 @@ man-pages
 matugen
 mediainfo
 mesa-utils
+minecraft-launcher
 mpv
 network-manager-applet
 networkmanager
@@ -89,6 +90,8 @@ playerctl
 polkit-kde-agent
 poppler
 power-profiles-daemon
+proton-vpn-cli
+proton-vpn-gtk-app
 python-gobject
 qt5-wayland
 reflector

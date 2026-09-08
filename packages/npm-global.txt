@@ -1,6 +1,6 @@
 # Paquetes npm globales (npm list -g --depth=0)
-# Fuente: auditoría 2026-08-28 en elok-archmsi
-# node v26.7.0 / npm 12.0.2 / npm prefix -g = /home/elok/.local
+# Fuente: auditoría 2026-09-08 en elok-archmsi
+# node v26.8.1 / npm 12.0.2 / npm prefix -g = /home/elok/.local
 #
 # NOTA: el prefix global se migró a ~/.local (sin sudo). Las instalaciones
 # globales caen en ~/.local/lib/node_modules con binarios en ~/.local/bin,
