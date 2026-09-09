@@ -1,7 +1,12 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-09-08 (**greeter de SDDM a juego con hyprlock** —
+Última actualización: 2026-09-09 (**TeamViewer para ver la pantalla del iPad** —
+§25 nueva: solo visión porque iPadOS no permite control por terceros, y el
+paquete AUR no declara `minizip`, lo que deja el demonio en `status=127`; §15
+gana la captura de la sesión Wayland como pendiente de probar. Diagnóstico en
+`history/2026-09-09-teamviewer-ipad.md`).
+Antes: 2026-09-08 (**greeter de SDDM a juego con hyprlock** —
 §24 nueva: el primer componente del repositorio que vive fuera de `$HOME`, con
 su convención `system/` y el instalador que hay que ejecutar con sudo).
 Antes, el mismo día: (**la barra en cajas** — §18 documenta que
@@ -1038,6 +1043,13 @@ Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
   como `card1-DP-N` o `card2-DP-N` en `/sys/class/drm/card*-*/status`, y si
   `/sys/bus/pci/devices/0000:01:00.0/power/runtime_status` se queda en
   `suspended` (2026-09-06).
+- **[VER] Compartir la pantalla de Hyprland con TeamViewer.** La GUI funciona
+  bajo XWayland y sirve para *ver* equipos remotos (§25), pero **no se ha
+  intentado la dirección contraria**: que este portátil sea el extremo
+  compartido. TeamViewer es un cliente de la era X11 y la captura de una sesión
+  Wayland es otro asunto; se espera que falle o dé pantalla negra, pero es una
+  suposición, no una comprobación. Prueba: conectar desde otro equipo y mirar
+  si se ve el escritorio (2026-09-09).
 - **[VER] El perfil UCM de la SSL 2+ declara menos canales de los que tiene la
   revisión Mk II.** WirePlumber avisa en cada arranque
   (`PlaybackChannels=4 < avail 6`, `CaptureChannels=4 < avail 8`) y el
@@ -2810,3 +2822,66 @@ fábrica por su cuenta, así que no hay riesgo de quedarse sin login.
 
 **A `packages/` no añade nada**: `sddm`, `qt6-declarative` e `imagemagick` ya
 estaban.
+
+## 25. Acceso remoto y pantalla del iPad (TeamViewer)  **[OK]**
+
+`aur/teamviewer 15.79.4-1`, con `teamviewerd.service` habilitado y **activo**
+desde el 2026-09-09 a las 17:17:06. La GUI corre **bajo XWayland**
+(`hyprctl clients` → `"class": "TeamViewer"`, `"xwayland": true`).
+
+**Para qué está**: ver la pantalla de un iPad desde el portátil. **Solo visión,
+sin control** — iPadOS no expone ninguna API que permita a una app de terceros
+controlar el dispositivo, así que no existe un equivalente a AnyDesk en ese
+sentido. **AnyDesk se descartó por eso**: su app de iOS es solo cliente y no
+puede ser el extremo compartido. TeamViewer sirve porque `QuickSupport`
+comparte pantalla vía ReplayKit, que es el único mecanismo que Apple permite.
+
+Cada sesión requiere pulsar *Iniciar transmisión* **a mano en el iPad**; no se
+puede dejar autorizado de forma permanente.
+
+**Alternativa para uso en LAN**: `aur/uxplay` (receptor AirPlay) da la misma
+pantalla sin cuenta ni software propietario. TeamViewer solo gana si hace falta
+alcance por Internet.
+
+### ⚠️ El paquete AUR no declara `minizip`, y el demonio no arranca
+
+Al primer intento, `teamviewerd` murió con `status=127`:
+
+```
+teamviewerd: error while loading shared libraries: libminizip.so.1:
+cannot open shared object file: No such file or directory
+```
+
+No es un problema de configuración del equipo: el `PKGBUILD` declara solo
+`hicolor-icon-theme qt5-x11extras qt5-quickcontrols qt5-svg`, y **`minizip` no
+está en la lista**. Coherente con que el paquete esté marcado como
+desactualizado en el AUR desde el 2026-07-23. Se resuelve con
+`sudo pacman -S minizip` (`core`, `1:1.3.2-3`), que provee el soname exacto
+`/usr/lib/libminizip.so.1 → libminizip.so.1.0.0`.
+
+**Esto reaparecerá en una restauración desde cero**, porque `packages/` recupera
+los paquetes pero no las dependencias que el AUR se deja: `minizip` figura en
+`pacman-explicit.txt` precisamente para que la reinstalación no vuelva a
+tropezar.
+
+Diagnóstico rápido de cualquier `status=127` similar:
+`ldd /opt/teamviewer/tv_bin/teamviewerd | grep "not found"` da la biblioteca, y
+`pacman -Fx 'libminizip\.so\.1$'` el paquete (requiere `pacman -Fy` una vez).
+
+### ⚠️ Un servicio en `failed` puede estar mostrando el error viejo
+
+Tras instalar `minizip`, `systemctl status` seguía diciendo `failed` y parecía
+que el arreglo no había servido. Conservaba el fallo **de la ejecución
+anterior**: misma marca de tiempo y mismo `Invocation:`. El demonio no se
+reinicia solo. Antes de dar un arreglo por fallido, **comparar la hora del
+fallo con la hora del arreglo**.
+
+### Qué no se versiona
+
+El **ID de TeamViewer** y `~/.config/teamviewer/client.conf`: son artefactos de
+acceso remoto y quedan fuera del repositorio por las reglas de `CLAUDE.md`.
+`/opt/teamviewer/config/global.conf` no es legible como usuario normal, así que
+`teamviewer --info` devuelve el campo del ID vacío sin que eso signifique nada;
+el ID se lee en la ventana.
+
+Historia y diagnóstico completo: `history/2026-09-09-teamviewer-ipad.md`.

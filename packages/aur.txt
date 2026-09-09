@@ -1,5 +1,5 @@
 # Paquetes extranjeros / AUR (pacman -Qqm)
-# Fuente: auditoría 2026-09-08 en elok-archmsi
+# Fuente: auditoría 2026-09-09 en elok-archmsi
 # Helper de AUR en uso: paru
 # Regenerar con: pacman -Qqm > packages/aur.txt
 
@@ -8,5 +8,6 @@ minecraft-launcher
 paru
 paru-debug
 spotify
+teamviewer
 visual-studio-code-bin
 wlogout
