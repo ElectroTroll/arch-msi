@@ -360,15 +360,33 @@ Es lo más distintivo de este equipo y lo que ningún dotfiles genérico cubre.
 
 | # | Tarea | Esfuerzo | Riesgo |
 |---|-------|----------|--------|
-| 4.1 | **Pantalla táctil** en Hyprland | Medio | Bajo |
+| 4.1 | ~~**Pantalla táctil** en Hyprland~~ **[OK] Completada** | Medio | Bajo |
 | 4.2 | **Rotación automática** en modo tableta | Alto | Medio |
-| 4.3 | **Stylus** — presión, botones, mapeo | Medio | Bajo |
+| 4.3 | **Stylus** — ~~presión~~, botones, ~~mapeo~~ **[PARCIAL]** | Medio | Bajo |
 | 4.4 | **Gestos del touchpad** (3–4 dedos) | Bajo | Bajo |
 | 4.5 | Revisar **S0ix** (aparecía `Disabled`) | Medio | Bajo |
 | 4.6 | **Dynamic Boost** / `nvidia-powerd` | Bajo | Bajo |
 
+**4.1 Pantalla táctil.** **[OK] Completada (2026-09-12).** No hubo nada que
+habilitar: el digitalizador `ELAN9024:00 04F3:4297` funciona de fábrica. Lo que
+sí hizo falta fue **anclarlo a `eDP-1`**, porque sin salida asignada Hyprland
+reparte sus coordenadas absolutas sobre el área de TODOS los monitores y el
+toque se descalibra en cuanto hay un externo conectado. Detalle en
+`docs/PROJECT_CONTEXT.md` §7; diagnóstico en
+`history/2026-09-12-lapiz-dos-pantallas.md`.
+
+**4.3 Stylus.** **[PARCIAL] (2026-09-11/12).** Hecho el **mapeo** (mismo
+anclaje a `eDP-1` que la 4.1, con entrada propia porque `hyprctl devices` lista
+el lápiz aparte del táctil) y verificada la **presión**, junto con inclinación y
+goma trasera — en uso real con Obsidian, ver §26. **Queda pendiente** asignar
+los dos botones del lápiz (`BTN_STYLUS`, `BTN_STYLUS2`), que hoy no tienen
+ninguna acción configurada.
+
 **4.2** requiere leer el acelerómetro (`iio-sensor-proxy`) y rotar pantalla y
 entrada táctil de forma coordinada. Es la tarea más compleja de esta fase.
+
+> Ojo con la 4.2 ahora que existe el anclaje de la 4.1: rotar la pantalla
+> obligará a rotar también la entrada, y un `output` fijo no cubre eso.
 
 **4.5** conviene mirarlo junto con el comportamiento de suspensión general:
 verificar que suspender/reanudar funciona bien con la dGPU y RTD3.

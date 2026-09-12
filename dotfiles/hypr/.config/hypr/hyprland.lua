@@ -466,6 +466,26 @@ for _, teclado in ipairs({
     hl.device({ name = teclado, kb_layout = "us,es", kb_variant = "intl," })
 end
 
+-- Lápiz y táctil de la pantalla (ELAN9024:00 04F3:4297) anclados al panel
+-- interno (2026-09-12).
+--
+-- El digitalizador reporta coordenadas ABSOLUTAS sobre su propia superficie.
+-- Sin `output`, Hyprland las estira sobre el ÁREA COMBINADA de todas las
+-- salidas, no sobre el panel que estás tocando. Con el monitor externo puesto
+-- esa área pasa a ser ~4160x1220 lógicos (`hyprctl monitors`: HDMI-A-1
+-- 2560x1440 en -2560x-220 y eDP-1 2560x1600 a escala 1,6 = 1600x1000 en 0x0),
+-- así que el trazo sale desplazado respecto a la punta del lápiz. Con un solo
+-- monitor las dos áreas coinciden, y por eso sin HDMI calibra bien.
+--
+-- Son DOS entradas porque `hyprctl devices` los lista por separado: el lápiz
+-- en `Tablets` (sufijo `-stylus`) y el dedo en `Touch` (sin sufijo).
+for _, puntero in ipairs({
+    "elan9024:00-04f3:4297-stylus", -- lápiz (sección Tablets)
+    "elan9024:00-04f3:4297",        -- táctil (sección Touch)
+}) do
+    hl.device({ name = puntero, output = "eDP-1" })
+end
+
 
 ---------------------
 ---- KEYBINDINGS ----

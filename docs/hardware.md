@@ -108,8 +108,17 @@ Verificado con `hyprctl monitors` y `hyprctl devices` (2026-07-22).
   Modos disponibles: `2560x1600@165.04Hz` y `2560x1600@60.04Hz`.
 - **Escala:** 1.60 (HiDPI) · gestión de color: preset **sRGB** · **VRR
   desactivado**.
-- **Táctil:** panel táctil `elan9024:00-04f3:4297` (Touch Device).
-- **Lápiz activo:** soportado vía tablet `elan9024:00-04f3:4297-stylus`.
+- **Táctil y lápiz:** digitalizador **ELAN9024:00 04F3:4297**, que Hyprland
+  expone en DOS secciones de `hyprctl devices` a la vez: el dedo como Touch
+  Device `elan9024:00-04f3:4297` y el lápiz como tablet
+  `elan9024:00-04f3:4297-stylus` (342,7×214,9 mm). Verificado el 2026-09-11 en
+  `/proc/bus/input/devices` (`ABS=1000d000003`, `KEY=1c03`): **presión**
+  (`ABS_PRESSURE`), **inclinación** (`ABS_TILT_X/Y`), **goma trasera**
+  (`BTN_TOOL_RUBBER`) y **dos botones** (`BTN_STYLUS`, `BTN_STYLUS2`), más
+  `PROP=2` = `INPUT_PROP_DIRECT`. No necesita driver ni configuración: funciona
+  de fábrica.
+  > ⚠️ **Ambos van anclados a `eDP-1`** desde el 2026-09-12. Sin ese anclaje se
+  > descalibran en cuanto hay un segundo monitor; ver `PROJECT_CONTEXT.md` §7.
 - **Touchpad:** `elan0305:00-04f3:31fd-touchpad` · **natural scrolling
   activado** (scroll factor `-1.00`).
 

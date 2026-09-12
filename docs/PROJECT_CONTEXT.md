@@ -1,7 +1,14 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-09-11 (**apuntes con teclado y lápiz** — §26 nueva:
+Última actualización: 2026-09-12 (**el lápiz y el táctil, anclados a `eDP-1`** —
+§7 gana la subsección: sin salida asignada, Hyprland reparte las coordenadas
+absolutas del digitalizador sobre el área de TODOS los monitores, y el toque se
+descalibra en cuanto hay un externo; más las dos trampas del parser Lua, que
+`hyprctl keyword` ya no vale y que el `ok` de `eval` no demuestra el remapeo.
+Cierra la tarea 4.1 del roadmap y deja la 4.3 en parcial. Diagnóstico en
+`history/2026-09-12-lapiz-dos-pantallas.md`).
+Antes: 2026-09-11 (**apuntes con teclado y lápiz** — §26 nueva:
 Obsidian con los plugins Ink y Excalidraw para dibujar dentro de una nota de
 texto, y las dos trampas del lápiz en el escritorio: que Firefox lo reporta como
 ratón bajo Wayland, y que Obsidian corre en Wayland nativo sin que eso rompa el
@@ -444,6 +451,66 @@ binario: `auto`, `auto-{up,down,left,right}`, `auto-center-{up,down,left,right}`
 
 `all-outputs` pasó a `false`: cada barra enseña solo lo suyo. Con `true` las dos
 listaban los diez y el número dejaba de decir en qué pantalla está la ventana.
+
+### El lápiz y el táctil van anclados a `eDP-1`  **[OK]**
+
+Hecho el **2026-09-12**, al aparecer el síntoma: con el monitor externo
+conectado, el trazo del lápiz y el toque del dedo caían **desplazados**
+respecto al punto tocado. Sin el externo, perfectos.
+
+**Causa.** El digitalizador reporta coordenadas **absolutas** sobre su propia
+superficie. Sin `output`, Hyprland las estira sobre el **área combinada de
+todas las salidas**, no sobre el panel que estás tocando:
+
+| | Posición | Tamaño lógico |
+|---|---|---|
+| `eDP-1` | `0x0` | 1600×1000 (2560×1600 ÷ escala 1,6) |
+| `HDMI-A-1` | `-2560x-220` | 2560×1440 |
+| **Combinada** | | **~4160×1220** |
+
+O sea que el lápiz quedaba mapeado a una superficie **2,6 veces más ancha** que
+el panel. Con una sola salida las dos áreas coinciden exactamente, y por eso el
+fallo solo aparece con el externo puesto.
+
+**Arreglo**, en `hyprland.lua` junto a los demás `hl.device`:
+
+```lua
+for _, puntero in ipairs({
+    "elan9024:00-04f3:4297-stylus", -- lápiz (sección Tablets)
+    "elan9024:00-04f3:4297",        -- táctil (sección Touch)
+}) do
+    hl.device({ name = puntero, output = "eDP-1" })
+end
+```
+
+Son **dos** entradas porque `hyprctl devices` los lista por separado, en
+`Tablets` y en `Touch`. Anclar solo el lápiz deja el dedo descalibrado.
+
+### ⚠️ Con el parser Lua, `hyprctl keyword` ya no vale
+
+El intento natural de probar esto en caliente falla:
+
+```
+$ hyprctl keyword 'device[elan9024:00-04f3:4297-stylus]:output' 'eDP-1'
+keyword can't work with non-legacy parsers. Use eval.
+```
+
+El equivalente es `hyprctl eval` con la llamada Lua, que sí responde `ok`:
+
+```
+$ hyprctl eval 'hl.device({ name = "elan9024:00-04f3:4297-stylus", output = "eDP-1" })'
+ok
+```
+
+**Pero ese `ok` no confirma que el dispositivo se haya remapeado**: solo dice
+que la llamada Lua se ejecutó sin error. Y `hyprctl getoption` sobre esa misma
+clave devuelve `no such option`, así que **el mapeo de un device no se puede
+leer de vuelta por software**. La única validación posible es tocar la pantalla.
+
+Por eso el cambio fue directo al archivo más `hyprctl reload`, que re-aplica la
+configuración entera desde cero, en vez de quedarse en el `eval` en caliente.
+
+Diagnóstico completo: `history/2026-09-12-lapiz-dos-pantallas.md`.
 
 ### Aplicaciones bajo XWayland y escalado fraccional
 
