@@ -1,7 +1,8 @@
 # El lápiz se descalibra con el monitor externo
 
 **Fecha:** 2026-09-12
-**Estado:** resuelto · pendiente de confirmación visual en el momento de escribir
+**Estado:** resuelto y **confirmado** por el usuario el 2026-09-12, con el
+monitor externo conectado
 
 ## Síntoma
 
@@ -89,8 +90,8 @@ es lo que hace falta para que el arreglo sea permanente.
   salidas activas
 
 Lo que **no** se pudo verificar por software es que el trazo caiga ahora bajo la
-punta, por el motivo de arriba. Queda a confirmación visual del usuario con el
-HDMI conectado.
+punta, por el motivo de arriba. **Confirmado a mano por el usuario el mismo día**,
+con el monitor externo conectado: el lápiz vuelve a calibrar.
 
 ## Si volviera a fallar
 

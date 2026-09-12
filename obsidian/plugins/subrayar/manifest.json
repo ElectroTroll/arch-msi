@@ -1,0 +1,9 @@
+{
+  "id": "subrayar",
+  "name": "Subrayar",
+  "version": "1.0.0",
+  "minAppVersion": "1.8.7",
+  "description": "Comando para subrayar con <u></u>, asignado a Ctrl+U. Markdown no tiene sintaxis de subrayado y Obsidian no trae ningún editor:toggle-underline.",
+  "author": "elok",
+  "isDesktopOnly": false
+}

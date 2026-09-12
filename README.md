@@ -47,6 +47,7 @@ y [`AGENTS.md`](AGENTS.md).
 | Dotfiles      | `dotfiles/` — 15 paquetes Stow desplegados          |
 | Scripts       | `scripts/` — mantenimiento y utilidades de sesión   |
 | Sistema       | `system/` — lo que va fuera de `$HOME` (SDDM)       |
+| Obsidian      | `obsidian/` — plugin propio, enlazado al vault      |
 
 ## Restauración (alto nivel)
 
@@ -85,6 +86,8 @@ arch-msi/
 ├── system/            # lo que NO vive en $HOME: se COPIA, no se enlaza
 │   ├── sddm/arch-msi/     # tema del greeter -> /usr/share/sddm/themes/
 │   └── etc/sddm.conf.d/   # drop-in que lo activa -> /etc/sddm.conf.d/
+├── obsidian/          # el vault NO se versiona; esto sí, y se enlaza a mano
+│   └── plugins/subrayar/  # plugin propio: Ctrl+U subraya con <u> (§26)
 └── scripts/
     ├── update-inventories.sh   # regenera los 4 archivos de packages/ con cabecera
     ├── add-wallpaper.sh        # ajusta una imagen a 2560x1600 y la añade a ~/Wallpapers

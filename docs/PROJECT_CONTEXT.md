@@ -1,7 +1,13 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-09-12 (**el lápiz y el táctil, anclados a `eDP-1`** —
+Última actualización: 2026-09-12, más tarde (**subrayar con `Ctrl+U`** — §26
+gana los atajos de deshacer/rehacer leídos del `obsidian.asar` y el plugin
+propio `subrayar`, primer y único componente del vault que se versiona, enlazado
+por symlink y no por Stow. Queda anotado que el comando de deshacer es
+`mobileOnly` y por eso no aparece en la lista de atajos, y que `Ctrl+U` llevaba
+`undoSelection`, que es lo que lo hacía parecer un deshacer errático).
+Antes, el mismo día: (**el lápiz y el táctil, anclados a `eDP-1`** —
 §7 gana la subsección: sin salida asignada, Hyprland reparte las coordenadas
 absolutas del digitalizador sobre el área de TODOS los monitores, y el toque se
 descalibra en cuanto hay un externo; más las dos trampas del parser Lua, que
@@ -3029,6 +3035,59 @@ Dos comprobaciones que conviene repetir si algún día se reinstalan así:
   (`ink` y `obsidian-excalidraw-plugin`), o Obsidian no los carga.
 - **Que hayan cargado de verdad se ve en que el plugin escribe su propio
   `data.json`** al arrancar. Que los archivos estén en disco no prueba nada.
+
+### Deshacer y rehacer: dónde está cada tecla
+
+El editor de Obsidian usa el `historyKeymap` de CodeMirror 6 tal cual, leído del
+`obsidian.asar`:
+
+| Tecla | Función |
+|-------|---------|
+| `Ctrl+Z` | `undo` |
+| `Ctrl+Shift+Z` | `redo` — entrada **específica de Linux** en el keymap |
+| `Ctrl+Y` | `redo` |
+| `Ctrl+U` | `undoSelection` → **reasignado**, ver abajo |
+| `Alt+U` | `redoSelection` |
+
+⚠️ **Deshacer NO aparece en Ajustes → Atajos de teclado.** El comando existe,
+pero está declarado `mobileOnly: true`, así que en escritorio no se registra y
+no es asignable. Buscarlo ahí es perder el tiempo; funciona igualmente.
+
+`Ctrl+U` era el más confuso: `undoSelection` recorre el mismo historial que
+`Ctrl+Z` pero parándose en los cambios de selección, así que **parece un
+deshacer errático**. Por eso se reasignó.
+
+Dentro de un dibujo de Ink las mismas teclas funcionan, porque el plugin lleva
+una **pila de deshacer unificada**: intercepta el teclado y, según dónde esté el
+foco, deshace trazos del lienzo o texto de la nota. Si el foco no está en el
+dibujo, `Ctrl+Z` deshace la nota — y si lo último fue insertar el lienzo, se lo
+lleva entero.
+
+### Subrayar: `Ctrl+U` y un plugin propio
+
+Markdown no tiene sintaxis de subrayado, y Obsidian **no trae comando**: de los
+`editor:toggle-*` existen `bold`, `italics`, `highlight`, `strikethrough`,
+`code`, `blockquote`, `inline-math`… y ningún `underline`. La única vía es HTML
+inline, `<u>palabra</u>`, que Obsidian sí renderiza.
+
+Para no escribirlo a mano hay un plugin propio, **`subrayar`**, que registra el
+comando *Subrayar / quitar subrayado* con `Ctrl+U` por defecto. Alterna: si la
+palabra ya está envuelta —por dentro o por fuera de la selección— quita las
+etiquetas en vez de anidarlas. **Sin selección opera sobre la palabra bajo el
+cursor**, que es el caso normal.
+
+Es el **único componente del vault que sí se versiona**, porque es código propio
+y son dos archivos pequeños. Vive en `obsidian/plugins/subrayar/` y llega al
+vault por un **symlink**, no por Stow: el resto de `~/Documentos/Apuntes` está
+fuera del repositorio, así que no hay ningún paquete Stow que pueda cubrirlo.
+
+```
+~/Documentos/Apuntes/.obsidian/plugins/subrayar
+  -> ~/Projects/arch-msi/obsidian/plugins/subrayar
+```
+
+Al restaurar hay que rehacer ese enlace a mano y añadir `subrayar` a
+`community-plugins.json`.
 
 ### Qué no se versiona
 
