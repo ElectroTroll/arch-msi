@@ -1,7 +1,13 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-09-09 (**TeamViewer para ver la pantalla del iPad** —
+Última actualización: 2026-09-11 (**apuntes con teclado y lápiz** — §26 nueva:
+Obsidian con los plugins Ink y Excalidraw para dibujar dentro de una nota de
+texto, y las dos trampas del lápiz en el escritorio: que Firefox lo reporta como
+ratón bajo Wayland, y que Obsidian corre en Wayland nativo sin que eso rompa el
+trazo, al contrario de lo previsto. Alternativas descartadas en
+`history/2026-09-11-apuntes-lapiz-obsidian.md`).
+Antes: 2026-09-09 (**TeamViewer para ver la pantalla del iPad** —
 §25 nueva: solo visión porque iPadOS no permite control por terceros, y el
 paquete AUR no declara `minizip`, lo que deja el demonio en `status=127`; §15
 gana la captura de la sesión Wayland como pendiente de probar. Diagnóstico en
@@ -2885,3 +2891,85 @@ acceso remoto y quedan fuera del repositorio por las reglas de `CLAUDE.md`.
 el ID se lee en la ventana.
 
 Historia y diagnóstico completo: `history/2026-09-09-teamviewer-ipad.md`.
+
+---
+
+## 26. Apuntes con teclado y lápiz (Obsidian)  **[OK]**
+
+`extra/obsidian 1.13.7-2` (sobre `electron43`) con dos plugins de comunidad:
+**Ink 0.5.6** y **Excalidraw 2.27.3**. Más `extra/xournalpp 1.3.7-1` como
+herramienta aparte para PDF y página fija.
+
+**Para qué está**: tomar apuntes escribiendo con el teclado y **dibujar con el
+lápiz dentro del mismo documento**, sin cambiar de aplicación. Ink es el que da
+eso: inserta un lienzo (tldraw) entre párrafo y párrafo de una nota Markdown, y
+el texto sigue fluyendo por debajo. Excalidraw cubre el otro caso —diagramas
+grandes con cajas y flechas— como dibujo embebido.
+
+**Vault**: `~/Documentos/Apuntes`. **No se versiona**: son apuntes personales, y
+los `main.js` de los dos plugins suman ~8,9 MB de código de terceros.
+
+### El lápiz funciona en Wayland nativo, y eso NO era lo esperado
+
+Obsidian arranca **sin XWayland** (`hyprctl clients -j` → `"xwayland": false`;
+el paquete no pasa ningún flag, lo decide `electron43`). Eso importa porque hay
+un bug documentado de lápiz en Electron/Wayland que afecta justo a estos
+plugins ([obsidian-excalidraw-plugin#1914][ex1914]), y la previsión era tener
+que caer a XWayland. **No hizo falta**: el lápiz dibuja en Wayland nativo.
+
+La diferencia con los reportes del bug es probablemente que aquí el
+digitalizador es **directo** (`INPUT_PROP_DIRECT`, integrado en el panel) y no
+una tableta externa indirecta tipo Huion o Wacom.
+
+Confirmado **en uso**, no con medición: no se llegaron a leer `pointerType` ni
+`pressure` numéricamente dentro de Obsidian.
+
+[ex1914]: https://github.com/zsviczian/obsidian-excalidraw-plugin/issues/1914
+
+### La vía de escape a XWayland queda preparada
+
+`/usr/bin/obsidian` es un wrapper que lee flags de
+`~/.config/obsidian/user-flags.conf`. Ese archivo existe **con todo comentado**
+—o sea, cero flags activos y comportamiento idéntico al de fábrica— y contiene
+la línea `--ozone-platform=x11` lista para descomentar si una actualización de
+`electron43` rompe el lápiz. Hay que cerrar y reabrir Obsidian, no basta con
+recargar.
+
+### ⚠️ Firefox no sirve para dibujar, y no es culpa del lápiz
+
+Firefox bajo Wayland reporta el lápiz como **ratón**: `pointerType` sale
+`"mouse"` y no hay inclinación ([Bugzilla 1606832][moz]). Chromium sí lo
+reconoce como `pen`. Consecuencia práctica: cualquier herramienta de dibujo
+**web** (Excalidraw en navegador, tldraw, etc.) hay que abrirla en un Chromium,
+no en Firefox. No afecta a Obsidian, que trae su propio Electron.
+
+Es una trampa cara de diagnosticar, porque el síntoma —"el lápiz va como un
+ratón"— es idéntico al de un lápiz mal configurado.
+
+[moz]: https://bugzilla.mozilla.org/show_bug.cgi?id=1606832
+
+### Los plugins se instalaron a mano, y por qué
+
+El vault se creó desde cero por script, así que no había interfaz por la que
+pasar: los tres archivos de cada plugin (`main.js`, `manifest.json`,
+`styles.css`) se bajaron de la **release oficial de GitHub** a
+`.obsidian/plugins/<id>/`, y se habilitaron escribiendo `community-plugins.json`
+con los dos `id`.
+
+Dos comprobaciones que conviene repetir si algún día se reinstalan así:
+
+- **El nombre de la carpeta debe ser exactamente el `id` del `manifest.json`**
+  (`ink` y `obsidian-excalidraw-plugin`), o Obsidian no los carga.
+- **Que hayan cargado de verdad se ve en que el plugin escribe su propio
+  `data.json`** al arrancar. Que los archivos estén en disco no prueba nada.
+
+### Qué no se versiona
+
+El vault entero (`~/Documentos/Apuntes`), incluidos los plugins descargados, y
+`~/.config/obsidian/obsidian.json`, que solo contiene la ruta del vault y un id
+local. `user-flags.conf` sí sería versionable como paquete Stow —igual que el
+`spotify-flags.conf` de la tarea 3.6— pero hoy está vacío de flags efectivos y
+no se ha creado el paquete.
+
+Investigación y alternativas descartadas:
+`history/2026-09-11-apuntes-lapiz-obsidian.md`.
