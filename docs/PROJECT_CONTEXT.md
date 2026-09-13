@@ -3389,10 +3389,20 @@ una reinstalación:
 | `[system] menubar` | `true` | barra superior |
 | `[system] sidebar` | `true` | barra lateral |
 
-> ⚠️ **Si se desactivan la barra lateral y la superior, se pierde el acceso a los
-> ajustes** y no hay forma de recuperarlo desde la interfaz. La salida es editar
-> `menubar` y `sidebar` a `true` en el `.conf` **con la aplicación cerrada**:
-> QSettings reescribe el archivo al salir y se llevaría por delante el cambio.
+> ⚠️ **Si se desactivan la barra lateral y la superior, la ventana se queda sin
+> ningún elemento visible que lleve a los ajustes.** No es un callejón sin
+> salida: **`Ctrl+P` abre los ajustes igualmente**, esté la interfaz como esté
+> (`ui/components/main_window.py:144`,
+> `self.actionSettings.setShortcut(_("Ctrl+P"))`). Ese atajo es la vía normal de
+> recuperación.
+>
+> El atajo está marcado como traducible —va dentro de `_()`—, así que en teoría
+> podría cambiar con el idioma de la interfaz; con `interface_language=system` y
+> el sistema en español sigue siendo `Ctrl+P`, comprobado el 2026-09-13.
+>
+> La vía de emergencia, si el atajo también fallara, es poner `menubar` y
+> `sidebar` a `true` en el `.conf` **con la aplicación cerrada**: QSettings
+> reescribe el archivo al salir y se llevaría por delante el cambio.
 
 Historia y diagnóstico completo: `history/2026-09-13-zapzap-whatsapp.md` y
 `history/2026-09-13-modo-oscuro-y-tema-de-whatsapp.md`.

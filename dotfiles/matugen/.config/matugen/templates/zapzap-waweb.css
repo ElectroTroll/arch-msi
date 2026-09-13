@@ -210,35 +210,63 @@
 /* ====================================================================
  * LISTA DE CHATS COLAPSADA EN VENTANAS ESTRECHAS
  *
- * Cuando la ventana es pequeña, la lista se reduce a la columna de avatares
- * y el chat abierto se queda con el resto. WhatsApp Web no trae nada de esto
- * y ZapZap tampoco: es CSS nuestro.
+ * Cuando la ventana es pequeña, la columna de chats se reduce a los avatares y
+ * el chat abierto se queda con el resto. No es función de WhatsApp ni de ZapZap.
  *
- * CÓMO, y por qué así. No se oculta nada por selector: las filas están
- * envueltas en divs con clases ofuscadas que Meta regenera, y cualquier regla
- * que dependa de ellas se rompería. En su lugar se fija el ancho del panel y
- * se le fuerza un ancho mínimo al grid interior, de modo que las filas
- * conserven su maquetación y simplemente queden RECORTADAS: lo que sobresale
- * es el texto, y lo que queda a la vista es el avatar.
+ * ⚠️ QUÉ HAY QUE COLAPSAR, que no es lo obvio. `#pane-side` es SOLO la lista.
+ * El buscador y los filtros («Todos / No leídos») son HERMANOS suyos dentro de
+ * `#side`, y por encima hay una columna con `flex: 0 0 45%` que es la que fija
+ * el ancho de verdad. Colapsar solo `#pane-side` deja la columna reservando su
+ * 45%: la lista se encoge, la cabecera se queda ancha y aparece un hueco negro
+ * debajo. Comprobado en pantalla el 2026-09-13.
  *
- * `overflow-x` y no `overflow`: #pane-side es el contenedor con scroll
- * vertical de la lista, y taparlo entero dejaría la lista sin poder recorrerse.
+ * Esa columna no tiene `id` y sus clases son ofuscadas, así que se la señala
+ * por su contenido con `:has(> #side)`, que no depende de nombres que Meta
+ * regenera.
  *
- * El umbral está en px de la PÁGINA, no del monitor. Para ajustarlo, cambiar
- * el 900 de aquí abajo.
+ * Dentro, se ocultan el título, el buscador y los filtros: en 76 px no caben, y
+ * sus funciones están en la barra de iconos de la izquierda, que sigue visible.
+ *
+ * Las FILAS no se tocan por selector: se les fuerza un `min-width` al grid para
+ * que se RECORTEN en vez de reorganizarse, y así el avatar conserva su tamaño.
+ * `overflow-x` y no `overflow`: `#pane-side` es el contenedor con scroll
+ * vertical y taparlo entero dejaría la lista sin poder recorrerse.
+ *
+ * El umbral está en px de la PÁGINA. Referencia medida: una ventana de 770 px
+ * lógicos en el panel interno da `innerWidth` 682.
  * ==================================================================== */
 
 @media (max-width: 900px) {
-  #pane-side {
+  /* La columna entera, no solo la lista */
+  div:has(> #side) {
     flex: 0 0 76px !important;
+    width: 76px !important;
+    min-width: 76px !important;
+    max-width: 76px !important;
+  }
+  /* Título y cabecera de la columna */
+  div:has(> #side) > *:not(#side) { display: none !important; }
+
+  #side {
+    width: 76px !important;
+    min-width: 76px !important;
+    overflow-x: hidden !important;
+  }
+  /* Buscador y filtros */
+  #side > *:not(#pane-side) { display: none !important; }
+
+  #pane-side {
+    flex: 1 1 auto !important;
     width: 76px !important;
     min-width: 76px !important;
     max-width: 76px !important;
     overflow-x: hidden !important;
   }
-  /* Sin esto las filas se reorganizarían para caber en 76px en vez de
-     recortarse, y el avatar se encogería con ellas. */
-  #pane-side [role="grid"] {
-    min-width: 340px !important;
-  }
+  #pane-side [role="grid"] { min-width: 340px !important; }
+
+  /* WhatsApp impone un ancho mínimo al contenedor de la aplicación (~750 px).
+     Por debajo de eso el contenido desborda y aparece scroll horizontal, con
+     una franja muerta a la derecha. Pasa con o sin el colapso: es de ellos.
+     `.two` es una clase REAL y estable de WhatsApp Web, no de las ofuscadas. */
+  .two { min-width: 0 !important; }
 }

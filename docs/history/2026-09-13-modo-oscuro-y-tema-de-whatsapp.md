@@ -157,13 +157,27 @@ De regalo, una `@media (max-width: 900px)` que reduce `#pane-side` a 76 px —la
 columna de avatares— cuando la ventana es estrecha. No es función de WhatsApp ni
 de ZapZap.
 
-No oculta nada por selector, a propósito: fija el ancho del panel y le fuerza un
-`min-width` al grid interior, de modo que las filas **se recortan** en vez de
-reorganizarse. Así no depende de clases ofuscadas. `overflow-x` y no `overflow`,
-porque `#pane-side` es el contenedor con scroll vertical de la lista.
+**El primer intento colapsaba lo que no era, y se vio en pantalla.** `#pane-side`
+es SOLO la lista: el buscador y los filtros son hermanos suyos dentro de `#side`,
+y por encima hay una columna con `flex: 0 0 45%` que es la que fija el ancho de
+verdad. Colapsando solo la lista, la columna seguía reservando su 45%: la lista
+se encogía a un avatar recortado, la cabecera se quedaba ancha y entre medias
+aparecía un socavón negro. Medir por DevTools decía que `#pane-side` valía 76 px
+y era cierto — pero la pregunta correcta no era esa. **Hizo falta mirar una
+captura de la pantalla para verlo.**
 
-Verificado simulando anchos por DevTools: a 800 px el panel mide 76 px; a 1400
-px, 419 px.
+La versión buena colapsa la columna entera, señalada con `:has(> #side)` para no
+depender de las clases ofuscadas, y oculta título, buscador y filtros, cuyas
+funciones están en la barra de iconos que sigue visible. Las filas no se tocan
+por selector: se les fuerza un `min-width` al grid para que **se recorten** en
+vez de reorganizarse. `overflow-x` y no `overflow`, porque `#pane-side` es el
+contenedor con scroll vertical de la lista.
+
+**De paso apareció un defecto que no era nuestro:** por debajo de ~750 px,
+WhatsApp Web desborda su propio contenedor y saca una barra de scroll horizontal
+con una franja muerta a la derecha. Pasa con o sin el colapso. Se corrige con
+`.two { min-width: 0 }` — y `.two` es una clase real y estable de WhatsApp, no de
+las ofuscadas.
 
 ---
 
@@ -183,7 +197,10 @@ sesión: `theme=auto`, `custom/global/css/enabled=true`, `menubar=true` y
 `sidebar=true`. Tras una reinstalación hay que reponerlas a mano; sin la segunda,
 la hoja se genera pero no se inyecta.
 
-> ⚠️ Desactivar la barra lateral **y** la superior deja la aplicación sin acceso
-> a sus propios ajustes, y no hay forma de volver desde la interfaz. La salida es
-> editar `menubar` y `sidebar` en el `.conf` **con la aplicación cerrada**:
-> QSettings reescribe el archivo al salir y se llevaría el cambio por delante.
+> ⚠️ Desactivar la barra lateral **y** la superior deja la ventana sin ningún
+> elemento visible que lleve a los ajustes. **`Ctrl+P` los abre igualmente**
+> (`ui/components/main_window.py:144`), y esa es la vía de recuperación normal;
+> el atajo va dentro de `_()`, o sea que es traducible y podría depender del
+> idioma de la interfaz. La vía de emergencia es editar `menubar` y `sidebar` en
+> el `.conf` **con la aplicación cerrada**, porque QSettings reescribe el archivo
+> al salir y se llevaría el cambio por delante.
