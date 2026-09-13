@@ -1,7 +1,14 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-09-13, más tarde (**WhatsApp en el escritorio** —
+Última actualización: 2026-09-13, más tarde aún (**todo el sistema en oscuro** —
+§18 gana el reparto de modo claro/oscuro de las APLICACIONES, que iban en claro
+sobre un escritorio oscuro porque matugen solo pinta el shell. Son tres caminos
+—portal, `settings.ini` de GTK y `QT_QPA_PLATFORMTHEME`— y el modo se sigue
+declarando una sola vez, en `matugen.mode`. Queda anotada la trampa de que
+`QT_QPA_PLATFORMTHEME=gtk3` dice ser oscuro y pinta blanco. Paquete Stow `gtk`
+nuevo).
+Antes, el mismo día: (**WhatsApp en el escritorio** —
 §27 nueva: `zapzap` como envoltorio de WhatsApp Web, con los clientes de
 terminal descartados por el riesgo de baneo que traen los que reimplementan el
 protocolo. El lanzador normal se cerraba a los dos segundos: Qt WebEngine no
@@ -2006,6 +2013,54 @@ Todo en `[matugen]` de `tokens.toml`, y todo medido con `--dry-run`:
 Cada aplicación mide a su manera y `tokens.toml` declara cada valor UNA vez y en
 UNA unidad; las conversiones (alfa hexadecimal, colores sin almohadilla para
 hyprlang, ruta absoluta del home) las hace el script.
+
+### Modo oscuro de las APLICACIONES  **[OK]**
+
+Añadido el 2026-09-13. Hasta entonces el escritorio era oscuro pero **todas las
+aplicaciones abrían en claro**, que es una incoherencia fácil de pasar por alto:
+matugen solo pinta los componentes del shell (Waybar, rofi, kitty, dunst,
+wlogout, hyprlock, yazi). Las apps van por un camino totalmente distinto y
+nadie les estaba diciendo nada.
+
+**No hay un único interruptor: hay tres caminos, y cada familia usa el suyo.**
+
+| Capa | Quién la lee | Dónde se fija |
+|---|---|---|
+| Portal `org.freedesktop.appearance color-scheme` | Firefox, Electron (VS Code, Obsidian, ZapZap), GTK4/libadwaita, Qt 6 vía plugin | clave gsettings, la pone `theme-apply` |
+| `~/.config/gtk-{3,4}.0/settings.ini` | apps GTK3 que no consultan el portal | paquete Stow `gtk` |
+| `QT_QPA_PLATFORMTHEME` | Dolphin y demás Qt 6 | `hl.env` en `hyprland.lua` |
+
+**La preferencia del portal la deduce `xdg-desktop-portal-gtk`** de la clave
+gsettings `org.gnome.desktop.interface color-scheme`. Esa clave vive en
+**dconf**, una base de datos binaria: no hay archivo que enlazar con Stow. Por
+eso la fija `theme-apply` en cada arranque (sección 5c del script) **derivándola
+de `matugen.mode`**, que ya está en `tokens.toml`. Así el modo se declara en un
+solo sitio; no hay un segundo lugar donde decir si el sistema es oscuro.
+
+> ⚠️ **TRAMPA: `QT_QPA_PLATFORMTHEME=gtk3` parece funcionar y no funciona.**
+> Devuelve `ColorScheme.Dark` igual que la opción buena, pero la paleta real
+> sale en `#faf9f8` — blanco—, porque en este sistema no hay ningún tema
+> Adwaita-dark de GTK3 en `/usr/share/themes` (solo `Default` y `Emacs`). El
+> valor correcto es **`xdgdesktopportal`**, que da `#323232` de fondo y
+> `#f0f0f0` de texto. La comprobación válida es mirar la PALETA, no el nombre
+> del esquema. Ambos plugins vienen en `qt6-base`; no hace falta instalar
+> `qt6ct`, `breeze` ni `kvantum`.
+
+> ⚠️ **El paquete Stow `gtk` va con `--no-folding`.** `~/.config/gtk-4.0` no
+> existía, así que Stow lo habría enlazado como directorio completo y cualquier
+> cosa que GTK escribiera dentro (los marcadores del selector de archivos, por
+> ejemplo) habría aterrizado en el repositorio. Es el mismo caso de `wlogout` y
+> `fastfetch` descrito arriba.
+
+**Validado el 2026-09-13** en las tres capas: el portal pasó de `0` a `1`;
+`Gtk.Settings` devuelve `prefer-dark: True` y `Adwaita-dark`; y un proceso
+lanzado por Hyprland tras el reload recibe la variable y Qt responde
+`ColorScheme.Dark` con fondo `#323232`. Las apps ya abiertas necesitan
+reiniciarse: leen la preferencia al arrancar.
+
+> Para volver a claro no se toca ningún archivo de aplicación: basta cambiar
+> `mode` en `theme/tokens.toml` y ejecutar `theme-apply`. El `settings.ini` del
+> paquete `gtk` sí quedaría desfasado —es estático— y habría que editarlo.
 
 ---
 

@@ -314,6 +314,39 @@ if command -v magick >/dev/null && [ -d /usr/share/wlogout/icons ]; then
     echo "theme-apply: iconos de wlogout teñidos con $ACCENT"
 fi
 
+# --- 5c. Modo claro/oscuro de las APLICACIONES --------------------------------
+# El escritorio (Waybar, rofi, kitty, dunst, hyprlock...) ya toma el modo de
+# `matugen.mode` en tokens.toml, porque lo pinta matugen. Las APLICACIONES no:
+# van por un camino distinto y, sin esto, se quedaban todas en claro sobre un
+# escritorio oscuro.
+#
+# QUIÉN LEE QUÉ. Firefox, Electron (VS Code, Obsidian, ZapZap), GTK4/libadwaita
+# y Qt 6 no miran ningún archivo de tema: consultan la preferencia
+# `org.freedesktop.appearance color-scheme` que publica xdg-desktop-portal-gtk,
+# y ESE portal la deduce de la clave gsettings que se fija aquí. Las apps GTK3
+# que no consultan el portal quedan cubiertas por el paquete Stow `gtk`
+# (~/.config/gtk-3.0/settings.ini).
+#
+# POR QUÉ AQUÍ Y NO EN UN ARCHIVO DEL REPOSITORIO. La clave vive en dconf, una
+# base de datos binaria: no hay archivo que enlazar con Stow. Ponerla en cada
+# arranque desde el `mode` ya declarado en tokens.toml mantiene una sola fuente
+# de verdad, en vez de un segundo sitio donde decir si el sistema es oscuro.
+if command -v gsettings >/dev/null; then
+    case "$MODE" in
+        dark)  ESQUEMA="prefer-dark";  GTK_TEMA="Adwaita-dark" ;;
+        light) ESQUEMA="prefer-light"; GTK_TEMA="Adwaita" ;;
+        # `smart` deja que decida cada app: no se impone nada.
+        *)     ESQUEMA=""; GTK_TEMA="" ;;
+    esac
+    if [ -n "$ESQUEMA" ]; then
+        # Sin `|| true` una sesión sin dconf accesible (por ejemplo un TTY
+        # suelto) abortaría el script entero por el `set -e`.
+        gsettings set org.gnome.desktop.interface color-scheme "$ESQUEMA" 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface gtk-theme "$GTK_TEMA" 2>/dev/null || true
+        echo "theme-apply: aplicaciones en $ESQUEMA ($GTK_TEMA)"
+    fi
+fi
+
 # --- 6. Recargas -------------------------------------------------------------
 # Cada aplicación necesita un trato distinto.
 #

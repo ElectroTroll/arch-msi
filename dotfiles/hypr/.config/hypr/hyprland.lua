@@ -162,6 +162,24 @@ end)
 hl.env("XCURSOR_SIZE", "24")
 hl.env("HYPRCURSOR_SIZE", "24")
 
+-- Modo oscuro para las aplicaciones Qt (Dolphin, y cualquier otra Qt6).
+--
+-- Sin esto, Qt no se entera de nada: con el escritorio en oscuro y el portal
+-- anunciando `prefer-dark`, una comprobación con QStyleHints devolvía
+-- `ColorScheme.Unknown` y un fondo de ventana #efefef, o sea blanco.
+--
+-- `xdgdesktopportal` hace que Qt lea la MISMA preferencia
+-- (`org.freedesktop.appearance color-scheme`) que ya siguen Firefox, Electron y
+-- GTK4. Una sola fuente de verdad para todo el sistema; la fija `theme-apply`
+-- desde `matugen.mode` de tokens.toml. El plugin viene en qt6-base, no hace
+-- falta instalar nada.
+--
+-- ⚠️ TRAMPA: la otra opción, `gtk3`, PARECE funcionar y no funciona. También
+-- devuelve `ColorScheme.Dark`, pero pinta el fondo en #faf9f8 (blanco), porque
+-- en este sistema no hay ningún tema Adwaita-dark de GTK3 en /usr/share/themes.
+-- Comprobado el 2026-09-13 mirando la paleta, no el nombre del esquema.
+hl.env("QT_QPA_PLATFORMTHEME", "xdgdesktopportal")
+
 
 -----------------------
 ----- PERMISSIONS -----

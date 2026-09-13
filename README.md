@@ -44,9 +44,9 @@ y [`AGENTS.md`](AGENTS.md).
 |---------------|-----------------------------------------------------|
 | Documentación | `docs/` — contexto, hardware, cronología            |
 | Inventarios   | `packages/` — pacman, AUR, npm, servicios           |
-| Dotfiles      | `dotfiles/` — 15 paquetes Stow desplegados          |
+| Dotfiles      | `dotfiles/` — 16 paquetes Stow desplegados          |
 | Scripts       | `scripts/` — mantenimiento y utilidades de sesión   |
-| Sistema       | `system/` — lo que va fuera de `$HOME` (SDDM)       |
+| Sistema       | `system/` — fuera de `$HOME` (SDDM, perfil UCM)     |
 | Obsidian      | `obsidian/` — plugin propio, enlazado al vault      |
 
 ## Restauración (alto nivel)
@@ -73,10 +73,10 @@ arch-msi/
 │   ├── keybindings.md
 │   └── history/       # cronología: incidentes y trampas, un archivo por episodio
 ├── dotfiles/          # paquetes GNU Stow, uno por componente
-│   ├── bin/        claude/     dunst/      hypr/
-│   ├── icons/      kitty/      matugen/    minecraft/
-│   ├── rofi/       shell/      swappy/     waybar/
-│   ├── wlogout/    yazi/
+│   ├── bin/        claude/     dunst/      gtk/
+│   ├── hypr/       icons/      kitty/      matugen/
+│   ├── minecraft/  rofi/       shell/      swappy/
+│   ├── waybar/     wlogout/    yazi/
 │   └── wallpapers/    # -> ~/Wallpapers (imágenes de fondo, ver PROJECT_CONTEXT §17)
 ├── packages/
 │   ├── pacman-explicit.txt
