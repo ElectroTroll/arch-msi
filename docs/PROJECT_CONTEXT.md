@@ -3373,8 +3373,22 @@ reorganizarse. Así no depende de las clases ofuscadas de las filas. Usa
 `overflow-x`, no `overflow`: `#pane-side` es el contenedor con scroll vertical y
 taparlo entero dejaría la lista sin poder recorrerse.
 
-Verificado el 2026-09-13 simulando anchos por DevTools: a 800 px el panel mide
-76 px y a 1400 px vuelve a 419 px.
+Tres detalles que costaron y que conviene no tocar a ciegas:
+
+- **76 px es un valor exacto**, no redondo: la fila separa el avatar 24 px del
+  borde y el avatar mide 48. El nombre empieza justo en 76. Más ancho y asoma la
+  primera letra; más estrecho y se corta la foto.
+- **La barra de scroll de la lista va oculta** (`scrollbar-width: none`). Sin
+  eso se come 10 px de los 76 y vuelve a cortar el avatar. La lista se recorre
+  con la rueda.
+- **Hay que colapsar también la capa de bordes.** `.two` lleva una capa de
+  superposición vacía que solo dibuja los separadores entre paneles y que
+  conserva la división original `flex: 0 0 45%`; si no se toca, deja una línea
+  gris flotando en mitad de la conversación y 275 px muertos. Se señala con
+  `.two > div > div:first-child`.
+
+Verificado el 2026-09-13 simulando anchos por DevTools y comprobando el
+resultado en pantalla: a 800 px el panel mide 76 px y a 1400 px vuelve a 419.
 
 ### Ajustes de la app que NO se versionan
 

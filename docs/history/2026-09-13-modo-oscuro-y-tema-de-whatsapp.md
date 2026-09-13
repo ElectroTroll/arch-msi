@@ -179,6 +179,36 @@ con una franja muerta a la derecha. Pasa con o sin el colapso. Se corrige con
 `.two { min-width: 0 }` — y `.two` es una clase real y estable de WhatsApp, no de
 las ofuscadas.
 
+### Y dos defectos más que solo se vieron mirando
+
+Con la columna ya colapsada quedaban dos cosas feas, ninguna deducible de las
+mediciones. Las dos salieron de volver a mirar una captura.
+
+**Las fotos se cortaban por la derecha.** La barra de scroll vertical de la lista
+se comía **10 px** de los 76: `#pane-side` medía 76 de ancho pero solo 66 de
+`clientWidth`, y el avatar —48 px, a 24 del borde— se recortaba 5 px. La primera
+reacción fue ensanchar a 96 px, y entonces asomaba la primera letra de cada
+nombre. El valor correcto es **76 con la barra de scroll oculta**: 24 + 48 = 72,
+y el texto del nombre empieza exactamente en 76. Un píxel más y asoma la letra;
+uno menos y se corta el avatar. La lista se sigue recorriendo con la rueda.
+
+**Una línea gris vertical flotando en mitad del chat.** Cruzaba por encima de las
+burbujas, así que no era un borde de la conversación. Localizarla costó: buscarla
+por coordenadas no funcionó —el `devicePixelRatio` es 1.6 y las cuentas no
+salían— y hubo que encontrar el x exacto **midiendo el brillo por columnas de la
+captura** con ImageMagick, y luego buscar el elemento por su forma (muy estrecho,
+muy alto) en vez de por posición.
+
+Resultó ser una **capa de superposición vacía** dentro de `.two` —solo `span`s
+sin contenido— cuyo único cometido es dibujar los separadores entre paneles, y
+que mantenía la división original `flex: 0 0 45%`. Al colapsar la columna real,
+esa capa se quedó donde estaba: su segundo panel empezaba en x=403 y pintaba ahí
+su borde izquierdo, sobre la conversación, además de reservar 275 px muertos.
+
+Se arregla colapsándola también. Se la señala con `.two > div > div:first-child`,
+que es estructura pura y no depende de clases ofuscadas; comprobado en la página
+que coge exactamente 2 elementos, el fantasma y otro de ancho cero.
+
 ---
 
 ## 4. Lo que se va a romper, y cómo arreglarlo

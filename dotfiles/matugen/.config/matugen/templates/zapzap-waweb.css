@@ -237,6 +237,12 @@
  * ==================================================================== */
 
 @media (max-width: 900px) {
+  /* 76 px es el valor exacto: la fila separa el avatar 24 px del borde y el
+     avatar mide 48 (24 + 48 = 72), y el texto del nombre empieza justo en 76.
+     Un píxel más y asoma la primera letra; menos, y se corta el avatar.
+     Depende de que la barra de scroll esté oculta — ver abajo—, porque si no
+     se come 10 px de los 76 y vuelve a cortar. */
+
   /* La columna entera, no solo la lista */
   div:has(> #side) {
     flex: 0 0 76px !important;
@@ -261,8 +267,28 @@
     min-width: 76px !important;
     max-width: 76px !important;
     overflow-x: hidden !important;
+    /* La barra de scroll se comía 10 px de los 96 y volvía a cortar el avatar.
+       La lista se sigue recorriendo con la rueda. */
+    scrollbar-width: none !important;
   }
+  #pane-side::-webkit-scrollbar { width: 0 !important; height: 0 !important; }
+
   #pane-side [role="grid"] { min-width: 340px !important; }
+
+  /* ⚠️ LA CAPA DE BORDES, que es lo que dejaba una línea gris en mitad del chat.
+     `.two` lleva una capa de superposición VACÍA —solo spans sin contenido— que
+     dibuja los separadores entre paneles, y mantiene la división original
+     `flex: 0 0 45%`. Al colapsar la columna real, esa capa se quedaba en su
+     sitio: el borde izquierdo de su segundo panel caía en x=403, o sea flotando
+     sobre la conversación, y además reservaba 275 px muertos.
+     Se la señala por estructura, no por clases: el selector coge exactamente
+     2 elementos, comprobado en la página. */
+  .two > div > div:first-child {
+    flex: 0 0 76px !important;
+    width: 76px !important;
+    min-width: 76px !important;
+    max-width: 76px !important;
+  }
 
   /* WhatsApp impone un ancho mínimo al contenedor de la aplicación (~750 px).
      Por debajo de eso el contenido desborda y aparece scroll horizontal, con
