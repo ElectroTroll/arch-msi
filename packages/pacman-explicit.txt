@@ -123,6 +123,7 @@ usbutils
 uwsm
 vim
 visual-studio-code-bin
+vulkan-intel
 vulkan-tools
 waybar
 wget

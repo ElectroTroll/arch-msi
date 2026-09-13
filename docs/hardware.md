@@ -38,10 +38,32 @@ equipo real. Salvo donde se indica, todos los datos provienen de `hostnamectl`,
 
 Verificado el 2026-09-06 con un monitor externo conectado.
 
-| Nodo DRM | GPU | Conectores |
-|----------|-----|------------|
-| `card1` / `renderD128` | Intel Arc (`i915`) | `eDP-1` (panel interno) · `DP-1`, `DP-2`, `DP-3` (Type-C, **sin verificar**) |
-| `card2` / `renderD129` | NVIDIA RTX 4060 (`nvidia`) | `HDMI-A-1` |
+| Nodo de render | GPU | PCI | Conectores |
+|----------------|-----|-----|------------|
+| `renderD128` | Intel Arc (`i915`) | `0000:00:02.0` | `eDP-1` (panel interno) · `DP-1`, `DP-2`, `DP-3` (Type-C, **sin verificar**) |
+| `renderD129` | NVIDIA RTX 4060 (`nvidia`) | `0000:01:00.0` | `HDMI-A-1` |
+
+> ⚠️ **El número de `cardN` NO es fijo.** Esta tabla decía `card1` (Intel) y
+> `card2` (NVIDIA) hasta el 2026-09-13, cuando se comprobó que la NVIDIA era
+> `card0` y la Intel `card1`. El número depende del orden de registro y cambia
+> entre arranques. Lo estable es el **nodo de render** y la dirección PCI, que
+> son los que usa esta tabla. Mismo problema que tenía §22 con el número de
+> tarjeta ALSA.
+
+### Vulkan
+
+Ambas GPU exponen Vulkan desde el 2026-09-13. Antes de esa fecha **solo lo hacía
+la NVIDIA**: el único ICD instalado era `nvidia_icd.json` y faltaba
+`vulkan-intel`, pese a que la Arc es la que renderiza el escritorio.
+
+| GPU | `driverID` | Versión |
+|-----|------------|---------|
+| `Intel(R) Arc(tm) Graphics (MTL)` | `DRIVER_ID_INTEL_OPEN_SOURCE_MESA` | Mesa 26.2.2 |
+| `NVIDIA GeForce RTX 4060 Laptop GPU` | `DRIVER_ID_NVIDIA_PROPRIETARY` | 615.71.09 |
+
+El hueco se destapó porque Qt WebEngine, al no poder usar GBM, cae a Vulkan y
+mataba a ZapZap al arrancar. Afectaba a cualquier cosa que pidiera Vulkan sobre
+la iGPU, no solo a esa app. Ver PROJECT_CONTEXT §27.
 
 > ⚠️ **El puerto HDMI está cableado a la NVIDIA**, no a la Intel. No es
 > configurable —ni módulo, ni BIOS, ni variables de entorno—: usar el HDMI

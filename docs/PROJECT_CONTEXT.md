@@ -1,7 +1,14 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-09-13 (**el rótulo `[ALSA UCM error]` de la SSL 2+,
+Última actualización: 2026-09-13, más tarde (**WhatsApp en el escritorio** —
+§27 nueva: `zapzap` como envoltorio de WhatsApp Web, con los clientes de
+terminal descartados por el riesgo de baneo que traen los que reimplementan el
+protocolo. El lanzador normal se cerraba a los dos segundos: Qt WebEngine no
+puede usar GBM y cae a Vulkan, y a esta máquina le faltaba `vulkan-intel` — un
+hueco de la máquina, no de la app. Diagnóstico en
+`history/2026-09-13-zapzap-whatsapp.md`).
+Antes, el mismo día: (**el rótulo `[ALSA UCM error]` de la SSL 2+,
 resuelto** — §22 explica que el perfil UCM declaraba 4+4 canales donde el
 hardware expone 6+8, y que los «canales que faltaban» eran 6 retornos de
 loopback y un par de reproducción que no suena: no había nada que recuperar. Se
@@ -267,12 +274,19 @@ Verificado el 2026-09-06 con un LG UltraGear conectado por HDMI.
 
 **El reparto de conectores lo decide la placa, no el software:**
 
-| Nodo DRM | GPU | Conectores |
+| Nodo de render | GPU | Conectores |
 |---|---|---|
-| `card1` / `renderD128` | Intel Arc (`i915`) `00:02.0` | `eDP-1` (panel interno) + `DP-1`, `DP-2`, `DP-3` |
-| `card2` / `renderD129` | NVIDIA RTX 4060 (`nvidia`) `01:00.0` | `HDMI-A-1` |
+| `renderD128` | Intel Arc (`i915`) `00:02.0` | `eDP-1` (panel interno) + `DP-1`, `DP-2`, `DP-3` |
+| `renderD129` | NVIDIA RTX 4060 (`nvidia`) `01:00.0` | `HDMI-A-1` |
 
-`HDMI-A-1` **solo existe bajo `card2`**. No hay MUX ni opción de BIOS que lo
+> ⚠️ **El número de `cardN` NO es fijo.** Esta tabla decía `card1` (Intel) y
+> `card2` (NVIDIA) hasta el 2026-09-13, cuando se comprobó que la NVIDIA era
+> **`card0`** y la Intel `card1`. Depende del orden de registro y cambia entre
+> arranques; el nodo de render y la dirección PCI sí son estables. El log citado
+> más abajo conserva los números que tenía aquella sesión: es una transcripción,
+> no una referencia. Ver `hardware.md`.
+
+`HDMI-A-1` **solo existe bajo la NVIDIA**. No hay MUX ni opción de BIOS que lo
 reencamine a la iGPU: es una pista de PCB. Conectar un monitor por HDMI obliga a
 despertar la dGPU y **la mantiene fuera de RTD3 mientras el cable esté puesto**.
 
@@ -314,11 +328,11 @@ sin novedad (dGPU 45 °C, CPU package 55 °C, ventiladores 2774 RPM, que son el
 perfil por defecto de MSI y no una respuesta a la dGPU). **No es un problema que
 merezca tocar la configuración.**
 
-**[VER] Posible ruta por la iGPU: USB-C.** `card1` expone `DP-1`, `DP-2` y
+**[VER] Posible ruta por la iGPU: USB-C.** La Intel expone `DP-1`, `DP-2` y
 `DP-3` desconectados, que apuntan a las salidas DisplayPort alt-mode de los
 puertos Type-C (`port0` y `port1` en `/sys/class/typec/`, más un dominio
 Thunderbolt). Si el monitor entrase por uno de ellos y apareciese como
-`card1-DP-N`, la NVIDIA volvería a D3cold y desaparecería la copia entre GPUs.
+bajo la Intel, la NVIDIA volvería a D3cold y desaparecería la copia entre GPUs.
 **Sin comprobar** — no se descarta que alguno de los Type-C esté también
 cableado a la dGPU. Ver §15.
 
@@ -1122,12 +1136,14 @@ Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
   que se sabe que `Ctrl+Alt+F3` funciona con Fn Lock, la prueba es fácil de
   hacer la próxima vez que ocurra.
 - Estado de autenticación de Claude Code (no comprobado; no exponer credenciales).
-- **[VER] Si algún puerto USB-C saca vídeo por la iGPU.** `card1` (Intel) expone
+- **[VER] Si algún puerto USB-C saca vídeo por la iGPU.** La Intel expone
   `DP-1`, `DP-2` y `DP-3`, que deberían corresponder a las salidas DisplayPort
   alt-mode de los Type-C, pero **no se ha conectado nada por ahí**. Si
   funcionan, un monitor externo por USB-C→DisplayPort evitaría despertar la
   NVIDIA y ahorraría los ~2 W del HDMI (§6). Prueba: conectar y mirar si sale
-  como `card1-DP-N` o `card2-DP-N` en `/sys/class/drm/card*-*/status`, y si
+  bajo la tarjeta del `i915` o la del `nvidia` (comprobar el driver con
+  `grep DRIVER /sys/class/drm/cardN/device/uevent`, no fiarse del número) en
+  `/sys/class/drm/card*-*/status`, y si
   `/sys/bus/pci/devices/0000:01:00.0/power/runtime_status` se queda en
   `suspended` (2026-09-06).
 - **[VER] Compartir la pantalla de Hyprland con TeamViewer.** La GUI funciona
@@ -3153,3 +3169,74 @@ no se ha creado el paquete.
 
 Investigación y alternativas descartadas:
 `history/2026-09-11-apuntes-lapiz-obsidian.md`.
+
+## 27. WhatsApp en el escritorio (ZapZap)  **[OK]**
+
+`aur/zapzap 7.4.4-1`, instalado el 2026-09-13. **No existe cliente oficial de
+WhatsApp para Linux**: todo lo que hay en AUR son envoltorios de
+`web.whatsapp.com`. ZapZap (PyQt6 + PyQt6-WebEngine) se eligió por encajar con
+el resto del escritorio Qt y por ser el que mejor mantenimiento lleva; el
+clásico `wasistlos` (GTK) estaba marcado como desactualizado desde agosto.
+
+Arrastra `qt6-webengine`, que no estaba en el sistema: 94 MiB de descarga y
+282 MiB instalados. Es el grueso real de la instalación — el paquete de ZapZap
+en sí es Python puro.
+
+Configuración en `~/.config/ZapZap/ZapZap.conf`, **no versionada**: guarda
+geometría de ventana, estado de la sesión y preferencias locales. La sesión de
+WhatsApp vive en `~/.local/share/ZapZap/` y es un artefacto de autenticación,
+así que queda fuera del repositorio por la regla de `.gitignore`.
+
+### La trampa: se cerraba a los dos segundos  **[OK]**
+
+El paquete instala **dos lanzadores**, `ZapZap` y `ZapZapNoGpu`. El normal
+moría a los pocos segundos de abrir, siempre con la misma pila: aborto dentro de
+`libgallium` (Mesa) bajando desde
+`QtWebEngineCore::RenderWidgetHostViewQtDelegateItem::updatePaintNode`. Es
+decir, moría **pintando** la vista web, no en red ni en WhatsApp.
+
+**Causa.** Qt WebEngine lo dice él mismo en la primera línea de su salida:
+
+```
+GBM is not supported with the current configuration. Fallback to Vulkan rendering in Chromium.
+```
+
+No puede usar GBM para compartir búferes, así que **cae a la ruta Vulkan** — y
+esta máquina no tenía driver Vulkan para la Intel. El único ICD instalado era
+`nvidia_icd.json`: **faltaba `vulkan-intel`**, pese a que la Arc integrada es la
+que pinta el escritorio. El lanzador `NoGpu` funcionaba porque pasa
+`--disable-gpu --disable-vulkan --disable-features=Vulkan,VulkanFromANGLE`, es
+decir, esquiva justamente esa ruta.
+
+**Arreglo:** `sudo pacman -S vulkan-intel` (1:26.2.2-1, misma versión que
+`mesa`). No sustituye ningún controlador: **añade** el ICD Vulkan de Mesa para
+la Arc, que sencillamente no estaba. Tras instalarlo, `vulkaninfo --summary`
+pasa a listar dos GPU —`Intel(R) Arc(tm) Graphics (MTL)` con
+`DRIVER_ID_INTEL_OPEN_SOURCE_MESA` y la RTX 4060— y el lanzador normal arranca y
+se queda.
+
+> **Esto era un hueco de la máquina, no de ZapZap.** Cualquier cosa que pidiera
+> Vulkan sobre la iGPU estaba en la misma situación. ZapZap solo fue lo primero
+> que lo destapó.
+
+**Descartado:** `--disable-vulkan` a secas, manteniendo la GPU. No sirve: es una
+bandera de Chromium y para cuando se aplica, la capa de Qt WebEngine ya eligió
+el camino. Se probó y murió con la pila idéntica.
+
+**No era un problema de permisos:** `/dev/dri/renderD128` y `renderD129` están a
+`0666`, accesibles sin pertenecer a `video` ni a `render`.
+
+### Riesgo de baneo: por qué no hay cliente de terminal
+
+Se valoraron y **descartaron** los clientes de terminal (`whatscli`, `wstui`, el
+puente `mautrix-whatsapp`, `purple-gowhatsapp`). Todos usan `whatsmeow`:
+**reimplementan el protocolo** en lugar de envolver la web, lo que entra en el
+terreno de los clientes no oficiales que los Términos de Servicio prohíben. El
+riesgo de suspensión es bajo para uso personal —lo que dispara baneos es el
+comportamiento de spam, no el cliente en sí— pero **no es cero**, y recae sobre
+el número de teléfono, con lo que eso arrastra (2FA, trabajo, familia).
+
+Los envoltorios web como ZapZap **no tienen ese problema**: para los servidores
+de Meta son WhatsApp Web, que es un producto suyo.
+
+Historia y diagnóstico completo: `history/2026-09-13-zapzap-whatsapp.md`.
