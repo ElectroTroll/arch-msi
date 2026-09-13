@@ -85,7 +85,8 @@ arch-msi/
 │   └── services-enabled.txt
 ├── system/            # lo que NO vive en $HOME: se COPIA, no se enlaza
 │   ├── sddm/arch-msi/     # tema del greeter -> /usr/share/sddm/themes/
-│   └── etc/sddm.conf.d/   # drop-in que lo activa -> /etc/sddm.conf.d/
+│   ├── etc/sddm.conf.d/   # drop-in que lo activa -> /etc/sddm.conf.d/
+│   └── alsa/ucm2/         # perfil UCM parcheado de la SSL 2+ Mk II (§22)
 ├── obsidian/          # el vault NO se versiona; esto sí, y se enlaza a mano
 │   └── plugins/subrayar/  # plugin propio: Ctrl+U subraya con <u> (§26)
 └── scripts/
@@ -96,7 +97,8 @@ arch-msi/
     ├── kb-layout.sh            # alterna es/us en el teclado que pulsa el atajo (§20)
     ├── audio-salida.sh         # alterna la salida de audio interfaz <-> altavoces (§22)
     ├── waybar-monitor.sh       # CPU/RAM/GPU y temperaturas para la barra (§23)
-    └── greeter-apply.sh        # instala el tema del greeter de SDDM (§24) — con sudo
+    ├── greeter-apply.sh        # instala el tema del greeter de SDDM (§24) — con sudo
+    └── alsa-ucm-apply.sh       # parchea el perfil UCM de la SSL 2+ (§22) — con sudo
 ```
 
 **Todo script ejecutable vive en `scripts/` con extensión `.sh`.** Los que
@@ -111,11 +113,12 @@ Hoy están así `theme-apply`, `vpn-autoconnect`, `kb-layout`, `audio-salida` y
 `update-inventories.sh` y `add-wallpaper.sh` se ejecutan desde el repo y no
 necesitan enlace.
 
-**`system/` es la excepción a Stow.** Guarda lo que va fuera de `$HOME` —hoy, el
-tema del greeter de SDDM— con la ruta de destino reflejada en su estructura. No
-se enlaza: lo **copia** `greeter-apply` con sudo. Un enlace al repositorio
-dentro de `/usr/share` dejaría al sistema dependiendo de que el home esté
-montado y de una ruta de clonado concreta. Ver PROJECT_CONTEXT §24.
+**`system/` es la excepción a Stow.** Guarda lo que va fuera de `$HOME` —el tema
+del greeter de SDDM y el perfil UCM parcheado de la SSL 2+ Mk II— con la ruta de
+destino reflejada en su estructura. No se enlaza: lo **copian** `greeter-apply`
+y `alsa-ucm-apply` con sudo. Un enlace al repositorio dentro de `/usr/share`
+dejaría al sistema dependiendo de que el home esté montado y de una ruta de
+clonado concreta. Ver PROJECT_CONTEXT §24 y §22.
 
 Los dotfiles se despliegan desde la raíz del repo, un paquete cada vez:
 

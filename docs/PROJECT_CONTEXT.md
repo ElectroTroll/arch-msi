@@ -1,7 +1,15 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-09-12, más tarde (**subrayar con `Ctrl+U`** — §26
+Última actualización: 2026-09-13 (**el rótulo `[ALSA UCM error]` de la SSL 2+,
+resuelto** — §22 explica que el perfil UCM declaraba 4+4 canales donde el
+hardware expone 6+8, y que los «canales que faltaban» eran 6 retornos de
+loopback y un par de reproducción que no suena: no había nada que recuperar. Se
+aplica en local el PR #837 de `alsa-ucm-conf`, abierto y sin revisar upstream,
+con `scripts/alsa-ucm-apply.sh`; §15 pierde ese `[VER]`. De paso se corrige el
+número de tarjeta ALSA, que no es fijo. Diagnóstico en
+`history/2026-09-13-ssl2-ucm-canales.md`).
+Antes: 2026-09-12, más tarde (**subrayar con `Ctrl+U`** — §26
 gana los atajos de deshacer/rehacer leídos del `obsidian.asar` y el plugin
 propio `subrayar`, primer y único componente del vault que se versiona, enlazado
 por symlink y no por Stow. Queda anotado que el comando de deshacer es
@@ -1129,14 +1137,11 @@ Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
   Wayland es otro asunto; se espera que falle o dé pantalla negra, pero es una
   suposición, no una comprobación. Prueba: conectar desde otro equipo y mirar
   si se ve el escritorio (2026-09-09).
-- **[VER] El perfil UCM de la SSL 2+ declara menos canales de los que tiene la
-  revisión Mk II.** WirePlumber avisa en cada arranque
-  (`PlaybackChannels=4 < avail 6`, `CaptureChannels=4 < avail 8`) y el
-  dispositivo aparece como `SSL 2+ Mk II [ALSA UCM error]`. La interfaz funciona
-  —salidas y entradas verificadas— pero **no se ha comprobado si quedan canales
-  físicos sin exponer**. Prueba pendiente: contrastar los sinks/sources visibles
-  con las conexiones reales del panel trasero, y mirar si el perfil «Pro Audio»
-  de pavucontrol (que ignora UCM) saca más canales que `HiFi` (2026-09-08, §22).
+- ~~**[VER] El perfil UCM de la SSL 2+ declara menos canales de los que tiene la
+  revisión Mk II.**~~ **Resuelto el 2026-09-13**: no quedaba ningún canal físico
+  sin exponer (los 8 de captura son 2 entradas + 6 de loopback; el par de
+  reproducción 5/6 no suena por ninguna salida). El rótulo era un recuento mal
+  declarado upstream, corregido con un parche local. Ver §22.
 - **[VER]** hyprlock registra `Starting fade in` pese a tener
   `animations { enabled = false }` en `hyprlock.conf`. Cosmético: no se ha
   observado efecto sobre el bloqueo ni sobre el desbloqueo. Sin resolver
@@ -2487,12 +2492,20 @@ y no se versiona.
 
 ## 22. Interfaz de audio USB (SSL 2+ Mk II)  **[OK]**
 
-Solid State Logic SSL 2+ Mk II conectada por USB (`ID 31e9:0009`), tarjeta ALSA
-`1 [II]`. **No hizo falta instalar ni un solo controlador**: es *class-compliant*
-(USB Audio Class 2) y la maneja `snd-usb-audio`, que ya viene en el kernel.
-Comprobado el 2026-09-08 con la interfaz enchufada y sonando.
+Solid State Logic SSL 2+ Mk II conectada por USB (`ID 31e9:0009`, `bcdDevice
+0116`), identificador ALSA **`II`**. **No hizo falta instalar ni un solo
+controlador**: es *class-compliant* (USB Audio Class 2) y la maneja
+`snd-usb-audio`, que ya viene en el kernel. Comprobado el 2026-09-08 con la
+interfaz enchufada y sonando.
 
-**No existe SSL 360° para Linux y no se echa en falta.** `amixer -c 1 scontrols`
+> **El NÚMERO de tarjeta no es fijo.** Esta sección decía «tarjeta ALSA `1
+> [II]`» hasta el 2026-09-13, cuando se comprobó que era la **2** (`hw:2`): la 1
+> es `sof-hda-dsp` y la 0 la NVIDIA. El número depende del orden de enumeración
+> y cambia entre arranques y reconexiones. Lo estable es el **identificador**
+> (`II`) y el nombre del sink, que es justamente por lo que `audio-salida`
+> busca por nombre y no por ID.
+
+**No existe SSL 360° para Linux y no se echa en falta.** `amixer -cII scontrols`
 devuelve **cero controles**: esta interfaz no expone mezclador por software, todo
 el control (ganancia, +4K, MONITOR MIX, 48V, auriculares) es físico y vive en el
 panel frontal. Lo que en Windows haría el software aquí ya lo hacen los mandos.
@@ -2533,20 +2546,61 @@ salidas y marca la activa.
 Verificado el 2026-09-08 en ambos sentidos: con Firefox reproduciendo, el flujo
 saltó de la SSL a los altavoces y de vuelta.
 
-### Aviso de UCM (cosmético)
+### El rótulo `[ALSA UCM error]`, resuelto  **[OK]**
 
-WirePlumber registra al arrancar:
+Hasta el 2026-09-13 la tarjeta aparecía en todas partes —pavucontrol, Waybar, el
+selector de salida— como `SSL 2+ Mk II [ALSA UCM error]`, y wireplumber
+registraba en cada arranque:
 
 ```
-spa.alsa: Error in ALSA UCM profile for _ucm0003.hw:II,0 (HiFi: Line2: sink): PlaybackChannels=4 < avail 6
-spa.alsa: Error in ALSA UCM profile for _ucm0003.hw:II,0 (HiFi: Mic2: source): CaptureChannels=4 < avail 8
+spa.alsa: Error in ALSA UCM profile for _ucm0004.hw:II,0 (HiFi: Line2: sink): PlaybackChannels=4 < avail 6
+spa.alsa: Error in ALSA UCM profile for _ucm0004.hw:II,0 (HiFi: Mic2: source): CaptureChannels=4 < avail 8
 ```
 
-Por eso el dispositivo aparece como `SSL 2+ Mk II [ALSA UCM error]`. Es un
-desajuste entre el perfil UCM de `alsa-ucm-conf` y la revisión **Mk II**, que
-tiene más canales de los que el perfil declara. **La interfaz funciona igual**;
-el riesgo es que no se expongan todos los canales físicos. Sin investigar a
-fondo (ver §15).
+**Causa.** El perfil de `alsa-ucm-conf` (`ucm2/USB-Audio/SolidStateLabs/`)
+declaraba 4 canales de reproducción y 4 de captura. El hardware expone **6 y 8**
+(`/proc/asound/cardN/stream0`). PipeWire compara ambos en `libspa-alsa.so` y, si
+no cuadran, cuelga la cadena literal `%s [ALSA UCM error]` de la descripción de
+la tarjeta. El soporte de la MkII se añadió upstream **sin probarlo en un
+aparato real**, heredando los 4/4 de la MkI.
+
+**No faltaba ningún canal físico.** Según la documentación de SSL, los 8 de
+captura son **2 entradas reales + 6 de loopback** (3 pares estéreo, que llegaron
+por actualización de firmware); de los 6 de reproducción, 4 son los jacks
+balanceados del panel trasero (salidas 1-4; la MkII sustituyó los RCA de la MkI)
+y el par **5/6 no suena por ninguna salida**. Los auriculares A y B toman ambos
+los buses 1/2 y 3/4 — el botón **3&4** conmuta B a 3-4 para dar una mezcla
+independiente. `Line1`, `Line2`, `Mic1` y `Mic2` ya cubrían todo lo que tiene
+conectores; no había nada que recuperar.
+
+**Arreglo aplicado (parche local).** Es el PR **#837** de `alsa-ucm-conf` (Alan
+Tran-Kiem, 2026-08-24), que añade una condición para `USB31e9:0009` con
+`DirectPlaybackChannels 6` / `DirectCaptureChannels 8` y una rama `If.chn6` que
+sabe partir un split de 6 canales. Su autor lo probó en una Mk II con el mismo
+`bcdDevice 0116` que esta. Se aplica con `scripts/alsa-ucm-apply.sh`, que guarda
+los originales en `/var/lib/arch-msi/alsa-ucm-orig/`.
+
+> ⚠️ **El PR sigue ABIERTO y sin revisar** (comprobado el 2026-09-13: `state:
+> open`, 0 comentarios, y la última etiqueta upstream es `v1.2.16.1`, la misma
+> que hay instalada). Esto es un parche local sobre archivos de un paquete:
+> **cada actualización de `alsa-ucm-conf` los devuelve en silencio y el rótulo
+> vuelve.** Hay que reejecutar el script. No hay forma limpia de evitarlo:
+> `alsa-lib` solo busca perfiles UCM en `/usr/share/alsa/ucm2`, sin ruta de
+> override en `/etc` ni en `$HOME`.
+>
+> **Cuando el PR entre upstream esto sobra entero:** `--revert`, borrar
+> `system/alsa/` y `scripts/alsa-ucm-apply.sh`, y quitar esta nota.
+> https://github.com/alsa-project/alsa-ucm-conf/pull/837
+
+**Validado el 2026-09-13** tras aplicar y reiniciar wireplumber: ninguna línea
+de UCM en el journal, `device.description = "SSL 2+ Mk II"` sin sufijo, y los
+sinks `HiFi__Line1__sink` / `HiFi__Line2__sink` intactos, de modo que
+`audio-salida` y `Super+Z` siguen funcionando.
+
+**Descartado: el perfil `pro-audio`.** Saca los 6+8 canales en crudo, pero sin
+nombres (`aux0…aux5`) y **sin quitar el rótulo** —la cadena se fija al sondear
+la tarjeta, no depende del perfil activo—, y además rompería `audio-salida`, que
+busca el sink por el nombre `Line1`, inexistente en ese perfil.
 
 ## 23. Monitorización del equipo en Waybar  **[OK]**
 

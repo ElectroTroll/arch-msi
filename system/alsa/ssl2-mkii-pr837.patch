@@ -1,0 +1,182 @@
+From 2176d7329c54cb23e7b9eb12672b0406853ecba3 Mon Sep 17 00:00:00 2001
+From: lofiWaterCat <alan001tk@gmail.com>
+Date: Mon, 24 Aug 2026 01:15:37 -0700
+Subject: [PATCH] ucm2: USB-Audio: fix channel counts for SSL 2+ MK II
+
+Signed-off-by: Alan Tran-Kiem <alan001tk@gmail.com>
+---
+ ucm2/USB-Audio/SolidStateLabs/SSL2-HiFi.conf | 81 +++++++++++++++++---
+ ucm2/USB-Audio/SolidStateLabs/SSL2.conf      | 19 +++--
+ 2 files changed, 82 insertions(+), 18 deletions(-)
+
+diff --git a/ucm2/USB-Audio/SolidStateLabs/SSL2-HiFi.conf b/ucm2/USB-Audio/SolidStateLabs/SSL2-HiFi.conf
+index 8e39b8612..d9d366167 100644
+--- a/ucm2/USB-Audio/SolidStateLabs/SSL2-HiFi.conf
++++ b/ucm2/USB-Audio/SolidStateLabs/SSL2-HiFi.conf
+@@ -34,10 +34,8 @@ If.chn4 {
+ 				}
+ 			}
+ 		]
+-
+ 		SectionDevice."Line1" {
+ 			Comment "Line Outputs 1/L + 2/R"
+-
+ 			Value {
+ 				PlaybackPriority 200
+ 			}
+@@ -52,10 +50,8 @@ If.chn4 {
+ 				ChannelPos1 FR
+ 			}
+ 		}
+-
+ 		SectionDevice."Line2" {
+ 			Comment "Line Outputs 3 + 4"
+-
+ 			Value {
+ 				PlaybackPriority 100
+ 			}
+@@ -72,12 +68,75 @@ If.chn4 {
+ 		}
+ 	}
+ 	False {
+-		SectionDevice."Line1" {
+-			Comment "Stereo Line"
+-
+-			Value {
+-				PlaybackPriority 200
+-				PlaybackPCM "hw:${CardId}"
++		If.chn6 {
++			Condition {
++				Type String
++				String1 "${var:DirectPlaybackChannels}"
++				String2 "6"
++			}
++			True {
++				Macro [
++					{
++						SplitPCM {
++							Name "ssl2_stereo_out"
++							Direction Playback
++							Channels 2
++							HWChannels "${var:DirectPlaybackChannels}"
++							HWChannelPos0 FL
++							HWChannelPos1 FR
++							HWChannelPos2 FL
++							HWChannelPos3 FR
++							HWChannelPos4 FL
++							HWChannelPos5 FR
++						}
++					}
++				]
++				SectionDevice."Line1" {
++					Comment "Line Outputs 1/L + 2/R"
++					Value {
++						PlaybackPriority 200
++					}
++					Macro.pcm_split.SplitPCMDevice {
++						Name "ssl2_stereo_out"
++						Direction Playback
++						HWChannels "${var:DirectPlaybackChannels}"
++						Channels 2
++						Channel0 0
++						Channel1 1
++						ChannelPos0 FL
++						ChannelPos1 FR
++					}
++				}
++				SectionDevice."Line2" {
++					Comment "Line Outputs 3 + 4"
++					Value {
++						PlaybackPriority 100
++					}
++					Macro.pcm_split.SplitPCMDevice {
++						Name "ssl2_stereo_out"
++						Direction Playback
++						HWChannels "${var:DirectPlaybackChannels}"
++						Channels 2
++						Channel0 2
++						Channel1 3
++						ChannelPos0 FL
++						ChannelPos1 FR
++					}
++				}
++				# USB playback channels 5/6 are present in the device
++				# descriptors but produce no audible output on either
++				# headphone output, both of which carry the 1/2 and 3/4
++				# buses (tested on SSL 2+ MK II, bcdDevice 0116).
++				# Not exposed.
++			}
++			False {
++				SectionDevice."Line1" {
++					Comment "Stereo Line"
++					Value {
++						PlaybackPriority 200
++						PlaybackPCM "hw:${CardId}"
++					}
++				}
+ 			}
+ 		}
+ 	}
+@@ -85,7 +144,6 @@ If.chn4 {
+ 
+ SectionDevice."Mic1" {
+ 	Comment "Mic/Line/Inst 1"
+-
+ 	Value {
+ 		CapturePriority 200
+ 	}
+@@ -101,7 +159,6 @@ SectionDevice."Mic1" {
+ 
+ SectionDevice."Mic2" {
+ 	Comment "Mic/Line/Inst 2"
+-
+ 	Value {
+ 		CapturePriority 100
+ 	}
+diff --git a/ucm2/USB-Audio/SolidStateLabs/SSL2.conf b/ucm2/USB-Audio/SolidStateLabs/SSL2.conf
+index 3df2fac50..f993dc30d 100644
+--- a/ucm2/USB-Audio/SolidStateLabs/SSL2.conf
++++ b/ucm2/USB-Audio/SolidStateLabs/SSL2.conf
+@@ -1,8 +1,6 @@
+ Comment "Solid State Labs SSL 2"
+-
+ Define.DirectPlaybackChannels 2
+ Define.DirectCaptureChannels 4
+-
+ If.plus {
+ 	Condition {
+ 		Type RegexMatch
+@@ -13,7 +11,6 @@ If.plus {
+ 	}
+ 	True.Define.DirectPlaybackChannels 4
+ }
+-
+ If.fw {
+ 	Condition {
+ 		Type RegexMatch
+@@ -22,12 +19,22 @@ If.fw {
+ 	}
+ 	True.Define.DirectCaptureChannels 2
+ }
+-
++If.plusmk2 {
++	Condition {
++		Type RegexMatch
++		String "${CardComponents}"
++		# 0009 = SSL 2+ MK II: 6 playback / 8 capture channels over USB.
++		# The non-plus MK II reports a different ID and is not covered here.
++		Regex "USB31e9:0009"
++	}
++	True {
++		Define.DirectPlaybackChannels 6
++		Define.DirectCaptureChannels 8
++	}
++}
+ SectionUseCase."HiFi" {
+ 	Comment "HiFi"
+ 	File "/USB-Audio/SolidStateLabs/SSL2-HiFi.conf"
+ }
+-
+ Include.dhw.File "/common/directm.conf"
+-
+ Macro.0.DirectUseCase { Id="Direct" PlaybackChannels="${var:DirectPlaybackChannels}" CaptureChannels="${var:DirectCaptureChannels}" }
