@@ -118,3 +118,14 @@ output_path = "~/.config/rofi/theme.rasi"
 [templates.yazi]
 input_path  = "~/.config/matugen/templates/yazi-theme.toml"
 output_path = "~/.config/yazi/theme.toml"
+
+# ZapZap (WhatsApp Web). La salida va a los datos de la APLICACIÓN, no a
+# ~/.config: ZapZap lee de ahí los CSS de «personalización avanzada» y los
+# inyecta en la página. No es ruta de Stow, así que la regla de oro se cumple.
+#
+# ⚠️ Esto pisa variables internas de WhatsApp Web, que NO son una API pública.
+# Si Meta las renombra, parte del verde volverá sin que nada falle a la vista.
+# Cómo volver a inspeccionarlas, en la cabecera de la plantilla. Ver §27.
+[templates.zapzap]
+input_path  = "~/.config/matugen/templates/zapzap-waweb.css"
+output_path = "~/.local/share/ZapZap/customizations/global/css/arch-msi.css"

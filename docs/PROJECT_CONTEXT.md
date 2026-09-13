@@ -1,7 +1,16 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-09-13, más tarde aún (**todo el sistema en oscuro** —
+Última actualización: 2026-09-13, al final del día (**WhatsApp Web con la
+paleta del escritorio** — §27 gana el tema de la página: resulta que WhatsApp
+define su color en DOS niveles, tokens WDS sobre el `<html>` y ~188 variables
+heredadas en `.dark` sobre el `<body>`, y pisar solo `:root` no hace nada porque
+las variables heredan y gana la definición más cercana. El CSS pasa a ser una
+plantilla de matugen más, así que sigue al fondo de pantalla. Se añade la lista
+de chats colapsable en ventanas estrechas y quedan anotadas las cuatro claves de
+ZapZap que no se versionan, incluida la que deja la app sin acceso a sus
+ajustes. Diagnóstico en `history/2026-09-13-modo-oscuro-y-tema-de-whatsapp.md`).
+Antes, el mismo día: (**todo el sistema en oscuro** —
 §18 gana el reparto de modo claro/oscuro de las APLICACIONES, que iban en claro
 sobre un escritorio oscuro porque matugen solo pinta el shell. Son tres caminos
 —portal, `settings.ini` de GTK y `QT_QPA_PLATFORMTHEME`— y el modo se sigue
@@ -1715,6 +1724,7 @@ No es una preferencia, lo decide **lo que cada formato permite**:
 | **wlogout** | GTK CSS | **Config generada entera** (el `layout` sí sigue en Stow) |
 | **fastfetch** | JSONC sin `include` | **Config generada entera** |
 | **yazi** | `theme.toml`, capa parcial | **Tema generado entero** (`yazi.toml` y `keymap.toml` siguen en Stow) |
+| **ZapZap** | CSS inyectado en la página | **Hoja generada entera**, a los datos de la app, no a `~/.config` (§27) |
 
 GTK CSS solo tiene `@define-color`, que sirve para colores y para nada más: sin
 variables numéricas, la única forma de que el tamaño de fuente o el radio salgan
@@ -3294,4 +3304,95 @@ el número de teléfono, con lo que eso arrastra (2FA, trabajo, familia).
 Los envoltorios web como ZapZap **no tienen ese problema**: para los servidores
 de Meta son WhatsApp Web, que es un producto suyo.
 
-Historia y diagnóstico completo: `history/2026-09-13-zapzap-whatsapp.md`.
+### Tema: WhatsApp Web con la paleta del escritorio  **[OK]**
+
+Añadido el 2026-09-13. ZapZap tiene «personalización avanzada», que inyecta CSS
+y JS del usuario desde `~/.local/share/ZapZap/customizations/global/{css,js}`.
+El CSS que pinta WhatsApp Web con la paleta de matugen **es una plantilla más**:
+
+| | |
+|---|---|
+| Plantilla | `dotfiles/matugen/.config/matugen/templates/zapzap-waweb.css` |
+| Salida | `~/.local/share/ZapZap/customizations/global/css/arch-msi.css` |
+| Declarada en | `[templates.zapzap]` de `config.toml` |
+
+La salida vive en los datos de la app, **no** en una ruta de Stow, así que la
+regla de oro de §18 se cumple. Y como es plantilla, los colores **siguen al
+fondo de pantalla**: no hay ni un hexadecimal escrito a mano.
+
+> ⚠️ **El JavaScript de esa función NO sirve en WhatsApp Web.** La inyección
+> crea un `<script>` inline y la CSP de WhatsApp lo bloquea en silencio. Los
+> `<style>` sí pasan. Comprobado el 2026-09-13 con marcadores visibles: la
+> banda de prueba en CSS se veía, la de JS no.
+
+**Dos capas de color, no una.** WhatsApp Web define su tema por partida doble, y
+saberlo es lo único que hace que esto funcione:
+
+1. Tokens **WDS** (`--WDS-surface-default`, `--WDS-accent`…) sobre el `<html>`,
+   con selectores de clase ofuscados y **doblados** (`.x1umy8rd.x1umy8rd`).
+2. Una capa **heredada** de ~188 variables (`--panel-background`, `--teal`…)
+   definida en `.dark`, que es una clase del **`<body>`**.
+
+> ⚠️ **TRAMPA: pisar solo `:root` no hace nada.** Las variables CSS heredan, así
+> que una definición en `.dark` (el body) gana a otra en `:root` (el html) por
+> cercanía al elemento, **por mucha especificidad que se le ponga**. El primer
+> intento pisaba únicamente `:root` y el resultado fue *cero* cambios visibles,
+> pese a que las variables sí tomaban el valor nuevo al consultarlas en el html.
+> Hay que escribir en los dos niveles: `:root:root:root` para los WDS y
+> `body.dark.dark` para la capa heredada.
+
+La plantilla **no usa las clases ofuscadas** (`.x1umy8rd` y compañía): las
+genera el compilador de Meta y cambian sin avisar. Usa `:root:root:root`
+(especificidad 0,3,0 con nombres estándar) y `prefers-color-scheme`, de forma
+que si el escritorio vuelve a claro la hoja se aparta sola.
+
+### Cómo volver a inspeccionar WhatsApp Web
+
+Cuando Meta renombre tokens y vuelva el verde por partes, **no hace falta
+adivinar**. La CSP bloquea el JS inyectado, pero no al protocolo de DevTools,
+que evalúa desde fuera de la página:
+
+```
+QTWEBENGINE_REMOTE_DEBUGGING=127.0.0.1:9222 zapzap
+curl -s http://127.0.0.1:9222/json      # localizar la pestaña
+```
+
+Desde ahí se listan las ~1400 variables reales y, mejor aún, **se buscan por su
+valor actual** en vez de por nombre: pedir las que hoy valen el verde de
+WhatsApp da la lista exacta de lo que hay que remapear. Así se hizo.
+
+### Lista de chats colapsable  **[OK]**
+
+La misma plantilla lleva una `@media (max-width: 900px)` que reduce `#pane-side`
+a 76 px —la columna de avatares— para dejarle el espacio al chat abierto. No es
+función de WhatsApp ni de ZapZap.
+
+No oculta nada por selector, a propósito: fija el ancho del panel y le fuerza un
+`min-width` al grid interior, de modo que las filas **se recortan** en vez de
+reorganizarse. Así no depende de las clases ofuscadas de las filas. Usa
+`overflow-x`, no `overflow`: `#pane-side` es el contenedor con scroll vertical y
+taparlo entero dejaría la lista sin poder recorrerse.
+
+Verificado el 2026-09-13 simulando anchos por DevTools: a 800 px el panel mide
+76 px y a 1400 px vuelve a 419 px.
+
+### Ajustes de la app que NO se versionan
+
+`~/.config/ZapZap/ZapZap.conf` lleva geometría y estado de sesión, así que queda
+fuera del repositorio. Eso deja **cuatro claves que hay que reponer a mano** tras
+una reinstalación:
+
+| Clave | Valor | Para qué |
+|---|---|---|
+| `[system] theme` | `auto` | seguir el claro/oscuro del sistema (§18) |
+| `[custom] global\css\enabled` | `true` | **activa la hoja de estilos**; sin esto se genera pero no se inyecta |
+| `[system] menubar` | `true` | barra superior |
+| `[system] sidebar` | `true` | barra lateral |
+
+> ⚠️ **Si se desactivan la barra lateral y la superior, se pierde el acceso a los
+> ajustes** y no hay forma de recuperarlo desde la interfaz. La salida es editar
+> `menubar` y `sidebar` a `true` en el `.conf` **con la aplicación cerrada**:
+> QSettings reescribe el archivo al salir y se llevaría por delante el cambio.
+
+Historia y diagnóstico completo: `history/2026-09-13-zapzap-whatsapp.md` y
+`history/2026-09-13-modo-oscuro-y-tema-de-whatsapp.md`.

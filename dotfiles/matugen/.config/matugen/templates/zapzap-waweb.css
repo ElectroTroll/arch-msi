@@ -1,0 +1,244 @@
+/* zapzap-waweb.css — PLANTILLA del tema de WhatsApp Web (arch-msi)
+ *
+ * Fuente:  dotfiles/matugen/.config/matugen/templates/zapzap-waweb.css (esto)
+ * Salida:  ~/.local/share/ZapZap/customizations/global/css/arch-msi.css
+ *
+ * ⚠️ NO EDITAR la salida: la reescribe matugen en cada `theme-apply`.
+ *
+ * La salida NO es una ruta de Stow —vive en los datos de la app, no en el
+ * repositorio— así que la regla de oro de §18 se sigue cumpliendo.
+ *
+ * ZapZap inyecta este archivo en la página con un <style>. La personalización
+ * por JavaScript de la app NO sirve aquí: crea un <script> inline y la CSP de
+ * WhatsApp lo bloquea. Los <style> sí pasan.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:root:root {
+    /* ---- Escala neutra (de aquí cuelga casi todo lo demás) ---- */
+    --WDS-neutral-gray-1000: {{colors.surface_container_lowest.default.hex}};
+    --WDS-neutral-gray-900:  {{colors.surface.default.hex}};
+    --WDS-neutral-gray-850:  {{colors.surface_container.default.hex}};
+    --WDS-neutral-gray-800:  {{colors.surface_container_high.default.hex}};
+    --WDS-neutral-gray-500:  {{colors.outline_variant.default.hex}};
+    --WDS-neutral-gray-300:  {{colors.on_surface_variant.default.hex}};
+    --WDS-neutral-gray-50:   {{colors.on_surface.default.hex}};
+
+    /* ---- El verde de WhatsApp pasa a ser el azul del sistema ---- */
+    --WDS-green-100: {{colors.primary_fixed.default.hex}};
+    --WDS-green-400: {{colors.primary.default.hex}};
+    --WDS-green-450: {{accent}};
+    --WDS-green-500: {{colors.primary_container.default.hex}};
+    --WDS-green-750: {{colors.on_primary_fixed_variant.default.hex}};
+    --WDS-green-800: {{colors.on_primary.default.hex}};
+    --WDS-emerald-400: {{colors.primary.default.hex}};
+
+    /* ---- Superficies ---- */
+    /* El fondo del <body> sale de aquí: `background: var(--WDS-app-wash, ...)`.
+       Es de la escala «warm-gray», aparte de la neutra, y sin esto quedaba el
+       #262524 original asomando por detrás de toda la aplicación. */
+    --WDS-app-wash:                      {{colors.surface.default.hex}};
+
+    --WDS-surface-default:               {{colors.surface.default.hex}};
+    --WDS-background-wash-plain:         {{colors.surface.default.hex}};
+    --WDS-background-wash-inset:         {{colors.surface.default.hex}};
+    --WDS-systems-chat-background-wallpaper: {{colors.surface.default.hex}};
+    --WDS-systems-chat-surface-tray:     {{colors.surface.default.hex}};
+    --WDS-surface-elevated-default:      {{colors.surface_container.default.hex}};
+    --WDS-surface-emphasized:            {{colors.surface_container.default.hex}};
+    --WDS-background-elevated-wash-plain:  {{colors.surface_container.default.hex}};
+    --WDS-background-elevated-wash-inset:  {{colors.surface_container.default.hex}};
+    --WDS-components-surface-nav-bar:    {{colors.surface_container.default.hex}};
+    --WDS-surface-elevated-emphasized:   {{colors.surface_container_high.default.hex}};
+    --WDS-systems-chat-surface-composer: {{colors.surface_container.default.hex}};
+
+    /* ---- Burbujas ---- */
+    --WDS-systems-bubble-surface-incoming: {{colors.surface_container.default.hex}};
+    --WDS-systems-bubble-surface-outgoing: {{colors.on_primary_fixed_variant.default.hex}};
+    --WDS-systems-bubble-surface-business: {{colors.surface_container.default.hex}};
+    --WDS-systems-bubble-surface-e2e:      {{colors.surface_container.default.hex}};
+    --WDS-systems-bubble-surface-system:   {{colors.surface_container.default.hex}};
+    --WDS-systems-bubble-content-business: {{colors.primary.default.hex}};
+
+    /* ---- Acento y texto ---- */
+    --WDS-accent:                     {{accent}};
+    --WDS-accent-deemphasized:        {{colors.on_primary.default.hex}};
+    --WDS-accent-emphasized:          {{colors.primary_fixed.default.hex}};
+    --WDS-content-on-accent:          {{colors.surface.default.hex}};
+    --WDS-content-action-emphasized:  {{accent}};
+    --WDS-content-external-link:      {{accent}};
+    --WDS-persistent-always-branded:  {{accent}};
+    --WDS-persistent-activity-indicator: {{colors.primary.default.hex}};
+    --WDS-secondary-positive-deemphasized: {{colors.on_primary.default.hex}};
+    --WDS-components-filter-surface-selected: {{colors.on_primary.default.hex}};
+    --WDS-content-default:            {{colors.on_surface.default.hex}};
+    --WDS-content-action-default:     {{colors.on_surface.default.hex}};
+    --WDS-lines-outline-default:      {{colors.outline_variant.default.hex}};
+    --WDS-systems-status-seen:        {{colors.outline_variant.default.hex}};
+
+    /* ---- Capa antigua: quedan componentes sin migrar a WDS ---- */
+    --app-background: {{colors.surface.default.hex}};
+    --background-default: {{colors.surface.default.hex}};
+    --background-default-hover: {{colors.surface_container.default.hex}};
+    --panel-background-colored: {{colors.surface_container.default.hex}};
+    --panel-header-background: {{colors.surface_container.default.hex}};
+    --panel-input-background: {{colors.surface_container.default.hex}};
+    --conversation-panel-background: {{colors.surface.default.hex}};
+    --drawer-background: {{colors.surface.default.hex}};
+    --search-input-background: {{colors.surface_container.default.hex}};
+    --search-container-background: {{colors.surface.default.hex}};
+    --dropdown-background: {{colors.surface_container.default.hex}};
+    --incoming-background: {{colors.surface_container.default.hex}};
+    --rich-text-panel-background: {{colors.surface_container.default.hex}};
+    --panel-background-deeper: {{colors.surface.default.hex}};
+    --background-wash: {{colors.surface.default.hex}};
+    --primary: {{colors.on_surface.default.hex}};
+    --icon: {{colors.on_surface.default.hex}};
+    --text-primary: {{colors.on_surface.default.hex}};
+    --primary-title: {{colors.on_surface.default.hex}};
+    --panel-header-icon: {{colors.on_surface.default.hex}};
+    --secondary: {{colors.outline_variant.default.hex}};
+    --text-secondary: {{colors.outline_variant.default.hex}};
+    --icon-lighter: {{colors.outline_variant.default.hex}};
+    --bubble-meta-icon: {{colors.outline_variant.default.hex}};
+    --border-stronger: {{colors.outline_variant.default.hex}};
+    --teal: {{accent}};
+    --teal-light: {{accent}};
+    --app-highlight: {{accent}};
+    --highlight: {{accent}};
+    --unread-marker-background: {{accent}};
+    --badge-unread: {{accent}};
+    --checkmark-read: {{accent}};
+    --icon-primary: {{accent}};
+    --text-action: {{accent}};
+  }
+
+  /* ================================================================
+   * SEGUNDO NIVEL: la capa heredada, definida en `.dark` SOBRE EL <body>.
+   *
+   * Esto es lo que faltaba en el primer intento. Las variables heredan, así
+   * que una definición en `.dark` (el body) gana a la mía en `:root` (el html)
+   * por cercanía al elemento, por mucha especificidad que le ponga arriba.
+   * Hay que pisarla en su mismo nivel: `body.dark.dark` da 0,2,1 contra el
+   * 0,1,0 de `.dark`.
+   *
+   * Muchos de estos tokens ya apuntan a WDS (`var(--WDS-...)`) y siguen el
+   * bloque de arriba solos; aquí van solo los que llevan color fijo.
+   * ================================================================ */
+  body.dark.dark {
+    /* Fondo del <body>: `background: var(--WDS-app-wash, ...)` */
+    --WDS-app-wash: {{colors.surface.default.hex}};
+
+    /* ---- Superficies ---- */
+    --panel-background: {{colors.surface.default.hex}};
+    --panel-background-deep: {{colors.surface_container_lowest.default.hex}};
+    --panel-input-background: {{colors.surface_container.default.hex}};
+    --compose-panel-background-hover: {{colors.surface_container.default.hex}};
+    --avatar-background: {{colors.surface_container.default.hex}};
+    --modal-backdrop-solid: {{colors.surface.default.hex}};
+    --background-document-with-captions: {{colors.surface_container.default.hex}};
+    --product-thumb-background: {{colors.surface_container.default.hex}};
+    --empty-state-background: {{colors.surface_container.default.hex}};
+    --pill-background: {{colors.surface_container.default.hex}};
+    --notification-biz-background: {{colors.surface_container.default.hex}};
+    --notification-non-e2e-background: {{colors.surface_container.default.hex}};
+    --bot-suggestion-background-color: {{colors.surface_container.default.hex}};
+    --bot-command-pill-background-color: {{colors.surface_container.default.hex}};
+    --poll-modal-footer-background-color: {{colors.surface_container.default.hex}};
+    --button-reject-background: {{colors.surface_container.default.hex}};
+    --button-reject-background-hover: {{colors.surface_container_high.default.hex}};
+    --button-round-background-inverted: {{colors.surface_container_high.default.hex}};
+    --picker-background: {{colors.surface_container.default.hex}};
+    --pip-player-background: {{colors.surface_container.default.hex}};
+    --cover-image-background: {{colors.surface_container.default.hex}};
+    --chip-button-background: {{colors.surface_container_high.default.hex}};
+    --qc-button-border: {{colors.surface_container_high.default.hex}};
+    --qc-button-border-active: {{colors.surface_container_highest.default.hex}};
+    --avatar-circle-gray-light: {{colors.surface_container_high.default.hex}};
+    --multi-skin-tone-picker-emoji-selected-background: {{colors.surface_container_high.default.hex}};
+    --ptt-ooc-background: {{colors.surface_container_high.default.hex}};
+    --ptt-draft-waveform-background: {{colors.surface_container_high.default.hex}};
+    --ptt-draft-waveform-background-border: {{colors.surface.default.hex}};
+    --overlay: {{colors.surface.default.hex}};
+    --transient-background: {{colors.surface.default.hex}};
+    --comments-modal-background: {{colors.surface.default.hex}};
+    --icon-in-cell-frame-background: {{colors.surface.default.hex}};
+    --video-player-background: {{colors.surface_container_lowest.default.hex}};
+    --app-background-deeper: {{colors.surface_container_lowest.default.hex}};
+    --labels-plus-icon-color: {{colors.surface.default.hex}};
+
+    /* ---- Verdes sueltos que quedaban fuera de WDS ---- */
+    --icon-high-emphasis: {{accent}};
+    --text-action: {{accent}};
+    --sender-superpower-title: {{accent}};
+    --qc-quantity-label-highlighted-background: {{accent}};
+    --status-ring-unread: {{accent}};
+    --ptt-green: {{accent}};
+    --ptt-thumb-incoming-unplayed: {{accent}};
+    --badge-pending: {{accent_alt}};
+    --link-alt: {{accent_alt}};
+    --button-bubble: {{accent}}b3;
+    --audio-progress-incoming: {{colors.primary.default.hex}};
+    --audio-progress-outgoing: {{colors.primary_container.default.hex}};
+    --audio-track-outgoing: {{colors.on_primary_fixed_variant.default.hex}};
+    --spinner-outgoing: {{colors.secondary_container.default.hex}};
+    --ptt-waveform-outgoing-unplayed: {{colors.secondary_container.default.hex}};
+    --ptt-waveform-outgoing-played: {{colors.secondary.default.hex}};
+
+    /* ---- Texto y grises ---- */
+    --text-primary-strong: {{colors.on_surface.default.hex}};
+    --modal-title: {{colors.on_surface.default.hex}};
+    --map-overlay-foreground: {{colors.on_surface.default.hex}};
+    --text-muted: {{colors.outline_variant.default.hex}};
+    --primary-muted: {{colors.outline_variant.default.hex}};
+    --intro-secondary: {{colors.outline_variant.default.hex}};
+    --button-reject: {{colors.outline_variant.default.hex}};
+    --label-disabled-text: {{colors.outline_variant.default.hex}};
+    --link-preview-placeholder-image: {{colors.outline_variant.default.hex}};
+    --media-editor-icon-secondary-color: {{colors.outline_variant.default.hex}};
+    --labels-plus-icon-background: {{colors.outline_variant.default.hex}};
+    --icon-disabled: {{colors.surface_variant.default.hex}};
+    --text-disabled: {{colors.surface_variant.default.hex}};
+    --media-gallery-thumb-icon: {{colors.surface_variant.default.hex}};
+    --poll-button-disabled-receiver: {{colors.surface_variant.default.hex}};
+    --avatar-border: {{colors.outline_variant.default.hex}};
+    --business-name-subtitle: {{colors.outline_variant.default.hex}};
+    --button-reject-hover: {{colors.on_surface_variant.default.hex}};
+
+  }
+}
+
+/* ====================================================================
+ * LISTA DE CHATS COLAPSADA EN VENTANAS ESTRECHAS
+ *
+ * Cuando la ventana es pequeña, la lista se reduce a la columna de avatares
+ * y el chat abierto se queda con el resto. WhatsApp Web no trae nada de esto
+ * y ZapZap tampoco: es CSS nuestro.
+ *
+ * CÓMO, y por qué así. No se oculta nada por selector: las filas están
+ * envueltas en divs con clases ofuscadas que Meta regenera, y cualquier regla
+ * que dependa de ellas se rompería. En su lugar se fija el ancho del panel y
+ * se le fuerza un ancho mínimo al grid interior, de modo que las filas
+ * conserven su maquetación y simplemente queden RECORTADAS: lo que sobresale
+ * es el texto, y lo que queda a la vista es el avatar.
+ *
+ * `overflow-x` y no `overflow`: #pane-side es el contenedor con scroll
+ * vertical de la lista, y taparlo entero dejaría la lista sin poder recorrerse.
+ *
+ * El umbral está en px de la PÁGINA, no del monitor. Para ajustarlo, cambiar
+ * el 900 de aquí abajo.
+ * ==================================================================== */
+
+@media (max-width: 900px) {
+  #pane-side {
+    flex: 0 0 76px !important;
+    width: 76px !important;
+    min-width: 76px !important;
+    max-width: 76px !important;
+    overflow-x: hidden !important;
+  }
+  /* Sin esto las filas se reorganizarían para caber en 76px en vez de
+     recortarse, y el avatar se encogería con ellas. */
+  #pane-side [role="grid"] {
+    min-width: 340px !important;
+  }
+}
