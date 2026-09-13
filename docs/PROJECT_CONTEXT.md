@@ -3381,11 +3381,20 @@ Tres detalles que costaron y que conviene no tocar a ciegas:
 - **La barra de scroll de la lista va oculta** (`scrollbar-width: none`). Sin
   eso se come 10 px de los 76 y vuelve a cortar el avatar. La lista se recorre
   con la rueda.
-- **Hay que colapsar también la capa de bordes.** `.two` lleva una capa de
-  superposición vacía que solo dibuja los separadores entre paneles y que
-  conserva la división original `flex: 0 0 45%`; si no se toca, deja una línea
-  gris flotando en mitad de la conversación y 275 px muertos. Se señala con
-  `.two > div > div:first-child`.
+- **Hay que quitarle el borde a la capa de separadores.** `.two` lleva capas de
+  superposición **vacías y `position: absolute`** que solo dibujan los
+  separadores entre paneles, conservando la división original 45% / resto. Al
+  ser absolutas **no ocupan espacio**: no empujan la conversación, solo dejan
+  una línea gris flotando sobre ella. Basta con volver su borde transparente;
+  **no hay que tocar su ancho**.
+
+  > ⚠️ **NO señalarlas por posición.** Un intento con
+  > `.two > div > div:first-child` funcionaba con la lista vacía y, **con un
+  > chat abierto, cogía el panel de conversación** y lo comprimía a 76 px, con
+  > el composer y los mensajes apilados sobre la lista. El selector bueno se
+  > apoya en la firma del contenido —un `div` con un único `span` vacío—:
+  > `.two div:has(> div > span:only-child:empty)`. Comprobado en la página que
+  > coge 3 elementos y que ninguno es la lista ni la conversación.
 
 Verificado el 2026-09-13 simulando anchos por DevTools y comprobando el
 resultado en pantalla: a 800 px el panel mide 76 px y a 1400 px vuelve a 419.

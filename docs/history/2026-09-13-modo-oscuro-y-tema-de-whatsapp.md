@@ -200,14 +200,40 @@ captura** con ImageMagick, y luego buscar el elemento por su forma (muy estrecho
 muy alto) en vez de por posición.
 
 Resultó ser una **capa de superposición vacía** dentro de `.two` —solo `span`s
-sin contenido— cuyo único cometido es dibujar los separadores entre paneles, y
-que mantenía la división original `flex: 0 0 45%`. Al colapsar la columna real,
-esa capa se quedó donde estaba: su segundo panel empezaba en x=403 y pintaba ahí
-su borde izquierdo, sobre la conversación, además de reservar 275 px muertos.
+sin contenido— cuyo único cometido es dibujar los separadores entre paneles,
+conservando la división original 45% / resto. Al colapsar la columna real, esa
+capa se quedó donde estaba y su segundo panel pintaba el borde en x=403, sobre
+la conversación.
 
-Se arregla colapsándola también. Se la señala con `.two > div > div:first-child`,
-que es estructura pura y no depende de clases ofuscadas; comprobado en la página
-que coge exactamente 2 elementos, el fantasma y otro de ancho cero.
+### El arreglo de la línea, mal a la primera
+
+El primer intento la colapsó con `.two > div > div:first-child`, bajo la
+suposición de que además reservaba 275 px muertos. **Las dos cosas estaban mal.**
+
+La capa es `position: absolute`: **no ocupa espacio**, no empujaba nada. Medido
+después sobre los hijos de `.two`, la lista ya estaba en `left=64 w=76` y la
+conversación en `left=140 w=614` — es decir, el diseño ya era correcto y lo único
+real era la raya.
+
+Y el selector era **posicional**. Con la lista vacía, el primer hijo era la capa
+de bordes. **Con un chat abierto, el primer hijo era el panel de conversación**,
+que quedó comprimido a 76 px: los mensajes, el vídeo y el composer apilados sobre
+la columna de avatares. Se entregó como arreglado porque se validó en el único
+estado en que no fallaba.
+
+El selector bueno no mira la posición sino la **firma del contenido** —un `div`
+con un único `span` vacío—, y solo vuelve el borde transparente:
+
+```css
+.two div:has(> div > span:only-child:empty) {
+  border-left-color: transparent !important;
+  border-right-color: transparent !important;
+}
+```
+
+Comprobado **antes** de escribirlo, no después: coge 3 elementos, ninguno es la
+lista ni la conversación ni las contiene. Y verificado en pantalla con un chat
+abierto, que es el estado que se había escapado.
 
 ---
 

@@ -275,19 +275,25 @@
 
   #pane-side [role="grid"] { min-width: 340px !important; }
 
-  /* ⚠️ LA CAPA DE BORDES, que es lo que dejaba una línea gris en mitad del chat.
-     `.two` lleva una capa de superposición VACÍA —solo spans sin contenido— que
-     dibuja los separadores entre paneles, y mantiene la división original
-     `flex: 0 0 45%`. Al colapsar la columna real, esa capa se quedaba en su
-     sitio: el borde izquierdo de su segundo panel caía en x=403, o sea flotando
-     sobre la conversación, y además reservaba 275 px muertos.
-     Se la señala por estructura, no por clases: el selector coge exactamente
-     2 elementos, comprobado en la página. */
-  .two > div > div:first-child {
-    flex: 0 0 76px !important;
-    width: 76px !important;
-    min-width: 76px !important;
-    max-width: 76px !important;
+  /* ⚠️ LA LÍNEA GRIS EN MITAD DEL CHAT.
+     `.two` lleva varias capas de superposición VACÍAS y `position: absolute`
+     —solo spans sin contenido— cuyo único cometido es dibujar los separadores
+     entre paneles. Conservan la división original (45% / resto), así que al
+     colapsar la columna real su borde se queda flotando sobre la conversación.
+     Al ser absolutas NO ocupan espacio: no empujan nada, solo pintan la raya.
+     Por eso basta con quitarles el borde; no hay que tocar su ancho.
+
+     ⚠️ NO colapsarlas por posición. Un intento anterior usó
+     `.two > div > div:first-child`, que con la lista vacía cogía la capa
+     correcta pero **con un chat abierto cogía también el panel de
+     conversación** y lo comprimía a 76 px: la conversación entera, composer
+     incluido, apilada sobre la lista. El selector de abajo se apoya en la
+     FIRMA del contenido (un div con un único span vacío), comprobado en la
+     página: coge 3 elementos, ninguno es la lista ni la conversación ni las
+     contiene. */
+  .two div:has(> div > span:only-child:empty) {
+    border-left-color: transparent !important;
+    border-right-color: transparent !important;
   }
 
   /* WhatsApp impone un ancho mínimo al contenedor de la aplicación (~750 px).
