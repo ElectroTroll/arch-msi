@@ -1,5 +1,5 @@
 # Paquetes instalados explícitamente (pacman -Qqe)
-# Fuente: auditoría 2026-09-12 en elok-archmsi
+# Fuente: auditoría 2026-09-13 en elok-archmsi
 # Regenerar con: pacman -Qqe > packages/pacman-explicit.txt
 # AVISO: al regenerar, esta cabecera se pierde. Debe volver a añadirse a mano
 # (o usar scripts/update-inventories.sh, que la conserva).
@@ -137,6 +137,7 @@ xdg-user-dirs
 xdg-utils
 xournalpp
 yazi
+zapzap
 zip
 zoxide
 zram-generator
