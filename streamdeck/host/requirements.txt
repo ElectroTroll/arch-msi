@@ -1,0 +1,25 @@
+# Dependencias del mezclador de volumen del StreamDeck DIY
+# Instalar con:  pip install -r requirements.txt   (Windows)
+# En Arch Linux, ver la nota del final: se instala con pacman.
+
+# Comun a los dos sistemas: lectura del puerto serie del Pro Micro
+pyserial>=3.5
+
+# Solo Windows: Core Audio / WASAPI (volumen maestro, microfono y por app)
+pycaw>=20240210 ; sys_platform == "win32"
+comtypes>=1.2.0 ; sys_platform == "win32"
+psutil>=5.9.0   ; sys_platform == "win32"
+
+# ---------------------------------------------------------------------------
+# En ARCH LINUX no uses este archivo con pip.
+# ---------------------------------------------------------------------------
+# El Python del sistema esta marcado como "externally managed" (PEP 668) y pip
+# se niega a instalar nada fuera de un entorno virtual. Como la unica
+# dependencia es pyserial y esta empaquetada, sale mas limpio instalarla con
+# pacman: asi la actualiza el sistema y el servicio de systemd puede usar
+# /usr/bin/python directamente, sin entorno virtual.
+#
+#   sudo pacman -S python-pyserial libpulse
+#
+# libpulse es el que trae el comando `pactl`, que es con lo que el backend de
+# Linux habla con PipeWire.

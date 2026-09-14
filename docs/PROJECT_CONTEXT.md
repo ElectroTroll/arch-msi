@@ -1,7 +1,22 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-09-14, al final del día (**Minecraft con instancias**
+Última actualización: 2026-09-14, al final del día (**el StreamDeck casero entra
+en el repositorio** — §30 nueva: hardware propio (Pro Micro, 12 teclas y 5
+sliders) traído del sobremesa con Windows. Es **el primer componente que es un
+proyecto entero y no configuración de un programa ajeno**, así que no es paquete
+Stow. Las teclas van por USB HID y no necesitan nada; toda la dificultad estaba
+en los sliders, cuyo backend de Linux nunca se había ejecutado. Lo que parecía
+una copia fuera del repositorio resultó ser un **symlink**
+(`~/StreamDeckDIY -> Projects/arch-msi/streamdeck`) que **no crea Stow ni ningún
+script**: sin él, el servicio de usuario no arranca. La curva de volumen se
+midió en vez de suponerse —fader lineal en dB, −5,00 dB por cada 10 % de
+recorrido, deshaciendo la cúbica de PipeWire— y la identificación de apps mira
+tres propiedades porque Spotify no publica el binario. Pendientes: Discord sin
+confirmar, OBS sin instalar y F17–F21 sin asignar, que además necesitan
+`hl.bind(...)` y no el `bind =` del README. Detalle en
+`history/2026-09-14-streamdeck.md`).
+Antes, el mismo día: (**Minecraft con instancias**
 — §29 nueva: `multimc-bin` del AUR, que **no contiene el launcher**: instala un
 bootstrapper de 27 KiB que se descarga MultiMC 0.7.0 en `~/.local/share/multimc`
 la primera vez que se abre, con lo que eso implica al restaurar el equipo. A
@@ -3886,3 +3901,116 @@ que cambia solo en cada sesión.
 configuración del launcher sino una entrada de escritorio escrita a mano.
 
 Historia y detalle completo: `history/2026-09-14-multimc.md`.
+
+## 30. StreamDeck DIY: 12 teclas y 5 sliders  **[OK]**
+
+Hardware propio, construido por el usuario y traído del PC de sobremesa
+(Windows) el 2026-09-14: un **SparkFun Pro Micro 5V** (ATmega32U4) con una
+matriz de 12 switches y 5 potenciómetros deslizantes, en carcasa impresa en 3D.
+Funciona por **dos vías independientes**, y esa separación es la clave de todo
+lo demás:
+
+| Vía | Qué manda | Qué hace falta en el PC |
+|---|---|---|
+| **USB HID** (teclas) | F13–F21 y teclas multimedia estándar | **nada**: el kernel lo ve como `Arduino LLC Arduino Leonardo Keyboard` |
+| **Puerto serie** (sliders) | `v0\|v1\|v2\|v3\|v4\n`, valores 0–1023 | el script propio `streamdeck_mixer.py` |
+
+### El primer componente del repositorio que es código propio, no configuración
+
+Todo lo demás en `dotfiles/` es configuración de programas ajenos. `streamdeck/`
+es **un proyecto entero**: firmware Arduino (`firmware/`), el mezclador en
+Python (`host/`) y su documentación de 35 KB, que se escribió en el sobremesa y
+ya traía el proceso completo con sus trampas de soldadura, pinout y firmware.
+**No es un paquete Stow** y no se enlaza nada bajo `~/.config`.
+
+⚠️ **Pero sí depende de un enlace hecho a mano, y no lo crea Stow.**
+
+```
+~/StreamDeckDIY -> Projects/arch-msi/streamdeck
+```
+
+El servicio de usuario apunta a `%h/StreamDeckDIY/host/streamdeck_mixer.py`, así
+que **sin ese symlink el mezclador no arranca**. Al restaurar en un equipo
+limpio hay que crearlo —o cambiar el `ExecStart`—. Es el mismo tipo de requisito
+manual que el directorio que hay que crear antes de invocar a Stow en §13, y por
+la misma razón: algo fuera del repositorio tiene que existir primero.
+
+### Lo que hace falta en el sistema
+
+- **`python-pyserial`** (en `pacman-explicit.txt` desde el 2026-09-14). Ojo:
+  `pip install` falla en Arch con *externally-managed-environment*, y **no se
+  fuerza con `--break-system-packages`**: la dependencia está empaquetada.
+- **`libpulse`**, que es quien trae `pactl`. Ya estaba.
+- **El usuario en el grupo `uucp`**, para abrir `/dev/ttyACM0` (`crw-rw---- root
+  uucp`). Verificado: `id` da `984(uucp)`. ⚠️ Tras el `usermod` **no basta con
+  abrir otra terminal**: hay que cerrar la sesión de Hyprland y volver a entrar,
+  porque el grupo se hereda del proceso de login.
+
+### El servicio de usuario está COPIADO, no enlazado
+
+`~/.config/systemd/user/streamdeck-mixer.service`, `enabled` y `active`
+(comprobado: arrancado a las 22:00, conectado a `/dev/ttyACM0` a 115200 baudios,
+con los cinco sliders mapeados en el log). El original vive en
+`streamdeck/host/streamdeck-mixer.service` y hoy **son idénticos byte a byte**,
+pero al ser una copia pueden desincronizarse: si se edita el del repositorio hay
+que volver a copiarlo y hacer `systemctl --user daemon-reload`.
+
+`Restart=always` con `RestartSec=5`: si el script muere, systemd lo relevanta.
+El script además reintenta solo cuando el StreamDeck no está enchufado.
+
+### Identificar aplicaciones en PipeWire: tres propiedades, no una
+
+El mezclador busca cada app por `application.process.binary`,
+`application.name` y `node.name`, en ese orden, porque **cada programa publica
+lo que le da la gana**:
+
+| App | `application.name` | `…process.binary` | `node.name` |
+|---|---|---|---|
+| Firefox | `Firefox` | `firefox` | `Firefox` |
+| Spotify | `Spotify` | *(no publica)* | `spotify` |
+| AnyDesk | `AnyDesk` | `anydesk` | `AnyDesk` |
+
+Spotify es el caso que obliga a mirar más de una: **no publica el binario**.
+`media.name` queda deliberadamente fuera de la identificación —es el título de
+la canción o de la pestaña y cambia constantemente—, y solo se usa como último
+recurso si un flujo no publica ninguna de las otras tres.
+
+Reparto actual: **0** maestro (`@DEFAULT_SINK@`), **1** navegador, **2** Spotify,
+**3** «resto» (juegos: cada uno tiene un nombre distinto, así no hay que tocar
+nada), **4** Discord.
+
+### La curva de volumen se midió, no se supuso
+
+PipeWire/PulseAudio aplican una escala **cúbica** al volumen software, así que
+mandar la posición del fader tal cual concentra casi todo el cambio audible en
+el tercio de abajo. La corrección no es un exponente a ojo: el fader se hace
+**lineal en dB**, que es como se comporta una mesa de mezclas.
+
+```
+dB       = (posicion - 1) * RANGO_DB_LINUX     # 50 dB de recorrido
+amplitud = 10 ** (dB / 20)
+pactl    = amplitud ** (1/3)                   # deshace la cúbica de PipeWire
+```
+
+Medido sobre el hardware: **−5,00 dB por cada 10 % de recorrido**. `RANGO_DB_LINUX`
+es el único número que hay que tocar para cambiar el tacto (40 corto, 50
+equilibrado —lo puesto—, 60 como mesa de mezclas); a 0 se desactiva la
+corrección. La constante de Windows (`CURVA_SESIONES_WINDOWS = 1.75`, otra
+medida, contra `GetMasterVolumeLevel()`) **se conserva**: el mismo script corre
+en los dos equipos.
+
+### Pendientes
+
+- **Discord**: el nombre que publica no está confirmado en Arch porque no estaba
+  sonando durante las pruebas. `--listar` lo enseña con la app sonando.
+- **OBS**: no está instalado en el portátil, así que sus hotkeys no se han
+  probado aquí. Aviso heredado: bajo Wayland los atajos globales solo llegan si
+  OBS corre en XWayland (`env -u WAYLAND_DISPLAY obs`).
+- **F17–F21**: las cinco teclas custom siguen **sin asignar**. En Hyprland con
+  configuración Lua no valen los `bind = , F17, exec, …` del README (§9): hay que
+  escribirlas como `hl.bind(...)` en `hyprland.lua`.
+
+Documentación completa del proyecto —cableado, pinout, firmware, montaje y
+solución de problemas— en `streamdeck/README.md`; el encargo del traspaso, en
+`streamdeck/TRASPASO-ARCH.md`. Historia de la incorporación al repositorio:
+`history/2026-09-14-streamdeck.md`.

@@ -89,6 +89,10 @@ arch-msi/
 │   └── alsa/ucm2/         # perfil UCM parcheado de la SSL 2+ Mk II (§22)
 ├── obsidian/          # el vault NO se versiona; esto sí, y se enlaza a mano
 │   └── plugins/       # propios: subrayar, subindice, superindice (§26)
+├── streamdeck/        # proyecto propio, NO es paquete Stow (§30)
+│   ├── firmware/      # sketches Arduino del Pro Micro
+│   └── host/          # mezclador en Python + servicio de usuario
+│                      # necesita ~/StreamDeckDIY -> este directorio
 └── scripts/
     ├── update-inventories.sh   # regenera los 4 archivos de packages/ con cabecera
     ├── add-wallpaper.sh        # ajusta una imagen a 2560x1600 y la añade a ~/Wallpapers

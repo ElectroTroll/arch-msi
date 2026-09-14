@@ -1,0 +1,38 @@
+# ============================================================================
+# StreamDeck DIY - servicio de usuario para Arch Linux (systemd --user)
+# ============================================================================
+#
+# Instalacion:
+#   mkdir -p ~/.config/systemd/user
+#   cp streamdeck-mixer.service ~/.config/systemd/user/
+#   # ajusta la ruta de ExecStart si no tienes el proyecto en ~/StreamDeckDIY
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now streamdeck-mixer.service
+#
+# Ver el log:
+#   journalctl --user -u streamdeck-mixer -f
+#
+# IMPORTANTE: hacen falta dos cosas del sistema, una sola vez:
+#   sudo pacman -S python-pyserial libpulse
+#   sudo usermod -aG uucp $USER     (para poder abrir /dev/ttyACM*)
+# Despues del usermod hay que cerrar sesion y volver a entrar.
+# ============================================================================
+
+[Unit]
+Description=StreamDeck DIY - mezclador de volumen por aplicacion
+# Espera a que PipeWire este levantado antes de arrancar
+After=pipewire.service pipewire-pulse.service
+Wants=pipewire-pulse.service
+
+[Service]
+Type=simple
+# -u = salida sin bufer, para que el journal muestre los mensajes al momento
+# y no en bloques cuando se llena el bufer.
+ExecStart=/usr/bin/python -u %h/StreamDeckDIY/host/streamdeck_mixer.py
+# Si el StreamDeck no esta enchufado, el script ya reintenta solo; aun asi,
+# si el proceso muere por cualquier motivo, systemd lo vuelve a levantar.
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
