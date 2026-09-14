@@ -95,7 +95,7 @@ arch-msi/
     ├── theme-apply.sh          # aplica el tema con matugen a todos los componentes (§18)
     ├── vpn-autoconnect.sh      # conecta ProtonVPN al iniciar sesión (§9)
     ├── kb-layout.sh            # alterna es/us en el teclado que pulsa el atajo (§20)
-    ├── audio-salida.sh         # alterna la salida de audio interfaz <-> altavoces (§22)
+    ├── audio-salida.sh         # rota la salida: altavoces → USB → Bluetooth (§22)
     ├── waybar-monitor.sh       # CPU/RAM/GPU y temperaturas para la barra (§23)
     ├── greeter-apply.sh        # instala el tema del greeter de SDDM (§24) — con sudo
     └── alsa-ucm-apply.sh       # parchea el perfil UCM de la SSL 2+ (§22) — con sudo

@@ -101,7 +101,7 @@ cambiarse el destino del audio.
 
 | Atajo     | Acción                                                                  |
 |-----------|-------------------------------------------------------------------------|
-| Super + Z | Alternar la salida de audio de todo el sistema entre la interfaz USB (SSL 2+ Mk II) y los altavoces del portátil (`audio-salida`). Arrastra también los flujos que ya estaban sonando. Ver PROJECT_CONTEXT §22. |
+| Super + Z | Rotar la salida de audio de todo el sistema: altavoces del portátil → interfaz USB (SSL 2+ Mk II) → Bluetooth conectado (JBL Charge 5, auriculares…) → vuelta a empezar (`audio-salida`). Solo aparecen las salidas presentes, así que sin interfaz ni Bluetooth sigue siendo un simple ida y vuelta. Arrastra también los flujos que ya estaban sonando. Ver PROJECT_CONTEXT §22. |
 
 ## Distribución de teclado
 

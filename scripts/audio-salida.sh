@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 #
-# Alterna la salida de audio DE TODO EL SISTEMA entre la interfaz USB
-# (Solid State Logic SSL 2+ Mk II) y los altavoces internos del portátil,
-# sin desenchufar nada. Funciona como usuario normal (sin sudo).
+# Rota la salida de audio DE TODO EL SISTEMA entre los altavoces internos del
+# portátil, la interfaz USB (Solid State Logic SSL 2+ Mk II) y cualquier
+# altavoz o auricular Bluetooth conectado, sin desenchufar nada. Funciona como
+# usuario normal (sin sudo).
 #
-# Uso: audio-salida            alterna interfaz <-> altavoces internos
-#      audio-salida --status   dice cuál es la salida activa
+# Uso: audio-salida            pasa a la siguiente salida disponible
+#      audio-salida --status   lista las salidas y marca cuáles entran en la rotación
 #
 # POR QUÉ NO BASTA CON `pactl set-default-sink`. Cambiar el predeterminado solo
 # afecta a los flujos NUEVOS y a los que no tengan destino fijado; una app que
@@ -16,13 +17,19 @@
 #
 # POR QUÉ SE IDENTIFICAN LOS SINKS POR NOMBRE Y NO POR ID. Los IDs numéricos de
 # `wpctl`/`pactl` se reasignan en cada arranque y cada vez que se reconecta la
-# interfaz; los nombres (`alsa_output.usb-...`, `alsa_output.pci-...`) son
-# estables porque los deriva ALSA de la ruta del dispositivo.
+# interfaz; los nombres (`alsa_output.usb-...`, `alsa_output.pci-...`,
+# `bluez_output.<MAC>.N`) son estables porque los deriva ALSA o BlueZ de la ruta
+# del dispositivo o de la dirección del aparato.
 #
 # LOS HDMI QUEDAN FUERA A PROPÓSITO. Este equipo expone cuatro sinks HDMI/DP
 # (tres del iGPU Intel + uno de la RTX 4060) que aparecen aunque no haya nada
-# enchufado. Meterlos en la rotación convertiría un atajo de dos posiciones en
-# uno de seis, en su mayoría mudos. Para esos casos está pavucontrol.
+# enchufado. Meterlos en la rotación la llenaría de destinos mudos. Para esos
+# casos está pavucontrol.
+#
+# EL BLUETOOTH SÍ ENTRA, Y NO ESTORBA CUANDO NO ESTÁ. A diferencia de los HDMI,
+# un `bluez_output.*` solo existe mientras el aparato está emparejado Y
+# conectado: si no hay nada, la rotación vuelve sola a dos posiciones. Si hay
+# varios conectados a la vez, cada uno es una parada más, en orden estable.
 
 set -Eeuo pipefail
 
@@ -35,6 +42,10 @@ PATRON_INTERNO='skl_hda_dsp_generic.*Speaker'
 # prefijo que ALSA da a todas. Así el script sigue sirviendo si algún día se
 # conecta otra interfaz distinta.
 PATRON_USB='^alsa_output\.usb-'
+
+# Cualquier salida Bluetooth. PipeWire crea estos sinks a través de BlueZ y el
+# nombre lleva la MAC del aparato, que es fija.
+PATRON_BT='^bluez_output\.'
 
 # La SSL 2+ Mk II expone dos sinks (`Line1` y `Line2`). Line1 son las salidas
 # principales, que es lo que WirePlumber elige por defecto y donde están los
@@ -52,23 +63,35 @@ descripcion() {
             }'
 }
 
-interno="$(sinks | grep -m1 -E "$PATRON_INTERNO" || true)"
-usb="$(sinks | grep -E "$PATRON_USB" | grep -m1 "$PREFERENCIA_USB" || true)"
-[ -z "$usb" ] && usb="$(sinks | grep -m1 -E "$PATRON_USB" || true)"
+todos="$(sinks)"
+
+interno="$(printf '%s\n' "$todos" | grep -m1 -E "$PATRON_INTERNO" || true)"
+usb="$(printf '%s\n' "$todos" | grep -E "$PATRON_USB" | grep -m1 "$PREFERENCIA_USB" || true)"
+[ -z "$usb" ] && usb="$(printf '%s\n' "$todos" | grep -m1 -E "$PATRON_USB" || true)"
+# Ordenados para que dos aparatos Bluetooth conectados a la vez den siempre la
+# misma secuencia; `pactl` los lista por ID, que cambia en cada reconexión.
+bt="$(printf '%s\n' "$todos" | grep -E "$PATRON_BT" | sort || true)"
+
+# El orden de la rotación: internos -> USB -> Bluetooth -> internos. Las paradas
+# que no existen simplemente no se añaden.
+anillo="$(printf '%s\n%s\n%s\n' "$interno" "$usb" "$bt" | grep -v '^$' || true)"
 
 actual="$(pactl get-default-sink)"
 
 case "${1:-}" in
     --status|-s)
-        for s in $(sinks); do
+        # `*` la salida activa, `·` las demás paradas de la rotación, nada las
+        # que quedan fuera (los HDMI).
+        for s in $todos; do
             marca=" "
+            printf '%s\n' "$anillo" | grep -qxF "$s" && marca="·"
             [ "$s" = "$actual" ] && marca="*"
             printf "%s %s\t%s\n" "$marca" "$s" "$(descripcion "$s")"
         done | column -t -s $'\t'
         exit 0
         ;;
     -h|--help)
-        sed -n '2,8p' "$0"
+        sed -n '2,9p' "$0"
         exit 0
         ;;
 esac
@@ -78,17 +101,16 @@ if [ -z "$interno" ]; then
     exit 1
 fi
 
-# Estando en la interfaz se va a los altavoces; desde CUALQUIER otro sitio
-# (altavoces, o un HDMI que se haya colado como predeterminado) se va a la
-# interfaz, y si no hay interfaz conectada, a los altavoces.
-if [ -n "$usb" ] && [ "$actual" != "$usb" ]; then
-    destino="$usb"
-else
-    destino="$interno"
-fi
+# Siguiente parada. Si el predeterminado está en la rotación se avanza una
+# posición y se vuelve al principio al llegar al final; si está fuera (un HDMI
+# que se haya colado como predeterminado) se entra por los altavoces internos.
+destino="$(printf '%s\n' "$anillo" | awk -v a="$actual" '
+    { parada[NR] = $0 }
+    $0 == a { i = NR }
+    END { print parada[(i % NR) + 1] }')"
 
 if [ "$destino" = "$actual" ]; then
-    echo "audio-salida: sin cambios (no hay interfaz USB conectada)"
+    echo "audio-salida: sin cambios (no hay más salidas disponibles)"
     exit 0
 fi
 

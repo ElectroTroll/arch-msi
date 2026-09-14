@@ -1,7 +1,16 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-09-13, al final del día (**WhatsApp Web con la
+Última actualización: 2026-09-14 (**el Bluetooth entra en `Super + Z`** — §22
+pasa de un interruptor de dos posiciones a una rotación *altavoces → USB →
+Bluetooth*, construida al pulsar con las salidas que existen en ese momento. El
+criterio queda escrito: los `bluez_output.*` entran porque solo existen mientras
+el aparato está conectado, y los HDMI siguen fuera porque están siempre, haya o
+no algo enchufado. §15 cierra el `[VER]` del firmware Bluetooth —hoy el arranque
+no da ni un error y hay tres aparatos emparejados—, pero **queda anotado que la
+causa no se ha verificado**: `linux-firmware` es la misma versión con la que
+fallaba. Diagnóstico en `history/2026-09-14-audio-bluetooth-rotacion.md`).
+Antes: 2026-09-13, al final del día (**WhatsApp Web con la
 paleta del escritorio** — §27 gana el tema de la página: resulta que WhatsApp
 define su color en DOS niveles, tokens WDS sobre el `<html>` y ~188 variables
 heredadas en `.dark` sobre el `<body>`, y pisar solo `:root` no hace nada porque
@@ -1178,15 +1187,22 @@ Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
   `animations { enabled = false }` en `hyprlock.conf`. Cosmético: no se ha
   observado efecto sobre el bloqueo ni sobre el desbloqueo. Sin resolver
   (2026-07-27).
-- **[VER] Bluetooth: el kernel falla al cargar el firmware, pero el
-  controlador responde.** En cada arranque aparece
-  `Bluetooth: hci0: FW download error recovery failed (-19)` (más
-  `sending frame failed` y `Failed to read MSFT supported features`), y sigue
-  apareciendo igual tras actualizar `linux-firmware` a 20260810. Aun así,
-  `bluetoothctl show` devuelve el controlador `90:09:DF:FF:DC:AE`.
-  **No se comprobó `bluetoothctl` antes de actualizar, así que se desconoce si
-  esto es una mejora o si ya era así.** Pendiente: emparejar un dispositivo real
-  para saber si el Bluetooth funciona de verdad o solo lo parece (2026-08-24).
+- ~~**[VER] Bluetooth: el kernel falla al cargar el firmware, pero el
+  controlador responde.**~~ **Comprobado el 2026-09-14**: en el arranque actual
+  (`linux-lts` 6.18.51-1) **no aparece ni una línea de error** en
+  `journalctl -kb` —ni `FW download error recovery failed (-19)`, ni
+  `sending frame failed`, ni `Failed to read MSFT supported features`—; el
+  firmware `intel/ibt-0291-0291.sfi` carga entero (`Firmware timestamp 2026.26
+  build 117936`, `Fseq status: Success`). Y ya hay aparatos reales emparejados,
+  que era lo que faltaba: JBL Charge 5, OnePlus Buds Pro 3 y Pro 2. El JBL,
+  conectado, expone el sink `bluez_output.F8_5C_7E_D3_B7_E3.1`, y `Super+Z` le
+  pasa el predeterminado del sistema (§22). Ver
+  `history/2026-09-14-audio-bluetooth-rotacion.md`.
+  > **Discrepancia anotada, no corregida a ciegas:** `linux-firmware` sigue
+  > siendo **20260810-2**, la misma versión con la que el error persistía el
+  > 2026-08-24. Lo que ha cambiado desde entonces es el kernel, pero **no se ha
+  > verificado** que sea esa la causa: lo único que consta es que hoy el error
+  > no está.
 
 > **Falso positivo descartado — el wifi está bien.** En el journal aparece
 > `iwlwifi: Direct firmware load for iwlwifi-gl-c0-fm-c0-c99.ucode failed with
@@ -2604,12 +2620,19 @@ panel frontal. Lo que en Windows haría el software aquí ya lo hacen los mandos
 Los **siete** sinks se pusieron al **100% y sin mute** el 2026-09-08 (venían
 dispares: 40%, 60%, 85%, y HDMI2 al 125%).
 
-### Alternar la salida: `audio-salida` + `Super+Z`
+### Rotar la salida: `audio-salida` + `Super+Z`
 
 Script `scripts/audio-salida.sh`, enlazado como `audio-salida` en
-`~/.local/bin` por el paquete Stow `bin`; atajo en `hyprland.lua`. Alterna entre la interfaz USB y los
-altavoces internos sin desenchufar nada; `audio-salida --status` lista las
-salidas y marca la activa.
+`~/.local/bin` por el paquete Stow `bin`; atajo en `hyprland.lua`. Rota entre
+los altavoces internos, la interfaz USB y **cualquier salida Bluetooth
+conectada**, sin desenchufar nada; `audio-salida --status` lista las salidas,
+marca la activa con `*` y con `·` las demás paradas de la rotación.
+
+El orden es fijo —**internos → USB → Bluetooth → internos**— y solo entran las
+salidas que existen en ese momento, así que sin interfaz ni Bluetooth el atajo
+sigue siendo el ida y vuelta de siempre. Si hay varios aparatos Bluetooth
+conectados a la vez, cada uno es una parada más, ordenados por nombre para que
+la secuencia no cambie entre reconexiones.
 
 - **Por qué no basta `pactl set-default-sink`**: cambiar el predeterminado solo
   afecta a los flujos nuevos y a los que no tengan destino fijado. Una app que ya
@@ -2618,14 +2641,24 @@ salidas y marca la activa.
 - **Identificación por nombre, no por ID**: los IDs de `wpctl`/`pactl` se
   reasignan en cada arranque y en cada reconexión de la interfaz.
 - **Los HDMI quedan fuera a propósito**: este equipo expone cuatro sinks HDMI/DP
-  que aparecen aunque no haya nada enchufado; incluirlos convertiría un atajo de
-  dos posiciones en uno de seis, casi todas mudas. Para esos casos, pavucontrol
-  (clic izquierdo en el icono de volumen de Waybar).
+  que aparecen aunque no haya nada enchufado; incluirlos llenaría la rotación de
+  destinos mudos. Para esos casos, pavucontrol (clic izquierdo en el icono de
+  volumen de Waybar). Si a pesar de todo un HDMI acaba siendo el predeterminado,
+  `Super+Z` entra por los altavoces internos.
+- **El Bluetooth sí entra, y no estorba cuando no está**: a diferencia de los
+  HDMI, un `bluez_output.<MAC>.N` solo existe mientras el aparato está
+  emparejado **y** conectado, de modo que la rotación se encoge sola. El nombre
+  lleva la MAC, que es fija (la del JBL Charge 5 es `F8:5C:7E:D3:B7:E3`).
 - El destino se **desmutea** al cambiar —puede venir silenciado de otra sesión—
   pero **el volumen no se toca**, para respetar el nivel de cada salida.
 
 Verificado el 2026-09-08 en ambos sentidos: con Firefox reproduciendo, el flujo
-saltó de la SSL a los altavoces y de vuelta.
+saltó de la SSL a los altavoces y de vuelta. **Revalidado el 2026-09-14** con el
+JBL Charge 5 conectado: vuelta completa `altavoces → SSL Line1 → JBL Charge 5 →
+altavoces`, con `pactl get-default-sink` confirmando cada parada, y un
+predeterminado forzado al HDMI de la NVIDIA volvió a los altavoces internos.
+Lo verificado es el **enrutado**, no que el altavoz suene. Por qué una rotación
+y no más ramas, en `history/2026-09-14-audio-bluetooth-rotacion.md`.
 
 ### El rótulo `[ALSA UCM error]`, resuelto  **[OK]**
 
