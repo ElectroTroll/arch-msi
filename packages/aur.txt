@@ -6,6 +6,7 @@
 anydesk-bin
 claude-desktop
 minecraft-launcher
+multimc-bin
 paru
 paru-debug
 spotify

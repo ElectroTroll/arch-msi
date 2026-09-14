@@ -1,7 +1,19 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-09-14, al final del día (**AnyDesk para controlar
+Última actualización: 2026-09-14, al final del día (**Minecraft con instancias**
+— §29 nueva: `multimc-bin` del AUR, que **no contiene el launcher**: instala un
+bootstrapper de 27 KiB que se descarga MultiMC 0.7.0 en `~/.local/share/multimc`
+la primera vez que se abre, con lo que eso implica al restaurar el equipo. A
+diferencia del launcher oficial (§13), MultiMC **sí necesita Java del sistema**
+y entran `jre8`, `jre17` y `jre21-openjdk`, sin que eso levante el veto a
+`jre-openjdk` a secas, que va por Java 26. La expectativa de que la ventana Qt5
+iría bajo XWayland y borrosa a escala 1,6 resultó **falsa** —el launcher es
+Wayland nativo—, pero el juego que lanza sí sale por X11, porque
+`UseNativeGLFW=false` usa el GLFW empaquetado de LWJGL. §13 se matiza y §15 gana
+el `[VER]` de en qué GPU se está jugando: `WrapperCommand` está vacío y la dGPU
+**no** está configurada aquí. Detalle en `history/2026-09-14-multimc.md`).
+Antes, el mismo día: (**AnyDesk para controlar
 otros equipos** — §28 nueva: `anydesk-bin` del AUR, con el servicio de acceso
 desatendido deliberadamente sin habilitar. Los dos fallos que vinieron detrás
 señalaban a culpables falsos: el `result_relay_offline` no era la red del campus
@@ -1063,6 +1075,13 @@ un único listener es justamente lo que permite garantizar el orden.
     `~/.minecraft/runtime`. Instalar `jre-openjdk` sería además
     contraproducente — va por Java 26 y el juego no arranca con JRE demasiado
     nuevo.
+    ⚠️ **Desde el 2026-09-14 sí hay Java del sistema, y no lo trajo este
+    paquete**: MultiMC (§29) no descarga runtime propio y usa los JRE
+    instalados, así que entraron `jre8`, `jre17` y `jre21-openjdk`. Eso **no
+    contradice el párrafo de arriba**: lo que sigue sin instalarse es
+    `jre-openjdk` a secas, que es el que va por Java 26. El launcher oficial
+    sigue usando el suyo de `~/.minecraft/runtime` y los tres JRE numerados no
+    le afectan.
     ⚠️ **Está enlazado por archivo, pero solo porque el directorio destino ya
     existía.** Aquí funcionó porque `~/.local/share/applications` ya contenía
     `claude-code-url-handler.desktop`, que no se versiona. **Al restaurar en un
@@ -1218,6 +1237,17 @@ Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
   `/sys/class/drm/card*-*/status`, y si
   `/sys/bus/pci/devices/0000:01:00.0/power/runtime_status` se queda en
   `suspended` (2026-09-06).
+- **[VER] En qué GPU renderiza Minecraft lanzado desde MultiMC.** El launcher
+  oficial tiene `prime-run` en su entrada de escritorio y se comprobó con
+  `nvidia-smi` que el juego cae en la RTX 4060 (§13). **MultiMC no lleva nada
+  equivalente**: su `WrapperCommand` está vacío, así que lo esperable es que
+  renderice en la iGPU Intel, pero es una deducción, no una medida: el log de
+  Minecraft moderno no imprime el renderer de OpenGL salvo en un informe de
+  fallo. Prueba: con una partida abierta, mirar si el proceso `java` aparece en
+  `nvidia-smi`, o leer la línea de la GPU en el F3 del juego. Si sale la Intel y
+  se quiere la dedicada, la vía es `prime-run` como *wrapper command* dentro de
+  MultiMC —no otro `.desktop`—, con la aplicación cerrada al editarlo
+  (2026-09-14).
 - **[VER] Compartir la pantalla de Hyprland con AnyDesk.** Salir hacia otro
   equipo funciona y está validado (§28), pero **no se ha probado la dirección
   contraria**: que este portátil sea el extremo controlado. El caso no es el
@@ -3720,3 +3750,113 @@ El **ID de AnyDesk** de esta máquina, el del equipo remoto y todo `~/.anydesk/`
 repositorio por las reglas de `CLAUDE.md`, igual que el ID de TeamViewer (§25).
 
 Historia y diagnóstico completo: `history/2026-09-14-anydesk.md`.
+
+## 29. Minecraft con instancias (MultiMC)  **[OK]**
+
+`aur/multimc-bin 1.6-3`, instalado el 2026-09-14 con `paru`. **Para qué está**:
+tener varias instalaciones de Minecraft separadas —cada una con su versión, su
+cargador de mods y sus mundos— en vez de la única que gestiona el launcher
+oficial de §13. Los dos conviven: MultiMC **no mira `~/.minecraft`** en ningún
+momento, y la misma cuenta de Microsoft sirve para ambos.
+
+### ⚠️ El paquete de AUR NO contiene el launcher
+
+Pesa 27 KiB e instala cuatro archivos: `/opt/multimc/run.sh`, su icono, el
+symlink `/usr/bin/multimc` y el `.desktop`. **No hay ningún binario de MultiMC
+dentro.** `run.sh` es el bootstrapper oficial: la primera vez que se ejecuta se
+descarga `mmc-stable-lin64.tar.gz` de `files.multimc.org` en
+`~/.local/share/multimc` (3,4 MB), lo extrae y lo lanza; después solo comprueba
+si el binario existe y va directo a ejecutarlo. Usa `zenity` para la barra de
+progreso y `wget` para la descarga, ambas dependencias declaradas.
+
+La versión instalada de verdad es **0.7.0-stable-3673** (git `d7b51bf`); el
+`1.6` del nombre del paquete es la versión del *instalador*, no del programa.
+
+**Al restaurar en un equipo limpio esto importa**: reinstalar `multimc-bin` no
+deja MultiMC listo, deja un script que se bajará el launcher la primera vez que
+se abra —hace falta red—. Y a la inversa: `pacman -Rns multimc-bin` **no borra
+`~/.local/share/multimc`**, que es donde están las instancias, los mundos y la
+cuenta. El launcher además se autoactualiza solo (`AutoUpdate=true`), así que su
+versión no la fija el repositorio ni pacman.
+
+### Java del sistema: tres versiones, y ninguna es `jre-openjdk`
+
+Aquí §13 se queda corta y conviene leer las dos juntas. El launcher oficial no
+necesita Java del sistema porque descarga el suyo en `~/.minecraft/runtime`;
+**MultiMC sí lo necesita**, porque usa los JRE que encuentra instalados.
+
+| Paquete | Versión | Cubre |
+|---|---|---|
+| `jre21-openjdk` | 21.0.12.1 | 1.20.5 en adelante, y 1.21.x |
+| `jre17-openjdk` | 17.0.20.1 | 1.17 – 1.20.4 |
+| `jre8-openjdk` | 1.8.0_504 | 1.16 y anteriores, modpacks viejos |
+
+Los detectó solos, pasó `JavaCheck.jar` sobre cada uno con código 0 y escogió el
+21 (`JavaPath=/usr/lib64/jvm/java-21-openjdk/bin/java`). Los tres conviven sin
+pisarse; `archlinux-java status` los lista con `java-21-openjdk` por defecto.
+
+**El aviso de §13 sobre `jre-openjdk` a secas sigue en pie**: ese paquete va por
+Java 26 y el juego no arranca con un JRE tan nuevo. La regla no es «nada de Java
+en el sistema», es «nada de Java sin número de versión en el nombre».
+
+Dependencias opcionales que también entraron: `glfw` y `xorg-xrandr` (ver
+abajo), y `openal`, que ya estaba.
+
+### El launcher es Wayland nativo; el juego sale por XWayland
+
+La expectativa era la contraria: MultiMC es Qt5 y depende de `qt5-x11extras`, así
+que se esperaba una ventana bajo XWayland y borrosa en `eDP-1` por la escala
+1,6, como le pasa a Spotify (§7). **No ocurre**: `hyprctl clients` da
+`"xwayland": false` para `org.multimc.MultiMC`. No hay nada que corregir.
+
+El proceso del juego, en cambio, sí va por X11:
+
+```
+[Render thread/ERROR]: 65547: X11: Standard cursor shape unavailable
+```
+
+La causa es `UseNativeGLFW=false` en `multimc.cfg`: la instancia usa el GLFW
+empaquetado por LWJGL (3.3.3), que va por X11, en lugar del `glfw` del sistema.
+Son **dos procesos por vías distintas**, no el caso mixto de AnyDesk (§28),
+donde una sola ventana Wayland leía geometría por X11. El error es cosmético y
+el juego funciona, así que `UseNativeGLFW` se deja como está: activarlo es de los
+cambios que rompen el arranque de LWJGL según la versión, y hoy no arregla nada.
+
+### Estado configurado
+
+Idioma español, 4096 MB de RAM máxima, tema oscuro. Cuenta de tipo **MSA**
+(Microsoft). Una instancia **1.21.11 con Fabric Loader 0.19.5**, con tiempo de
+juego ya registrado: la cadena entera —cuenta, descarga de librerías, Fabric,
+arranque— está validada de punta a punta.
+
+### ⚠️ La dGPU NO está configurada aquí, al contrario que en §13
+
+El launcher oficial arranca con `prime-run` desde el `.desktop` del paquete Stow
+`minecraft` (§13). **MultiMC no tiene nada equivalente**: `WrapperCommand` está
+vacío, así que sin las variables de PRIME lo esperable es que el juego renderice
+en la iGPU Intel. **No se ha comprobado** en qué GPU corre; queda como `[VER]`
+en §15.
+
+Cuando se decida, la vía **no** es copiar el truco del `.desktop`, sino poner
+`prime-run` como *wrapper command* dentro de MultiMC (Ajustes → Comandos
+personalizados): así el launcher Qt se queda en la Intel —no necesita la dGPU
+para dibujar una lista de instancias— y la RTX 4060 solo despierta al entrar en
+una partida, que es lo que respeta el Runtime D3 de §6. Ojo al editarlo a mano:
+**MultiMC reescribe `multimc.cfg` entero al cerrar**, así que hay que tocarlo con
+la aplicación cerrada o se pierde el cambio.
+
+### Qué no se versiona
+
+Todo `~/.local/share/multimc`, por tres razones distintas: `accounts.json` son
+tokens MSA (artefacto de autenticación, fuera por `CLAUDE.md`, igual que los ID
+de AnyDesk y TeamViewer); `instances/`, `libraries/`, `assets/`, `meta/` y
+`cache/` son datos y descargas que pesan y se regeneran; y `multimc.cfg`, aun
+siendo configuración, se descarta porque la aplicación la reescribe entera al
+salir —geometrías de ventana en base64 incluidas— y con Stow daría un archivo
+que cambia solo en cada sesión.
+
+**MultiMC no tiene paquete Stow.** Al repositorio solo entra su nombre en
+`packages/aur.txt`. Es el caso contrario al de §13, donde lo versionado no es la
+configuración del launcher sino una entrada de escritorio escrita a mano.
+
+Historia y detalle completo: `history/2026-09-14-multimc.md`.

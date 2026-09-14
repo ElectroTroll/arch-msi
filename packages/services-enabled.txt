@@ -28,6 +28,7 @@ snapper-timeline.timer
 
 ## Usuario (systemctl --user)
 hypridle.service
+streamdeck-mixer.service
 waybar.service
 wireplumber.service
 xdg-user-dirs.service
