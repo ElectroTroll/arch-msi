@@ -1,7 +1,18 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-09-14, al final del día (**el StreamDeck casero entra
+Última actualización: 2026-09-14, al final del día (**Spotify se subía el volumen
+solo** — §30 gana el apartado de `OBJETIVOS_MPRIS`: al cambiar de canción el
+volumen volvía al 100 %, y **el mezclador no tenía la culpa** —pasa igual con el
+servicio parado—. La primera hipótesis, que Spotify recreaba su flujo, resultó
+**falsa**: `pactl subscribe` da 27 eventos `change` y ningún `new`. Lo que a
+veces lo arreglaba era el ruido del potenciómetro, que reescribía el volumen por
+casualidad. El arreglo es pedirle el volumen a la propia aplicación por MPRIS
+(`playerctl`), que es la dueña del flujo. La curva no cambia, y eso se midió:
+MPRIS usa la misma escala cruda de PulseAudio. Queda escrito el intento
+descartado de medirla grabando audio, que dio exponentes de 1,51 a 2,94 y no
+servía. Diagnóstico en `history/2026-09-14-spotify-volumen-mpris.md`).
+Antes, el mismo día: (**el StreamDeck casero entra
 en el repositorio** — §30 nueva: hardware propio (Pro Micro, 12 teclas y 5
 sliders) traído del sobremesa con Windows. Es **el primer componente que es un
 proyecto entero y no configuración de un programa ajeno**, así que no es paquete
@@ -3941,6 +3952,8 @@ la misma razón: algo fuera del repositorio tiene que existir primero.
   `pip install` falla en Arch con *externally-managed-environment*, y **no se
   fuerza con `--break-system-packages`**: la dependencia está empaquetada.
 - **`libpulse`**, que es quien trae `pactl`. Ya estaba.
+- **`playerctl`** (ya estaba, explícito), para el volumen de Spotify por MPRIS.
+  Ver el apartado de abajo.
 - **El usuario en el grupo `uucp`**, para abrir `/dev/ttyACM0` (`crw-rw---- root
   uucp`). Verificado: `id` da `984(uucp)`. ⚠️ Tras el `usermod` **no basta con
   abrir otra terminal**: hay que cerrar la sesión de Hyprland y volver a entrar,
@@ -3998,6 +4011,47 @@ equilibrado —lo puesto—, 60 como mesa de mezclas); a 0 se desactiva la
 corrección. La constante de Windows (`CURVA_SESIONES_WINDOWS = 1.75`, otra
 medida, contra `GetMasterVolumeLevel()`) **se conserva**: el mismo script corre
 en los dos equipos.
+
+### ⚠️ Spotify va por MPRIS, no por `pactl`, y el motivo es que se pisaba solo
+
+Síntoma: al cambiar de canción, el volumen de Spotify volvía al 100 %. **No era
+cosa del mezclador**: medido cada 120 ms, el `sink-input` salta a 65536 unos
+150 ms después del cambio, y **pasa igual con el servicio parado**.
+
+La reaplicación de `REAPLICAR_AL_CAMBIAR_APPS` no lo cogía porque compara la
+**lista de apps sonando**, y ahí no cambia nada: el flujo conserva su índice
+(`pactl subscribe` da 27 eventos `change` y **ningún** `new` ni `remove`) y
+Spotify sigue en la lista. Lo que lo corregía a veces era el **ruido del
+potenciómetro**: al temblar ≥ `UMBRAL_CRUDO`, el script reescribía por
+casualidad. Con el slider quieto se quedaba al 100 %.
+
+Causa de fondo: **el mezclador es de lazo abierto**. Solo escribe —no hay una
+sola llamada a `get-sink-input-volume` en el código— así que cualquier programa
+que toque el volumen gana por incomparecencia.
+
+Arreglo (2026-09-14): `OBJETIVOS_MPRIS = {"spotify": "spotify"}`. Para esas
+aplicaciones el volumen se le pide a la **propia app** con `playerctl`, y es
+ella quien lo aplica a su flujo; si el que manda es el dueño del flujo, no hay
+pelea. **La escala no cambia**, y eso está medido con tres puntos exactos
+(MPRIS 0,50 → 32768; 0,25 → 16384; 0,75 → 49152, sobre 65536): MPRIS usa la
+misma escala cruda de PulseAudio, así que `RANGO_DB_LINUX` y su raíz cúbica
+siguen valiendo y solo hay que dividir entre `VOLUMEN_NORMAL`.
+
+> **Intento descartado, y merece quedar escrito**: primero se midió la curva
+> grabando el monitor del sink con `pw-record` y comparando RMS. Salieron
+> exponentes de 1,51 a 2,94 sobre las mismas cuatro medidas —el RMS depende de
+> qué suene en esos 1,5 s—, o sea **nada concluyente**. El número exacto estaba
+> en lo que ya publicaba el sistema. (Aparte: `parec` devuelve 0 bytes en este
+> equipo; `pw-record` sí graba.)
+
+`playerctl` (2.4.1-5) pasa a ser **requisito** del mezclador. Si falta, el
+script avisa al arrancar y sigue por `pactl`: se pierde el arreglo, no el
+volumen. Los demás sliders **siguen por `pactl`**; `OBJETIVOS_MPRIS` es una
+lista corta a propósito, solo para apps que gestionan su volumen por su cuenta.
+
+**Sin comprobar**: mover el slider 2 físicamente. La validación se hizo llamando
+al backend del script (40 % → `stream=20722`, 70 % → `stream=36851`, intacto
+tras dos cambios de canción), no tocando el hardware.
 
 ### Pendientes
 

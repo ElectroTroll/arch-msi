@@ -110,6 +110,30 @@ SLIDER_MAP = {
 #   wledsrserver -> servidor de WLED reactivo al sonido (las luces LED)
 EXCLUIDOS_DE_RESTO = ["sistema", "wledsrserver"]
 
+# Aplicaciones cuyo volumen se manda a la PROPIA APLICACION por MPRIS, y no al
+# flujo de audio con pactl.  clave = nombre normalizado de la app (el mismo que
+# en SLIDER_MAP);  valor = nombre del reproductor MPRIS (el de `playerctl -l`).
+#
+# POR QUE, y como se midio (2026-09-14, en el portatil):
+#   Spotify lleva su propia contabilidad del volumen y REESCRIBE el de su flujo
+#   cada vez que cambia de cancion: 150 ms despues del cambio, el sink-input
+#   salta a 100% y ahi se queda. No es cosa del mezclador —pasa igual con el
+#   servicio parado— y la reaplicacion de REAPLICAR_AL_CAMBIAR_APPS no lo coge,
+#   porque ni el indice del sink-input ni la lista de apps sonando cambian.
+#
+#   En vez de pelearse por escribir el mismo sitio, se le pide el volumen a la
+#   aplicacion y es ella quien lo aplica. Comprobado: con el volumen puesto por
+#   MPRIS, DOS cambios de cancion seguidos lo respetan.
+#
+#   La escala NO hay que recalcularla: MPRIS usa la misma escala cruda de
+#   PulseAudio, medido con tres puntos exactos (0.50 -> 32768, 0.25 -> 16384,
+#   0.75 -> 49152, sobre VOLUMEN_NORMAL = 65536). O sea que la curva en dB de
+#   RANGO_DB_LINUX vale igual y solo hay que dividir entre VOLUMEN_NORMAL.
+#
+# Si `playerctl` no esta instalado, o la aplicacion no responde por MPRIS, se
+# sigue por el camino normal de pactl: se pierde el arreglo, no el volumen.
+OBJETIVOS_MPRIS = {"spotify": "spotify"}
+
 # Curva de volumen: volumen = (posicion del slider) ** EXPONENTE_VOLUMEN
 #
 #   1.0  -> LINEAL. Recomendado, y lo que hay puesto.
@@ -458,6 +482,13 @@ class BackendLinux:
     def __init__(self):
         if shutil.which("pactl") is None:
             sys.exit("No se encuentra 'pactl'. En Arch:  sudo pacman -S libpulse")
+        # Solo hace falta si algun objetivo va por MPRIS (ver OBJETIVOS_MPRIS).
+        self._playerctl = shutil.which("playerctl")
+        if OBJETIVOS_MPRIS and self._playerctl is None:
+            print("[aviso] falta 'playerctl' (pacman -S playerctl): %s se "
+                  "controlara por pactl y Spotify volvera a subirse el volumen "
+                  "al cambiar de cancion."
+                  % ", ".join(sorted(OBJETIVOS_MPRIS)))
         self._entradas = {}   # nombre normalizado -> [indices de sink-input]
         self.refrescar()
 
@@ -550,9 +581,35 @@ class BackendLinux:
         posicion = amplitud ** (1.0 / 3.0)
         return str(int(round(posicion * self.VOLUMEN_NORMAL)))
 
+    def _aplicar_mpris(self, jugador, valor):
+        """Le pide el volumen a la propia aplicacion, por MPRIS.
+
+        `valor` es el mismo numero crudo que se le mandaria a pactl; MPRIS usa
+        esa misma escala normalizada a 0.0-1.0 (ver OBJETIVOS_MPRIS).
+        """
+        if self._playerctl is None:
+            return False
+        # 6 decimales: con 4 el redondeo se comia 2-3 cuentas de las 65536
+        # (inaudible, pero gratis de arreglar).
+        nivel = "%.6f" % (int(valor) / float(self.VOLUMEN_NORMAL))
+        try:
+            res = subprocess.run([self._playerctl, "-p", jugador, "volume", nivel],
+                                 capture_output=True, text=True, timeout=5)
+        except Exception:
+            return False
+        # Falla si la aplicacion no esta abierta: entonces no hay nada que bajar
+        # y el camino de pactl tampoco encontrara su flujo.
+        return res.returncode == 0
+
     def aplicar(self, objetivo, volumen, no_asignadas):
         obj = normalizar_nombre(objetivo)
         valor = self._valor_crudo(volumen)
+
+        # Las apps que se controlan por MPRIS van antes que nada. Si la via
+        # falla se sigue por pactl, que es el comportamiento de siempre.
+        jugador = OBJETIVOS_MPRIS.get(obj)
+        if jugador and self._aplicar_mpris(jugador, valor):
+            return True
 
         if obj == "maestro":
             return self._pactl("set-sink-volume", "@DEFAULT_SINK@", valor).returncode == 0

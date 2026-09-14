@@ -56,6 +56,7 @@ hardware real:
 | Slider 2 → Spotify | ✅ detectado como `spotify` |
 | Slider 3 → «resto» | ✅ correcto que no encuentre nada: Firefox y Spotify tienen slider propio |
 | Curva de volumen | Fader **lineal en dB** (`RANGO_DB_LINUX`): −5,00 dB por cada 10 % de recorrido, medido |
+| Slider 2 → Spotify, al cambiar de canción | ✅ desde el 2026-09-14 va por **MPRIS** (`OBJETIVOS_MPRIS`), porque Spotify se reescribía su propio volumen a 100 % en cada canción |
 
 **Pendiente en Arch:**
 
@@ -811,6 +812,52 @@ front-left`: **Spotify publica sus canales como `aux0` / `aux1`**, no como
 ```bash
 pactl list sink-inputs | grep -E "^Sink Input|Volume:|application.name "
 ```
+
+### En Arch: Spotify se pone al 100 % cada vez que cambia de canción
+
+**Síntoma**: bajas el slider de Spotify, suena bien, y a la primera canción que
+entra el volumen vuelve a subirse solo.
+
+**No es culpa del mezclador.** Medido el 2026-09-14 con muestreo cada 120 ms:
+
+```
+ 0.02s  sink-input=1650  crudo=16418   25%
+ 2.04s  >>> cambio de canción <<<
+ 2.19s  sink-input=1650  crudo=65536  100%   <- 150 ms después
+```
+
+Y con **el servicio del mezclador parado pasa exactamente igual**, así que el
+que reescribe el volumen es Spotify, no el script.
+
+Por qué la reaplicación de `REAPLICAR_AL_CAMBIAR_APPS` no lo cogía: esa
+comprobación mira si **cambia la lista de apps sonando**, y aquí no cambia nada
+—el sink-input conserva su índice (`#1650` antes y después) y Spotify sigue en
+la lista—. Lo que a veces lo corregía por casualidad era el ruido del
+potenciómetro: al temblar ≥ `UMBRAL_CRUDO` cuentas, el script reescribía el
+volumen. Con el slider quieto, se quedaba al 100 %.
+
+**La solución es no pelearse con Spotify por escribir el mismo sitio**: se le
+pide el volumen a la propia aplicación por MPRIS, y es ella quien lo aplica a su
+flujo. Eso es lo que hace `OBJETIVOS_MPRIS` en el script, que necesita
+`playerctl` (`sudo pacman -S playerctl`).
+
+Comprobado que **la escala es la misma**, así que la curva en dB no cambia:
+
+| MPRIS | volumen del sink-input |
+|---|---|
+| 0,50 | 32768 = 50 % |
+| 0,25 | 16384 = 25 % |
+| 0,75 | 49152 = 75 % |
+
+Y comprobado que aguanta: puesto el volumen por MPRIS, **dos cambios de canción
+seguidos lo respetan**.
+
+Si `playerctl` no está instalado, el script avisa al arrancar y sigue por
+`pactl`: se pierde el arreglo, no el volumen.
+
+> Esto solo hace falta para aplicaciones que gestionan su volumen por su cuenta.
+> Firefox y el resto no lo necesitan; por eso `OBJETIVOS_MPRIS` es una lista
+> corta y no el camino por defecto.
 
 ### En Linux el volumen «rebota» al mover el slider
 Si tienes un applet de volumen que también escribe en el mismo sink, pueden
