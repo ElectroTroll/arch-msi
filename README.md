@@ -47,7 +47,7 @@ y [`AGENTS.md`](AGENTS.md).
 | Dotfiles      | `dotfiles/` — 16 paquetes Stow desplegados          |
 | Scripts       | `scripts/` — mantenimiento y utilidades de sesión   |
 | Sistema       | `system/` — fuera de `$HOME` (SDDM, perfil UCM)     |
-| Obsidian      | `obsidian/` — plugin propio, enlazado al vault      |
+| Obsidian      | `obsidian/` — 3 plugins propios, enlazados al vault |
 
 ## Restauración (alto nivel)
 
@@ -88,7 +88,7 @@ arch-msi/
 │   ├── etc/sddm.conf.d/   # drop-in que lo activa -> /etc/sddm.conf.d/
 │   └── alsa/ucm2/         # perfil UCM parcheado de la SSL 2+ Mk II (§22)
 ├── obsidian/          # el vault NO se versiona; esto sí, y se enlaza a mano
-│   └── plugins/subrayar/  # plugin propio: Ctrl+U subraya con <u> (§26)
+│   └── plugins/       # propios: subrayar, subindice, superindice (§26)
 └── scripts/
     ├── update-inventories.sh   # regenera los 4 archivos de packages/ con cabecera
     ├── add-wallpaper.sh        # ajusta una imagen a 2560x1600 y la añade a ~/Wallpapers

@@ -1,0 +1,9 @@
+{
+  "id": "subindice",
+  "name": "Subíndice",
+  "version": "1.0.0",
+  "minAppVersion": "1.8.7",
+  "description": "Comando para escribir subíndices con <sub></sub>, asignado a Ctrl+Alt+, . Sirve para la base de un número: 1010<sub>2</sub>. Markdown no tiene sintaxis de subíndice y el único comando de Obsidian que baja un número es LaTeX.",
+  "author": "elok",
+  "isDesktopOnly": false
+}

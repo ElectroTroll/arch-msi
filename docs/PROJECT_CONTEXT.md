@@ -1,7 +1,16 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-09-14 (**el Bluetooth entra en `Super + Z`** — §22
+Última actualización: 2026-09-14, más tarde (**subíndice, superíndice, y el
+texto que se volvía naranja** — §26 gana dos plugins propios más, `subindice` y
+`superindice` (`Ctrl+Alt+,` y `Ctrl+Alt+.`), clonados de `subrayar`, y la
+explicación de por qué estructurar una nota con tabuladores y líneas en blanco
+la rompe: una línea de solo tabulador es una línea en blanco, cierra el párrafo,
+y lo que viene detrás empieza en la columna 4, que es un bloque de código
+indentado. La estructura pasa a hacerse con citas `>`. Queda anotado que
+`Super+,` no llegó a funcionar y que **la causa no se ha verificado**.
+Diagnóstico en `history/2026-09-14-obsidian-subindices-y-citas.md`).
+Antes, el mismo día: (**el Bluetooth entra en `Super + Z`** — §22
 pasa de un interruptor de dos posiciones a una rotación *altavoces → USB →
 Bluetooth*, construida al pulsar con las salidas que existen en ese momento. El
 criterio queda escrito: los `bluez_output.*` entran porque solo existen mientras
@@ -3244,18 +3253,101 @@ palabra ya está envuelta —por dentro o por fuera de la selección— quita la
 etiquetas en vez de anidarlas. **Sin selección opera sobre la palabra bajo el
 cursor**, que es el caso normal.
 
-Es el **único componente del vault que sí se versiona**, porque es código propio
-y son dos archivos pequeños. Vive en `obsidian/plugins/subrayar/` y llega al
-vault por un **symlink**, no por Stow: el resto de `~/Documentos/Apuntes` está
-fuera del repositorio, así que no hay ningún paquete Stow que pueda cubrirlo.
+### Subíndice y superíndice: `Ctrl+Alt+,` y `Ctrl+Alt+.`
+
+El mismo hueco que el subrayado, y la misma solución. Para bajar o subir un
+número Obsidian solo ofrece `editor:toggle-inline-math`, que mete una fórmula
+LaTeX (`$1010_2$`) con su tipografía matemática. Cuando lo que se quiere es
+texto normal, la vía es HTML inline: `<sub>` y `<sup>`.
+
+Dos plugins gemelos clonados de `subrayar` — misma función de alternado, solo
+cambian la etiqueta, el atajo y el nombre del comando:
+
+| Plugin | Etiqueta | Atajo | Para qué |
+|--------|----------|-------|----------|
+| `subindice` | `<sub></sub>` | `Ctrl+Alt+,` | la base de un número: `1010₂` |
+| `superindice` | `<sup></sup>` | `Ctrl+Alt+.` | exponentes y ordinales: `2¹⁰` |
+
+La coma baja, el punto sube.
+
+**Sin selección NO operan sobre la palabra bajo el cursor**, al contrario que
+`subrayar`: dejan el par de etiquetas vacío con el cursor en medio. Es
+deliberado — al acabar de teclear `1010`, la palabra bajo el cursor es el propio
+número, y envolverlo entero sería lo contrario de lo que se busca. El gesto es
+`1010` → atajo → `2` → `End`.
+
+⚠️ **`Super+,` no llegó a funcionar** y fue el primer atajo que se probó.
+Hyprland no tiene ningún bind con coma, así que el compositor no lo estaba
+robando. **La causa no se ha verificado**: en ese momento el plugin tampoco
+estaba activado en `community-plugins.json`, así que no está descartado que
+`Super+,` sirva. Se cambió a `Ctrl+Alt+,`, que sí responde. `Ctrl+,` a secas no
+vale: lo ocupan los ajustes de Obsidian.
+
+### Los tres plugins propios: symlink, no Stow
+
+`subrayar`, `subindice` y `superindice` son el **único componente del vault que
+sí se versiona**, porque es código propio y son dos archivos pequeños cada uno.
+Viven en `obsidian/plugins/` y llegan al vault por **symlink**, no por Stow: el
+resto de `~/Documentos/Apuntes` está fuera del repositorio, así que no hay
+ningún paquete Stow que pueda cubrirlo.
 
 ```
-~/Documentos/Apuntes/.obsidian/plugins/subrayar
-  -> ~/Projects/arch-msi/obsidian/plugins/subrayar
+~/Documentos/Apuntes/.obsidian/plugins/<id>
+  -> ~/Projects/arch-msi/obsidian/plugins/<id>
 ```
 
-Al restaurar hay que rehacer ese enlace a mano y añadir `subrayar` a
+Al restaurar hay que rehacer los tres enlaces a mano y añadir los tres `id` a
 `community-plugins.json`.
+
+⚠️ **Obsidian no ve un plugin enlazado mientras está abierto.** Escanea la
+carpeta al arrancar, así que un symlink creado después no aparece en la lista de
+complementos hasta recargar (`Ctrl+P` → *Recargar la aplicación sin guardar*).
+Que el enlace exista no prueba nada; que el plugin ha cargado se ve en que su
+`id` aparece en `community-plugins.json` después de activarlo.
+
+### ⚠️ Tabuladores y líneas en blanco: el texto que se vuelve naranja
+
+Estructurar una nota **indentando con tabuladores** y separando los bloques con
+líneas en blanco es una combinación rota en Markdown. El síntoma desconcierta:
+de la línea en blanco hacia abajo, el texto sale **naranja y dentro de una
+caja**.
+
+No es un fallo de Obsidian ni del tema. Es un **bloque de código indentado**:
+
+- Una línea que solo contiene un tabulador **es una línea en blanco** para
+  Markdown, y cierra el párrafo.
+- A partir de ahí, una línea que empieza con 4 columnas —y un tabulador son
+  cuatro— ya no es continuación de nada: es código.
+- El naranja es literalmente `--text-color-code` del tema Blue Topaz
+  (`#d58000`); la caja es el `<pre>`.
+
+Mientras no hay línea en blanco las líneas tabuladas son *continuación perezosa*
+del párrafo anterior y se ven como texto normal. Por eso el problema aparece a
+media nota y parece aleatorio.
+
+**Lo que NO lo arregla**: bajar la indentación a 2 espacios. Funciona en el
+primer nivel y vuelve a fallar en el segundo, donde 2+2 son otra vez 4.
+
+**La estructura se hace con cita (`>`), no con indentación.** El segundo nivel
+es `>>`. Tres ventajas: la barra vertical a la izquierda la pinta el tema, que
+era el efecto que se buscaba; la línea de separación dentro del grupo es un `>`
+suelto que **Obsidian escribe solo al pulsar Enter**; y sin indentación el
+bloque de código no puede volver, por mucho que se anide.
+
+Dos trampas al convertir tabuladores en citas, porque dentro de la cita el
+contenido vuelve a la columna 0 y recupera su significado en Markdown: una línea
+de `=` debajo de texto es un **título setext** —convierte la línea de arriba en
+un `<h1>`— y una línea que empieza por `#` es un **encabezado**. Dentro del
+bloque de código eran texto literal. Se escapan con `\`.
+
+Y una consecuencia que se asume: **se pierde la alineación monoespaciada**. Una
+tabla de bits cuadrada a base de espacios se veía alineada porque la caja era
+monoespaciada; como texto normal, los espacios seguidos se colapsan. Si esa
+alineación importa, el sitio correcto es un bloque de código **explícito**
+delimitado por tres acentos graves, que sale con caja pero a propósito.
+
+Comprobado con `markdown_py` sobre la nota real, que es lo que cierra el
+diagnóstico: 4 bloques `<pre><code>` antes de convertir, 0 después.
 
 ### Qué no se versiona
 

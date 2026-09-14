@@ -1,0 +1,9 @@
+{
+  "id": "superindice",
+  "name": "Superíndice",
+  "version": "1.0.0",
+  "minAppVersion": "1.8.7",
+  "description": "Comando para escribir superíndices con <sup></sup>, asignado a Ctrl+Alt+. . Sirve para exponentes y ordinales: 2<sup>10</sup>, 1<sup>o</sup>. Markdown no tiene sintaxis de superíndice y el único comando de Obsidian que sube un número es LaTeX.",
+  "author": "elok",
+  "isDesktopOnly": false
+}
