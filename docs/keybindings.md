@@ -4,9 +4,15 @@
 > [`dotfiles/hypr/.config/hypr/hyprland.lua`](../dotfiles/hypr/.config/hypr/hyprland.lua)
 > y debe actualizarse cada vez que cambien los binds de esa config. Contrastado
 > con `hyprctl binds` el 2026-07-22, el 2026-08-01 (53 binds), el 2026-08-04
-> (55 binds, tras los dos de dunst) y el 2026-09-08 (**57 binds**, tras
-> `Super + Espacio` y `Super + Z`): todos los atajos documentados coinciden
+> (55 binds, tras los dos de dunst), el 2026-09-08 (**57 binds**, tras
+> `Super + Espacio` y `Super + Z`) y el 2026-09-14 (**57 binds**, sin altas ni
+> bajas: lo que cambia es el comando de las cuatro teclas multimedia, que pasan
+> a `playerctl -p playerctld,%any`): todos los atajos documentados coinciden
 > con los cargados en la sesión actual.
+>
+> Ojo al contrastar en este equipo: con configuración Lua los binds salen en
+> `hyprctl binds` como `dispatcher: __lua` con un `arg` numérico, así que la
+> orden que ejecutan **no se ve ahí**. Solo se puede comprobar la tecla.
 
 `Super` es la tecla `mainMod` de la config (`SUPER`, la tecla "Windows").
 
@@ -91,10 +97,21 @@ la sesión bloqueada.
 | XF86AudioMicMute           | Alternar silencio del micrófono                     |
 | XF86MonBrightnessUp        | Subir brillo de pantalla 5% (`brightnessctl`)       |
 | XF86MonBrightnessDown      | Bajar brillo de pantalla 5% (`brightnessctl`)       |
-| XF86AudioNext              | Siguiente pista (`playerctl`)                       |
-| XF86AudioPause             | Pausar/reanudar reproducción (`playerctl`)          |
-| XF86AudioPlay              | Pausar/reanudar reproducción (`playerctl`)          |
-| XF86AudioPrev              | Pista anterior (`playerctl`)                        |
+| XF86AudioNext              | Siguiente pista (`playerctl -p playerctld,%any`)    |
+| XF86AudioPause             | Pausar/reanudar reproducción (íd.)                  |
+| XF86AudioPlay              | Pausar/reanudar reproducción (íd.)                  |
+| XF86AudioPrev              | Pista anterior (íd.)                                |
+
+> **Por qué `-p playerctld,%any` y no `playerctl` a secas.** Las dos partes
+> hacen falta. `playerctld` apunta al reproductor que usaste **por última vez**:
+> sin él, `playerctl` actúa sobre el primero que enumera, y ese orden no es
+> estable —con Firefox y Spotify abiertos, el play/pause se lo llevaba Firefox
+> unas veces sí y otras no—. `%any` es la reserva, y hace falta porque no todos
+> los reproductores saben hacer todo: una página de YouTube en Firefox declara
+> `CanGoNext = false`, así que la tecla de pista siguiente cae sola en el que sí
+> pueda. `playerctld` no necesita servicio habilitado: se activa por D-Bus
+> (`org.mpris.MediaPlayer2.playerctld.service`) y viene en el paquete
+> `playerctl`.
 
 El siguiente **no** tiene `locked = true`: con la sesión bloqueada no debe poder
 cambiarse el destino del audio.

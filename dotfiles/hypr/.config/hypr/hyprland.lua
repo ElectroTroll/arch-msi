@@ -585,10 +585,19 @@ hl.bind("XF86MonBrightnessUp",  hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%+")
 hl.bind("XF86MonBrightnessDown",hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%-"),                  { locked = true, repeating = true })
 
 -- Requires playerctl
-hl.bind("XF86AudioNext",  hl.dsp.exec_cmd("playerctl next"),       { locked = true })
-hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
-hl.bind("XF86AudioPlay",  hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
-hl.bind("XF86AudioPrev",  hl.dsp.exec_cmd("playerctl previous"),   { locked = true })
+-- El "-p playerctld,%any" importa, y las dos partes hacen falta:
+--   playerctld -> el player que usaste por ultima vez. Sin esto, playerctl
+--                 actua sobre el primero que enumera y ese orden NO es estable:
+--                 con Firefox y Spotify abiertos, el play/pause se lo llevaba
+--                 Firefox unas veces si y otras no.
+--   %any       -> cualquier otro player, como reserva. Hace falta porque no
+--                 todos saben hacer todo: una pagina de YouTube en Firefox
+--                 declara CanGoNext = false, asi que el boton de cancion
+--                 siguiente cae solo en el player que si pueda (Spotify).
+hl.bind("XF86AudioNext",  hl.dsp.exec_cmd("playerctl -p playerctld,%any next"),       { locked = true })
+hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl -p playerctld,%any play-pause"), { locked = true })
+hl.bind("XF86AudioPlay",  hl.dsp.exec_cmd("playerctl -p playerctld,%any play-pause"), { locked = true })
+hl.bind("XF86AudioPrev",  hl.dsp.exec_cmd("playerctl -p playerctld,%any previous"),   { locked = true })
 
 -- Screenshots (grim + slurp + swappy)
 hl.bind("Print",               hl.dsp.exec_cmd([[grim -g "$(slurp)" - | wl-copy]]))
