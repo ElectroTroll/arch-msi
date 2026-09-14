@@ -11,8 +11,11 @@ y entran `jre8`, `jre17` y `jre21-openjdk`, sin que eso levante el veto a
 iría bajo XWayland y borrosa a escala 1,6 resultó **falsa** —el launcher es
 Wayland nativo—, pero el juego que lanza sí sale por X11, porque
 `UseNativeGLFW=false` usa el GLFW empaquetado de LWJGL. §13 se matiza y §15 gana
-el `[VER]` de en qué GPU se está jugando: `WrapperCommand` está vacío y la dGPU
-**no** está configurada aquí. Detalle en `history/2026-09-14-multimc.md`).
+el `[VER]` de en qué GPU se está jugando —**cerrado el mismo día**: con
+`WrapperCommand=prime-run` puesto a mano, `nvidia-smi` lista el `java` del juego
+con 187 MiB en la RTX 4060 y la GPU sube de 2,35 W a ~10 W, así que la dGPU
+queda configurada y **medida**, no supuesta—. Detalle en
+`history/2026-09-14-multimc.md`).
 Antes, el mismo día: (**AnyDesk para controlar
 otros equipos** — §28 nueva: `anydesk-bin` del AUR, con el servicio de acceso
 desatendido deliberadamente sin habilitar. Los dos fallos que vinieron detrás
@@ -1237,17 +1240,16 @@ Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
   `/sys/class/drm/card*-*/status`, y si
   `/sys/bus/pci/devices/0000:01:00.0/power/runtime_status` se queda en
   `suspended` (2026-09-06).
-- **[VER] En qué GPU renderiza Minecraft lanzado desde MultiMC.** El launcher
-  oficial tiene `prime-run` en su entrada de escritorio y se comprobó con
-  `nvidia-smi` que el juego cae en la RTX 4060 (§13). **MultiMC no lleva nada
-  equivalente**: su `WrapperCommand` está vacío, así que lo esperable es que
-  renderice en la iGPU Intel, pero es una deducción, no una medida: el log de
-  Minecraft moderno no imprime el renderer de OpenGL salvo en un informe de
-  fallo. Prueba: con una partida abierta, mirar si el proceso `java` aparece en
-  `nvidia-smi`, o leer la línea de la GPU en el F3 del juego. Si sale la Intel y
-  se quiere la dedicada, la vía es `prime-run` como *wrapper command* dentro de
-  MultiMC —no otro `.desktop`—, con la aplicación cerrada al editarlo
-  (2026-09-14).
+- ~~**[VER] En qué GPU renderiza Minecraft lanzado desde MultiMC.**~~
+  **Resuelto el mismo 2026-09-14, y de paso medido**: se puso `prime-run` como
+  *wrapper command* en `multimc.cfg` y con el juego abierto `nvidia-smi` lista
+  el proceso `java` de la instancia con 187 MiB en la RTX 4060; las tres
+  variables de PRIME están en su `/proc/PID/environ`
+  (`__NV_PRIME_RENDER_OFFLOAD`, `__GLX_VENDOR_LIBRARY_NAME`,
+  `__VK_LAYER_NV_optimus`) y la GPU pasa de 2,35 W en reposo a ~10 W con 27-73 %
+  de uso. **Antes de esto la deducción era la contraria y habría sido falsa**:
+  con el `WrapperCommand` vacío se dio por hecho que tiraba de la iGPU, pero no
+  se había medido. Detalle en §29.
 - **[VER] Compartir la pantalla de Hyprland con AnyDesk.** Salir hacia otro
   equipo funciona y está validado (§28), pero **no se ha probado la dirección
   contraria**: que este portátil sea el extremo controlado. El caso no es el
@@ -3829,21 +3831,45 @@ Idioma español, 4096 MB de RAM máxima, tema oscuro. Cuenta de tipo **MSA**
 juego ya registrado: la cadena entera —cuenta, descarga de librerías, Fabric,
 arranque— está validada de punta a punta.
 
-### ⚠️ La dGPU NO está configurada aquí, al contrario que en §13
+### La dGPU se configura DENTRO de MultiMC, no con otro `.desktop`  **[OK]**
 
 El launcher oficial arranca con `prime-run` desde el `.desktop` del paquete Stow
-`minecraft` (§13). **MultiMC no tiene nada equivalente**: `WrapperCommand` está
-vacío, así que sin las variables de PRIME lo esperable es que el juego renderice
-en la iGPU Intel. **No se ha comprobado** en qué GPU corre; queda como `[VER]`
-en §15.
+`minecraft` (§13). Aquí la vía es otra, y deliberadamente: una sola línea en
+`multimc.cfg`, que es lo que escribe la GUI en Ajustes → Comandos
+personalizados → *Wrapper command*.
 
-Cuando se decida, la vía **no** es copiar el truco del `.desktop`, sino poner
-`prime-run` como *wrapper command* dentro de MultiMC (Ajustes → Comandos
-personalizados): así el launcher Qt se queda en la Intel —no necesita la dGPU
-para dibujar una lista de instancias— y la RTX 4060 solo despierta al entrar en
-una partida, que es lo que respeta el Runtime D3 de §6. Ojo al editarlo a mano:
-**MultiMC reescribe `multimc.cfg` entero al cerrar**, así que hay que tocarlo con
-la aplicación cerrada o se pierde el cambio.
+```
+WrapperCommand=prime-run
+```
+
+**Por qué el wrapper y no el `.desktop`**: el wrapper envuelve solo el proceso
+del juego, así que el launcher Qt se queda en la Intel —no necesita la dGPU para
+dibujar una lista de instancias— y la RTX 4060 despierta únicamente al entrar en
+una partida. Con el truco del `.desktop` la heredarían los dos. Es lo que
+respeta el Runtime D3 de §6.
+
+**Medido, no deducido** (2026-09-14, instancia 1.21.11):
+
+| Comprobación | Resultado |
+|---|---|
+| Árbol de procesos | `/usr/bin/prime-run … java -Xms512m -Xmx4096m …` |
+| `/proc/PID/environ` del `java` | `__NV_PRIME_RENDER_OFFLOAD=1`, `__GLX_VENDOR_LIBRARY_NAME=nvidia`, `__VK_LAYER_NV_optimus=NVIDIA_only` |
+| `nvidia-smi` con el juego abierto | el `java` aparece en la GPU 0 con **187 MiB** |
+| Consumo | de **2,35 W** en reposo a **~10 W**, 27-73 % de uso |
+
+Esto cierra el `[VER]` que §15 tenía abierto, y de paso **desmiente la
+suposición de partida**: se había escrito que sin wrapper el juego *seguramente*
+iba por la iGPU, pero eso nunca llegó a medirse y ya no se puede afirmar en un
+sentido ni en otro.
+
+⚠️ **Al editar `multimc.cfg` a mano, la aplicación tiene que estar cerrada**:
+MultiMC reescribe el archivo entero al salir y se lleva por delante el cambio.
+Puesto con la GUI cerrada, el valor **sobrevive** a los arranques siguientes
+(comprobado tras lanzar y cerrar el juego).
+
+> La dGPU aparece como `active` en `runtime_status` incluso sin juego, pero eso
+> no es cosa de MultiMC: el HDMI cuelga de la NVIDIA y la mantiene despierta
+> mientras el monitor externo esté conectado (§6).
 
 ### Qué no se versiona
 
