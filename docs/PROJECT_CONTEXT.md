@@ -1,7 +1,20 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-09-14, más tarde (**subíndice, superíndice, y el
+Última actualización: 2026-09-14, al final del día (**AnyDesk para controlar
+otros equipos** — §28 nueva: `anydesk-bin` del AUR, con el servicio de acceso
+desatendido deliberadamente sin habilitar. Los dos fallos que vinieron detrás
+señalaban a culpables falsos: el `result_relay_offline` no era la red del campus
+ni el `NXDOMAIN` de `crl.anydesk.com` —que sale igual cuando funciona—, sino un
+relay que dijo «no reconectes» y un cliente que obedece y no reintenta nunca; se
+cura reiniciándolo. Y la imagen deformada era un 16:9 remoto dentro de una
+ventana casi cuadrada sobre una pantalla a escala 1,6: se arregla llevándola al
+monitor externo, que es 16:9 a escala 1. §9 gana la segunda trampa del parser
+Lua, peor que la primera porque **falla en silencio**: `hl.dsp.*` construye la
+acción y solo `hyprctl dispatch` la ejecuta, así que `eval` responde `ok` sin
+hacer nada. §25 se corrige: el descarte de AnyDesk valía solo para el iPad.
+Diagnóstico en `history/2026-09-14-anydesk.md`).
+Antes, el mismo día: (**subíndice, superíndice, y el
 texto que se volvía naranja** — §26 gana dos plugins propios más, `subindice` y
 `superindice` (`Ctrl+Alt+,` y `Ctrl+Alt+.`), clonados de `subrayar`, y la
 explicación de por qué estructurar una nota con tabuladores y líneas en blanco
@@ -428,6 +441,31 @@ cableado a la dGPU. Ver §15.
 >
 > Al añadir cualquier integración con Hyprland, comprobar primero a mano que
 > el dispatcher responde `ok`.
+>
+> ⚠️ **Y `ok` NO significa que se haya hecho nada.** Descubierto el 2026-09-14
+> peleándose con la ventana de AnyDesk (§28): `hl.dsp.window.move({...})` y
+> `hl.dsp.window.fullscreen()` devolvían `ok` por `hyprctl eval` sin mover ni
+> agrandar nada, con cualquier forma de los argumentos. La razón es que
+> **`hl.dsp.*` CONSTRUYE una acción para asociarla a una tecla, no la
+> ejecuta** —es exactamente para lo que la usa `hl.bind(...)`—. Quien la
+> ejecuta es `hl.dispatch(...)`, y a él se llega con `hyprctl dispatch`, que
+> envuelve lo que reciba:
+>
+> ```
+> hyprctl eval     'hl.dsp.window.move({ workspace = 8 })'   → ok, y no pasa nada
+> hyprctl dispatch 'hl.dsp.window.move({ workspace = 8 })'   → ok, y la ventana se mueve
+> ```
+>
+> O sea que hay **dos** trampas encadenadas: la sintaxis clásica falla con
+> error visible, y la sintaxis Lua correcta por la vía equivocada falla **en
+> silencio**. La única comprobación que vale es mirar el estado después
+> (`hyprctl clients`, `hyprctl monitors`), nunca la respuesta.
+>
+> Para descubrir la API sin documentación, `hl.dsp` es una tabla y se puede
+> volcar desde el propio Lua, ya que `eval` no devuelve valores:
+> `hyprctl eval '(function() local f=io.open("/tmp/dsp.txt","w") for k in pairs(hl.dsp) do f:write(k.."\n") end f:close() return 1 end)()'`.
+> Así salieron `hl.dsp.window.*` (`move`, `fullscreen`, `float`, `resize`,
+> `center`, `close`…) y `hl.dsp.workspace.*`.
 
 > **Realidad de configuración:** tienen config propia y versionada **Hyprland**
 > (`hyprland.lua`), **hyprlock** (`hyprlock.conf`) e **hypridle**
@@ -1180,6 +1218,13 @@ Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
   `/sys/class/drm/card*-*/status`, y si
   `/sys/bus/pci/devices/0000:01:00.0/power/runtime_status` se queda en
   `suspended` (2026-09-06).
+- **[VER] Compartir la pantalla de Hyprland con AnyDesk.** Salir hacia otro
+  equipo funciona y está validado (§28), pero **no se ha probado la dirección
+  contraria**: que este portátil sea el extremo controlado. El caso no es el
+  mismo que el de TeamViewer de abajo: la ventana de AnyDesk es Wayland nativa
+  mientras sus tripas leen geometría por X11, así que no se puede deducir el
+  resultado de ninguno de los dos. Prueba: conectar desde otro equipo y mirar si
+  se ve el escritorio o sale negro (2026-09-14).
 - **[VER] Compartir la pantalla de Hyprland con TeamViewer.** La GUI funciona
   bajo XWayland y sirve para *ver* equipos remotos (§25), pero **no se ha
   intentado la dirección contraria**: que este portátil sea el extremo
@@ -3089,7 +3134,9 @@ desde el 2026-09-09 a las 17:17:06. La GUI corre **bajo XWayland**
 sin control** — iPadOS no expone ninguna API que permita a una app de terceros
 controlar el dispositivo, así que no existe un equivalente a AnyDesk en ese
 sentido. **AnyDesk se descartó por eso**: su app de iOS es solo cliente y no
-puede ser el extremo compartido. TeamViewer sirve porque `QuickSupport`
+puede ser el extremo compartido. Ese descarte vale **solo para el iPad**: para
+controlar otros equipos AnyDesk sí sirve, y está instalado desde el 2026-09-14
+(**§28**). TeamViewer sirve porque `QuickSupport`
 comparte pantalla vía ReplayKit, que es el único mecanismo que Apple permite.
 
 Cada sesión requiere pulsar *Iniciar transmisión* **a mano en el iPad**; no se
@@ -3554,3 +3601,122 @@ una reinstalación:
 
 Historia y diagnóstico completo: `history/2026-09-13-zapzap-whatsapp.md` y
 `history/2026-09-13-modo-oscuro-y-tema-de-whatsapp.md`.
+
+## 28. Acceso remoto a otros equipos (AnyDesk)  **[OK]**
+
+`aur/anydesk-bin 8.0.4-1`, instalado el 2026-09-14 con `paru`. **Para qué
+está**: controlar otro equipo desde este portátil. Es la dirección contraria a
+§25, que sirve para *ver* la pantalla de un iPad sin controlarla.
+
+> **Corrección a §25.** Allí se lee «AnyDesk se descartó». Ese descarte valía
+> **solo para el caso del iPad** —su app de iOS es únicamente cliente y no puede
+> ser el extremo compartido—, no era un rechazo general de la herramienta.
+> Para equipos de escritorio sirve, y es justo lo que se instaló.
+
+**Las dependencias sí están declaradas**, al contrario que en TeamViewer (§25).
+Se repasaron las 22 del `PKGBUILD` contra lo instalado antes de nada: solo
+faltaba `lsb-release`, que pacman arrastró sola. `minizip` —la que el paquete de
+TeamViewer se dejaba y tumbaba el demonio— **aquí sí figura**. Por eso
+`lsb-release` **no** se añade a `pacman-explicit.txt`: una reinstalación de
+`anydesk-bin` vuelve a traerla, que es justo lo que no pasaba con `minizip`.
+
+El `PKGBUILD` no tiene `prepare()`, `build()` ni `.install`: descarga el tarball
+oficial con sha256 fijado e instala archivos. No ejecuta nada durante el
+empaquetado.
+
+### El servicio se deja deliberadamente sin habilitar
+
+`anydesk.service` queda **`disabled` e `inactive`**. El paquete imprime al
+instalar un aviso sugiriendo `systemctl enable --now anydesk`: eso es el
+**acceso desatendido**, y su unidad arranca `anydesk --service` con `User=root`,
+dejando el equipo alcanzable sin que nadie acepte la conexión. Para salir hacia
+otros equipos **no hace falta**, y por eso no está. No aparece en
+`packages/services-enabled.txt`, que es lo correcto.
+
+### ⚠️ `result_relay_offline`: un relay que dice «no reconectes», y el cliente se rinde
+
+Al primer arranque, todos los intentos de conexión morían con
+`Net socket error: result_relay_offline`, y `~/.anydesk/system.conf` guardaba
+`ad.anynet.relay.fatal_result=1.19`, `relay.state=3`. La cadena real, en
+`~/.anydesk/anydesk.trace`:
+
+| Momento | Qué pasó |
+|---|---|
+| +0,4 s | Conecta a `boot.net.anydesk.com`, TLS 1.3 correcto |
+| +0,6 s | `anynet_invalid_zone` → **normal**: el bootstrap solo entrega la lista de relays |
+| +0,7 s | Conecta al relay asignado, TLS correcto, handshake protocolo 3 |
+| +1,0 s | **`Connection terminated: anynet_19` · `Received "don't reconnect" from server`** |
+| +1,0 s | `main_relay_conn - Connect failed` → **el fiber termina y no reintenta jamás** |
+
+Ese es el punto: **un relay concreto rechazó al cliente y AnyDesk, al recibir el
+«no reconectes», detiene el conector durante el resto de la vida del proceso.**
+Todo lo que se intente después falla por falta de relay, no por la red.
+
+**La cura es reiniciar el cliente** (`pkill -x anydesk && anydesk`), sin sudo y
+sin borrar configuración. Al rearrancar pide lista nueva, le toca **otro relay**
+y entra. Verificado el 2026-09-14: `Connection established`,
+`Relay connection state changed: Connected`, `fatal_result` de **1.19 a 1.0**,
+`relay.state` de **3 a 2** y `anydesk --get-status` → `online`.
+
+**Lo que NO era la causa, descartado con pruebas** (importa, porque la traza
+empuja a culpar a los tres):
+
+- **No es la red del campus.** Desde `Mi Campus Alicante` resuelven los relays y
+  los puertos **443 y 6568 están abiertos**; el TLS con el relay se completó.
+  Sin proxy, sin portal cautivo, sin VPN activa.
+- **No es el `firewalld` local**, activo pero sin estorbar a la salida.
+- **No es el error de DNS que sale en rojo.** `crl.anydesk.com` da `NXDOMAIN`
+  **de forma autoritativa desde los propios nameservers de AnyDesk**, no por
+  filtrado. La prueba definitiva: **aparece igual en el arranque que sí
+  funcionó**. Es ruido.
+
+### La ventana es Wayland, pero las tripas son X11
+
+`hyprctl clients` da `"xwayland": false` —la ventana es superficie Wayland
+nativa—, pero el proceso **abre además una conexión X11 por Xwayland** para
+enumerar monitores y construir la tabla xkb: su traza tiene un hilo `x11`
+leyendo salidas XRandR, y registra `Could not find a primary monitor`. Es un
+caso mixto, distinto del de TeamViewer, que corre entero bajo XWayland.
+
+De ahí salen los dos defectos que se vieron en la primera sesión real.
+
+**1. Imagen mal proporcionada.** El equipo remoto era **3840x2160 (16:9)** y la
+ventana estaba flotando en `eDP-1`, que va a **escala fraccionaria 1,6** y es
+**16:10**, con un tamaño de 1044x914 (ratio 1,14, casi cuadrado). Ahí un 16:9 no
+cabe sin deformarse.
+
+> **Arreglo: llevar la sesión a `HDMI-A-1` y ponerla a pantalla completa.** Ese
+> monitor es **2560x1440 a escala 1**, o sea **16:9 exacto contra 16:9**:
+> reducción limpia desde 3840x2160 y sin escalado fraccionario de por medio.
+> Comprobado: la ventana pasa a `2560x1440` (ratio 1,778) y la sesión sobrevive
+> al movimiento.
+
+**2. El teclado no se traduce bien.** La traza dice
+`Keyboard layouts differ (l:unknown != r:en_us_intl). Auto-mode is Translate`.
+El teclado local es español (`at-translated-set-2-keyboard`, layout `es,us`,
+activo `Spanish`), pero **AnyDesk lo ve como `unknown`** porque lo lee por la
+vía X11, que no le devuelve la distribución de Hyprland. Con el origen
+desconocido, la traducción de teclas va a ciegas. Se corrige **en la barra de la
+sesión** (menú de teclado), no hay clave en `user.conf` mientras no se toque
+desde la interfaz.
+
+### Los atajos de Hyprland siguen funcionando dentro de la sesión
+
+Comprobado en el log del compositor: **cero apariciones** del protocolo
+`keyboard-shortcuts-inhibit`. Hyprland intercepta las combinaciones con `Super`
+antes de que lleguen a AnyDesk, así que `Super + ←`, `Super + 1…9` y compañía
+funcionan aunque la sesión esté a pantalla completa y con el foco. Al remoto va
+todo lo demás.
+
+**Hueco detectado: `hyprland.lua` no tiene ningún atajo de pantalla completa.**
+Para entrar o salir hay que usar la barra de la propia AnyDesk (la pestaña del
+borde superior) o el comando de abajo. Queda como posible mejora, sin decidir.
+
+### Qué no se versiona
+
+El **ID de AnyDesk** de esta máquina, el del equipo remoto y todo `~/.anydesk/`
+(`system.conf`, `user.conf`, `service.conf`, `anydesk.trace`,
+`connection_trace.txt`): son artefactos de acceso remoto y quedan fuera del
+repositorio por las reglas de `CLAUDE.md`, igual que el ID de TeamViewer (§25).
+
+Historia y diagnóstico completo: `history/2026-09-14-anydesk.md`.
