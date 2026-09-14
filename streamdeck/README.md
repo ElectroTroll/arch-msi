@@ -56,7 +56,7 @@ hardware real:
 | Slider 2 → Spotify | ✅ detectado como `spotify` |
 | Slider 3 → «resto» | ✅ correcto que no encuentre nada: Firefox y Spotify tienen slider propio |
 | Curva de volumen | Fader **lineal en dB** (`RANGO_DB_LINUX`): −5,00 dB por cada 10 % de recorrido, medido |
-| Slider 2 → Spotify, al cambiar de canción | ✅ desde el 2026-09-14 va por **MPRIS** (`OBJETIVOS_MPRIS`), porque Spotify se reescribía su propio volumen a 100 % en cada canción |
+| Slider 2 → Spotify, al cambiar de canción | ✅ desde el 2026-09-14 va por **MPRIS** (`OBJETIVOS_MPRIS`), porque Spotify se reescribía su propio volumen a 100 % en cada canción. Probado con el hardware el 2026-09-15 |
 
 **Pendiente en Arch:**
 

@@ -130,9 +130,10 @@ Y llamando al backend real del script ya modificado:
 Las 2-3 cuentas de diferencia eran el redondeo a 4 decimales del valor MPRIS
 (−0,0005 dB, inaudible); se subió a 6 decimales porque no costaba nada.
 
-**Queda una comprobación que no se puede hacer desde aquí**: mover el slider 2
-físicamente y escuchar el resultado. Todo lo de arriba se validó llamando al
-backend, no tocando el hardware.
+La comprobación que faltaba —mover el slider 2 físicamente, que no se puede
+hacer desde una sesión de terminal— **la confirmó el usuario el 2026-09-15**: el
+slider controla el volumen de Spotify y **aguanta el cambio de canción**. Con
+eso el arreglo queda validado de punta a punta, hardware incluido.
 
 ## 6. Qué NO se tocó
 

@@ -3971,6 +3971,18 @@ que volver a copiarlo y hacer `systemctl --user daemon-reload`.
 `Restart=always` con `RestartSec=5`: si el script muere, systemd lo relevanta.
 El script además reintenta solo cuando el StreamDeck no está enchufado.
 
+⚠️ **Sí añade requisitos a `install/services.sh`** (ver 6.1 del roadmap), al
+contrario que rofi, yazi, minecraft o dunst. Son **dos, y de tipos distintos**:
+
+1. **El `enable` de `streamdeck-mixer.service`**, que vive en
+   `~/.config/systemd/user/graphical-session.target.wants/` y no se versiona —el
+   cuarto hueco de 6.1—. Sin él los sliders no mueven nada, aunque **las teclas
+   sí sigan funcionando**, porque son USB HID puro: el aparato parece medio roto
+   en vez de apagado.
+2. **El symlink `~/StreamDeckDIY`**, que no es un `enable` ni un archivo de
+   configuración. Es el único requisito de su clase en el proyecto, y sin él el
+   servicio arranca y muere sin encontrar el script.
+
 ### Identificar aplicaciones en PipeWire: tres propiedades, no una
 
 El mezclador busca cada app por `application.process.binary`,
@@ -4049,9 +4061,11 @@ script avisa al arrancar y sigue por `pactl`: se pierde el arreglo, no el
 volumen. Los demás sliders **siguen por `pactl`**; `OBJETIVOS_MPRIS` es una
 lista corta a propósito, solo para apps que gestionan su volumen por su cuenta.
 
-**Sin comprobar**: mover el slider 2 físicamente. La validación se hizo llamando
-al backend del script (40 % → `stream=20722`, 70 % → `stream=36851`, intacto
-tras dos cambios de canción), no tocando el hardware.
+**Comprobado con el hardware el 2026-09-15**: el slider 2 mueve el volumen de
+Spotify y **se mantiene al cambiar de canción**. Antes de eso la validación era
+solo de software —llamando al backend del script: 40 % → `stream=20722`, 70 % →
+`stream=36851`, intacto tras dos cambios de canción—, y quedaba pendiente
+justamente la parte que no se puede probar sin tocar el aparato.
 
 ### Pendientes
 

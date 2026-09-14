@@ -438,11 +438,11 @@ Cerrar el objetivo original: poder reinstalar y recuperar el sistema.
 | 6.5 | **Prueba real de restauración en una VM** | Alto | Nulo |
 
 **6.1** ⚠️ **Requisito bloqueante, no una nota menor: `install/services.sh`
-tiene que reactivar TRES cosas que no viven en los dotfiles.** El `enable` de un
-servicio de usuario crea un enlace en
+tiene que reactivar CUATRO cosas que no viven en los dotfiles.** El `enable` de
+un servicio de usuario crea un enlace en
 `~/.config/systemd/user/graphical-session.target.wants/`, que **no** está
 versionado; de él solo queda rastro en `packages/services-enabled.txt`. Los
-tres huecos son del mismo tipo y fallan **en silencio**: los archivos vuelven
+cuatro huecos son del mismo tipo y fallan **en silencio**: los archivos vuelven
 a su sitio, pero nada los activa y nada avisa de que falta el paso.
 
 - **`hypridle.service`** — sin rehabilitarlo, la sesión no se bloquea sola
@@ -476,11 +476,31 @@ a su sitio, pero nada los activa y nada avisa de que falta el paso.
   versionado en `dotfiles/claude/` y se enlaza con Stow, pero quien lo invoca
   es este archivo, que **no** se versiona porque contiene credenciales y estado
   de sesión. Sin él, el módulo de uso de Claude se queda en `—` para siempre.
+- **`streamdeck-mixer.service`** (cuarto hueco, desde el 2026-09-14) — sin
+  rehabilitarlo, los sliders del StreamDeck no mueven ningún volumen: las teclas
+  sí funcionan, porque son USB HID y no dependen de nada del PC, así que el
+  aparato parece medio roto en vez de apagado. La unidad está en el repositorio
+  (`streamdeck/host/streamdeck-mixer.service`), pero **se copia a
+  `~/.config/systemd/user/`, no se enlaza con Stow**, así que la restauración
+  tiene que copiarla, hacer `daemon-reload` y `enable`. Ver §30.
+  > ⚠️ **El StreamDeck añade además un requisito que NO es un `enable` ni un
+  > archivo de configuración, y es el único de su clase en todo el proyecto: el
+  > symlink `~/StreamDeckDIY` → `Projects/arch-msi/streamdeck`.** El `ExecStart`
+  > apunta a `%h/StreamDeckDIY/host/streamdeck_mixer.py`, así que sin ese enlace
+  > el servicio arranca y muere sin encontrar el script. No lo crea Stow, no lo
+  > crea el instalador de `system/` y no está en ningún script: hoy existe
+  > porque se hizo a mano. Alternativa al restaurar: cambiar el `ExecStart` a la
+  > ruta real del repositorio.
+  >
+  > El mezclador necesita también tres cosas del sistema que sí constan en
+  > `packages/`: `python-pyserial`, `libpulse` y `playerctl`, más el usuario en
+  > el grupo `uucp` —y ese `usermod` **no surte efecto hasta cerrar sesión y
+  > volver a entrar**—.
 
-La fase 6 **no puede darse por completada** sin los tres, y la prueba de
+La fase 6 **no puede darse por completada** sin los cuatro, y la prueba de
 restauración en VM (6.5) debe verificarlos explícitamente.
 Ver `docs/PROJECT_CONTEXT.md` §9 (Red y seguridad), §13 (Dotfiles y estado del
-repositorio) y §14 (Tareas pendientes).
+repositorio), §14 (Tareas pendientes) y §30 (StreamDeck DIY).
 
 **6.3** debe recoger los detalles no obvios: VMD activo en BIOS, ESP compartida
 con Windows, layout de subvolúmenes, orden de instalación.
