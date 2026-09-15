@@ -12,10 +12,13 @@ tercera distribución `gr` se descarta porque `Super+Espacio` rota entre las
 cargadas y pasaría a tres paradas. Y LaTeX sirve para fórmulas, no para un
 carácter suelto en prosa: guarda `\Delta`, no `Δ`, así que no es buscable —el
 mismo razonamiento de §26 con los subíndices—. Anotado que **`Ctrl+Shift+U` no
-funciona aquí**: lo aporta ibus y no hay método de entrada. Queda **sin
-comprobar** que `wtype` llegue a Obsidian, que es la misma incógnita del teclado
-virtual que dejó abierta Compose. Diagnóstico en
-`history/2026-09-15-simbolos-griegos.md`).
+funciona aquí**: lo aporta ibus y no hay método de entrada. Quedaba **sin
+comprobar** que `wtype` llegue a Obsidian, la misma incógnita del teclado
+virtual que dejó abierta Compose — **cerrado el mismo día**: `wtype 0.4-2` entra
+en `packages/`, `wtype ""` sale con código 0 (Hyprland expone el protocolo) y el
+usuario confirma que `Super + G` escribe en Obsidian; queda el matiz de que
+teclear y copiar ocurren los dos, así que no se ha distinguido cuál puso el
+carácter. Diagnóstico en `history/2026-09-15-simbolos-griegos.md`).
 Antes: 2026-09-14, al final del día (**Spotify se subía el volumen
 solo** — §30 gana el apartado de `OBJETIVOS_MPRIS`: al cambiar de canción el
 volumen volvía al 100 %, y **el mezclador no tenía la culpa** —pasa igual con el
@@ -4130,7 +4133,7 @@ y en el navegador igual que en los apuntes.
 | Script | `scripts/simbolos.sh` |
 | En el `PATH` | `dotfiles/bin/.local/bin/simbolos` (symlink, paquete Stow `bin`) |
 | Atajo | `Super + G` en `hyprland.lua` — G de «griego» |
-| Depende de | `rofi` (ya estaba, §13) y `wl-clipboard`; `wtype` opcional |
+| Depende de | `rofi` (ya estaba, §13) y `wl-clipboard`; `wtype` opcional, instalado el 2026-09-15 |
 
 96 entradas. Los sub/superíndices son **Unicode reales** (`₀₁₂₃ₙ`, `⁰¹²³ⁿ⁻`), no
 `<sub>`: la misma preferencia que ya se razonó en §26, porque se copian y pegan
@@ -4196,10 +4199,18 @@ registrado en `hyprctl binds` (modmask 64, key G), con lo que el recuento pasa
 de 57 a **58 binds**; y la ruta del portapapeles da `Δ` en **2 bytes sin salto
 de línea**.
 
-**Sin comprobar**: el menú en pantalla, que necesita la sesión del usuario. Y
-**que `wtype` llegue a Obsidian** — usa el protocolo de teclado virtual de
-Wayland y Electron podría ignorarlo; es la misma incógnita que dejó abierta la
-vía de Compose.
+**Confirmado el mismo día, ya con `wtype 0.4-2` instalado**: el menú abre bien y
+**el símbolo llega a Obsidian**, según el usuario. Por mi parte queda
+comprobado que `wtype ""` sale con código 0, o sea que **Hyprland expone el
+protocolo de teclado virtual** y `wtype` habla con él. La incógnita que dejó
+abierta la vía de Compose —si Electron atiende ese protocolo— se resuelve por
+tanto en la práctica.
+
+⚠️ Un matiz que conviene no dar por cerrado: **no se ha distinguido si el
+carácter lo teclea `wtype` o se pegó desde el portapapeles**. El script llena
+los dos caminos a la vez, así que ambos producen el mismo resultado visible. La
+prueba que lo separa es de cinco segundos: pulsar `Super + G`, elegir un símbolo
+y ver si aparece **sin tocar `Ctrl+V`**.
 
 Diagnóstico completo, con las cuatro vías y por qué se descartaron tres:
 `history/2026-09-15-simbolos-griegos.md`.

@@ -1,5 +1,5 @@
 # Paquetes instalados explícitamente (pacman -Qqe)
-# Fuente: auditoría 2026-09-14 en elok-archmsi
+# Fuente: auditoría 2026-09-15 en elok-archmsi
 # Regenerar con: pacman -Qqe > packages/pacman-explicit.txt
 # AVISO: al regenerar, esta cabecera se pierde. Debe volver a añadirse a mano
 # (o usar scripts/update-inventories.sh, que la conserva).
@@ -139,6 +139,7 @@ wl-clipboard
 wlogout
 wlopm
 woff2-font-awesome
+wtype
 xdg-desktop-portal
 xdg-desktop-portal-hyprland
 xdg-user-dirs

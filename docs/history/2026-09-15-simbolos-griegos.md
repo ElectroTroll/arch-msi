@@ -137,9 +137,8 @@ Comprobado:
 
 - El menú en pantalla. rofi necesita la sesión del usuario, no se puede abrir
   desde una terminal de agente.
-- Que `wtype` llegue a Obsidian. Usa el protocolo de **teclado virtual** de
-  Wayland, y es la misma incógnita que dejó abierta el apartado 2 con Compose:
-  Electron puede ignorarlo. El paquete se instala después de escribir esto.
+- Si el carácter lo **teclea `wtype`** o se pegó del portapapeles. El script
+  llena los dos caminos a la vez, así que el resultado visible es idéntico.
 
 ## 7. Qué queda en el repositorio
 
@@ -149,5 +148,20 @@ Comprobado:
 | `dotfiles/bin/.local/bin/simbolos` | symlink relativo, paquete Stow `bin` |
 | `dotfiles/hypr/.config/hypr/hyprland.lua` | +6 líneas: el bind `Super+G` |
 
-Nada más. `wtype` es un paquete de `extra` y entra en `packages/` por la vía
-normal, no por aquí.
+Nada más. `wtype` es un paquete de `extra` y entró en `packages/` por la vía
+normal (`scripts/update-inventories.sh`), no por aquí.
+
+## 8. Cerrado el mismo día: `wtype` instalado
+
+`wtype 0.4-2` entra desde `extra` y aparece ya en `packages/pacman-explicit.txt`.
+Con él presente, `command -v wtype` acierta y el script pasa a la rama que
+teclea.
+
+Comprobado: **`wtype ""` sale con código 0**, o sea que Hyprland expone
+`zwp_virtual_keyboard_manager_v1` y `wtype` consigue hablar con él. Y el usuario
+confirma que **`Super + G` funciona y el símbolo llega a Obsidian**. Con eso, la
+incógnita del apartado 2 —si Electron atiende el teclado virtual— queda resuelta
+en la práctica.
+
+Lo único que sigue sin separarse es lo dicho arriba: teclear y copiar ocurren
+los dos, así que a simple vista no se distingue cuál puso el carácter.
