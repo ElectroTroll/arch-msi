@@ -1,7 +1,22 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-09-14, al final del día (**Spotify se subía el volumen
+Última actualización: 2026-09-15 (**escribir Δ y γ sin tenerlas en el teclado**
+— §31 nueva: selector de símbolos en `Super + G`, 96 entradas buscables por
+nombre en castellano. Las otras tres vías se evaluaron con el sistema delante y
+perdieron. La de la tecla Compose por un motivo que conviene tener escrito: el
+archivo `Compose` **ya trae 67 combinaciones griegas**, pero todas cuelgan de
+`<dead_greek>`, que solo existe en `us(altgr-weur)` y no en las dos
+distribuciones de este equipo — están en el disco y son **inalcanzables**. La
+tercera distribución `gr` se descarta porque `Super+Espacio` rota entre las
+cargadas y pasaría a tres paradas. Y LaTeX sirve para fórmulas, no para un
+carácter suelto en prosa: guarda `\Delta`, no `Δ`, así que no es buscable —el
+mismo razonamiento de §26 con los subíndices—. Anotado que **`Ctrl+Shift+U` no
+funciona aquí**: lo aporta ibus y no hay método de entrada. Queda **sin
+comprobar** que `wtype` llegue a Obsidian, que es la misma incógnita del teclado
+virtual que dejó abierta Compose. Diagnóstico en
+`history/2026-09-15-simbolos-griegos.md`).
+Antes: 2026-09-14, al final del día (**Spotify se subía el volumen
 solo** — §30 gana el apartado de `OBJETIVOS_MPRIS`: al cambiar de canción el
 volumen volvía al 100 %, y **el mezclador no tenía la culpa** —pasa igual con el
 servicio parado—. La primera hipótesis, que Spotify recreaba su flujo, resultó
@@ -3388,6 +3403,24 @@ estaba activado en `community-plugins.json`, así que no está descartado que
 `Super+,` sirva. Se cambió a `Ctrl+Alt+,`, que sí responde. `Ctrl+,` a secas no
 vale: lo ocupan los ajustes de Obsidian.
 
+### Griegas y símbolos matemáticos: `Super + G`, fuera de Obsidian
+
+El mismo razonamiento de los subíndices lleva a la misma conclusión un escalón
+más arriba. Para **fórmulas**, LaTeX: Obsidian renderiza MathJax de serie con
+`$\Delta v$` y `$$…$$`. Para un **carácter suelto en prosa** —«la Δ de
+temperatura», «rayos γ»— LaTeX desentona tipográficamente y, sobre todo, en el
+`.md` guarda `\Delta` y no `Δ`, así que **buscar `Δ` en el vault no lo
+encuentra**.
+
+Por eso los símbolos sueltos no se resolvieron dentro de Obsidian sino en el
+escritorio, con el selector de `Super + G` (**§31**), que inserta el carácter
+Unicode de verdad y sirve igual en kitty o en el navegador.
+
+Anotado al contrastarlo contra el bundle de Obsidian: el comando
+`editor:toggle-inline-math` **viene sin atajo por defecto** —su `addCommand` no
+declara `hotkeys`— y el `hotkeys.json` del vault está vacío, así que vive solo
+en la paleta de comandos mientras no se le asigne uno.
+
 ### Los tres plugins propios: symlink, no Stow
 
 `subrayar`, `subindice` y `superindice` son el **único componente del vault que
@@ -4082,3 +4115,91 @@ Documentación completa del proyecto —cableado, pinout, firmware, montaje y
 solución de problemas— en `streamdeck/README.md`; el encargo del traspaso, en
 `streamdeck/TRASPASO-ARCH.md`. Historia de la incorporación al repositorio:
 `history/2026-09-14-streamdeck.md`.
+
+---
+
+## 31. Símbolos que no están en el teclado (`Super + G`)  **[OK]**
+
+Selector de símbolos —griegas, operadores matemáticos, conjuntos, flechas y
+sub/superíndices— buscable **por nombre en castellano**. Nació de una pregunta
+sobre Obsidian (§26), pero es del escritorio entero: sirve en kitty, en Dolphin
+y en el navegador igual que en los apuntes.
+
+| Pieza | Dónde |
+|---|---|
+| Script | `scripts/simbolos.sh` |
+| En el `PATH` | `dotfiles/bin/.local/bin/simbolos` (symlink, paquete Stow `bin`) |
+| Atajo | `Super + G` en `hyprland.lua` — G de «griego» |
+| Depende de | `rofi` (ya estaba, §13) y `wl-clipboard`; `wtype` opcional |
+
+96 entradas. Los sub/superíndices son **Unicode reales** (`₀₁₂₃ₙ`, `⁰¹²³ⁿ⁻`), no
+`<sub>`: la misma preferencia que ya se razonó en §26, porque se copian y pegan
+a cualquier sitio.
+
+### Por qué un menú y no una tecla Compose ni una distribución griega
+
+Las tres vías se evaluaron con el sistema delante, y las otras dos perdieron por
+motivos distintos:
+
+- **Tecla Compose.** El archivo `Compose` del sistema **ya trae 67
+  combinaciones griegas**, pero todas cuelgan de `<dead_greek>`, y `dead_greek`
+  solo existe en la variante `us(altgr-weur)` — ni en `es` ni en `us(intl)`, que
+  son las dos de este equipo (§20). Están en el disco y **son inalcanzables**.
+  Se podrían recuperar con un `~/.XCompose` de prefijo `<Multi_key>`, pero sigue
+  exigiendo **recordar una pulsación por símbolo**.
+- **Tercera distribución `gr`.** `Super+Espacio` **rota** entre las cargadas
+  (§20), así que pasaría de dos paradas a tres y se acabaría escribiendo en
+  griego sin querer.
+
+El menú gana porque **se busca por nombre**, que es lo que uno tiene en la
+cabeza al escribir apuntes, y es lo único que escala a 96 símbolos sin
+memorizar nada.
+
+⚠️ **`Ctrl+Shift+U` no funciona en este equipo** y conviene tenerlo anotado: esa
+entrada Unicode la aporta ibus, y aquí no hay ningún método de entrada
+(`XMODIFIERS` vacío, ni ibus ni fcitx).
+
+### Los alias sin tildes son deliberados
+
+Cada entrada del catálogo lleva el nombre acentuado **y** su forma pelada:
+
+```
+Δ  Delta mayúscula · variación · variacion · incremento · \Delta
+```
+
+**rofi filtra por subcadena y no normaliza acentos.** Sin el alias, escribir
+`variacion` con prisa no encontraría nada. Va también el nombre LaTeX, que es
+como se llama al símbolo cuando se viene de escribir fórmulas.
+
+### Se copia siempre; teclear es lo opcional
+
+El símbolo elegido va **siempre** al portapapeles con `wl-copy -n` (la `-n` es
+necesaria: sin ella se pegaría el símbolo *y* un salto de línea). Además, **si
+`wtype` está instalado**, se teclea en la ventana enfocada; si no, un aviso de
+dunst recuerda que se pega con `Ctrl+V`.
+
+La detección es `command -v wtype`, así que el script funcionó desde el primer
+momento sin instalar nada y cambia de modo solo cuando el paquete aparece. Se
+copia aunque `wtype` funcione: cuesta nada y sirve de red si la aplicación
+ignora el teclado virtual.
+
+⚠️ **El `sleep 0.15` antes de teclear no es decorativo.** rofi es una capa de
+Wayland que toma el foco del teclado; al cerrarse, Hyprland lo devuelve a la
+ventana anterior de forma **asíncrona**. Sin la pausa, el carácter puede caer en
+el limbo entre las dos ventanas.
+
+### Estado de validación
+
+Comprobado el 2026-09-15: `bash -n` y `luac -p` correctos; `stow -n` da **un
+solo `LINK` y cero conflictos**; `hyprctl reload` → `ok` y `Super+G` sale
+registrado en `hyprctl binds` (modmask 64, key G), con lo que el recuento pasa
+de 57 a **58 binds**; y la ruta del portapapeles da `Δ` en **2 bytes sin salto
+de línea**.
+
+**Sin comprobar**: el menú en pantalla, que necesita la sesión del usuario. Y
+**que `wtype` llegue a Obsidian** — usa el protocolo de teclado virtual de
+Wayland y Electron podría ignorarlo; es la misma incógnita que dejó abierta la
+vía de Compose.
+
+Diagnóstico completo, con las cuatro vías y por qué se descartaron tres:
+`history/2026-09-15-simbolos-griegos.md`.

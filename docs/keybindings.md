@@ -7,8 +7,9 @@
 > (55 binds, tras los dos de dunst), el 2026-09-08 (**57 binds**, tras
 > `Super + Espacio` y `Super + Z`) y el 2026-09-14 (**57 binds**, sin altas ni
 > bajas: lo que cambia es el comando de las cuatro teclas multimedia, que pasan
-> a `playerctl -p playerctld,%any`): todos los atajos documentados coinciden
-> con los cargados en la sesión actual.
+> a `playerctl -p playerctld,%any`) y el 2026-09-15 (**58 binds**, tras
+> `Super + G`): todos los atajos documentados coinciden con los cargados en la
+> sesión actual.
 >
 > Ojo al contrastar en este equipo: con configuración Lua los binds salen en
 > `hyprctl binds` como `dispatcher: __lua` con un `arg` numérico, así que la
@@ -155,6 +156,21 @@ escribirlas sueltas, **AltGr** (o pulsar espacio detrás):
 | `~` | AltGr + Shift + `` ` `` |
 | `^` | AltGr + Shift + `6` |
 Detalle en `docs/PROJECT_CONTEXT.md` §20.
+
+### Símbolos que no están en ninguna de las dos distribuciones
+
+| Atajo     | Acción                                                                  |
+|-----------|-------------------------------------------------------------------------|
+| Super + G | Selector de símbolos: griegas, operadores, conjuntos, flechas y sub/superíndices (`simbolos`). G de «griego». |
+
+96 entradas, **buscables por nombre en castellano** (`variacion`, `gamma`,
+`sumatorio`, `perpendicular`) o por su nombre LaTeX (`\Delta`). Cada una lleva
+alias **sin tildes** a propósito: rofi filtra por subcadena y no normaliza
+acentos.
+
+El símbolo elegido va siempre al portapapeles; además se **teclea** en la
+ventana enfocada si está instalado `wtype`. Detalle en
+`docs/PROJECT_CONTEXT.md` §31.
 
 ## Notificaciones (dunst)
 

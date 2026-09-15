@@ -526,6 +526,12 @@ hl.bind(mainMod .. " + R", hl.dsp.exec_cmd("rofi -show drun"))
 hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
 hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"))    -- dwindle only
 
+-- Selector de símbolos que no están en el teclado (griegas, operadores, flechas
+-- y sub/superíndices), buscables por nombre en castellano. Escribe el elegido
+-- en la ventana enfocada si hay `wtype`; si no, lo deja en el portapapeles.
+-- Ver scripts/simbolos.sh. G de "griego".
+hl.bind(mainMod .. " + G", hl.dsp.exec_cmd("simbolos"))
+
 -- Alterna es/us EN EL TECLADO QUE PULSA EL ATAJO, sin tocar el otro: el estado
 -- de xkb es por dispositivo. Ver scripts/kb-layout.sh.
 -- Se resuelve por CÓDIGO de tecla, no por símbolo (`resolve_binds_by_sym` está
