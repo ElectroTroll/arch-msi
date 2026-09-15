@@ -16,9 +16,9 @@ funciona aquí**: lo aporta ibus y no hay método de entrada. Quedaba **sin
 comprobar** que `wtype` llegue a Obsidian, la misma incógnita del teclado
 virtual que dejó abierta Compose — **cerrado el mismo día**: `wtype 0.4-2` entra
 en `packages/`, `wtype ""` sale con código 0 (Hyprland expone el protocolo) y el
-usuario confirma que `Super + G` escribe en Obsidian; queda el matiz de que
-teclear y copiar ocurren los dos, así que no se ha distinguido cuál puso el
-carácter. Diagnóstico en `history/2026-09-15-simbolos-griegos.md`).
+usuario confirma que `Super + G` escribe en Obsidian **tecleando**, comprobado
+aparte de la copia: el carácter aparece sin tocar `Ctrl+V`. Diagnóstico en
+`history/2026-09-15-simbolos-griegos.md`).
 Antes: 2026-09-14, al final del día (**Spotify se subía el volumen
 solo** — §30 gana el apartado de `OBJETIVOS_MPRIS`: al cambiar de canción el
 volumen volvía al 100 %, y **el mezclador no tenía la culpa** —pasa igual con el
@@ -4199,18 +4199,20 @@ registrado en `hyprctl binds` (modmask 64, key G), con lo que el recuento pasa
 de 57 a **58 binds**; y la ruta del portapapeles da `Δ` en **2 bytes sin salto
 de línea**.
 
-**Confirmado el mismo día, ya con `wtype 0.4-2` instalado**: el menú abre bien y
-**el símbolo llega a Obsidian**, según el usuario. Por mi parte queda
-comprobado que `wtype ""` sale con código 0, o sea que **Hyprland expone el
-protocolo de teclado virtual** y `wtype` habla con él. La incógnita que dejó
-abierta la vía de Compose —si Electron atiende ese protocolo— se resuelve por
-tanto en la práctica.
+**Cerrado el mismo día, ya con `wtype 0.4-2` instalado.** El menú abre bien y el
+símbolo llega a Obsidian. Comprobado además que `wtype ""` sale con código 0, o
+sea que **Hyprland expone el protocolo de teclado virtual** y `wtype` habla con
+él.
 
-⚠️ Un matiz que conviene no dar por cerrado: **no se ha distinguido si el
-carácter lo teclea `wtype` o se pegó desde el portapapeles**. El script llena
-los dos caminos a la vez, así que ambos producen el mismo resultado visible. La
-prueba que lo separa es de cinco segundos: pulsar `Super + G`, elegir un símbolo
-y ver si aparece **sin tocar `Ctrl+V`**.
+Y la parte que costaba separar también queda resuelta: **el carácter lo teclea
+`wtype`, no se pega**. Como el script llena los dos caminos a la vez —se copia
+siempre, aunque `wtype` funcione—, ambos dan el mismo resultado visible, así que
+se hizo la prueba que los distingue: pulsar `Super + G`, elegir un símbolo y ver
+si aparece **sin tocar `Ctrl+V`**. Aparece. El usuario lo confirma el 2026-09-15
+escribiendo `βΓ` por esa vía.
+
+Eso responde de paso la duda de fondo que arrastraba también la vía de Compose:
+**Electron en Wayland nativo sí atiende el teclado virtual**.
 
 Diagnóstico completo, con las cuatro vías y por qué se descartaron tres:
 `history/2026-09-15-simbolos-griegos.md`.

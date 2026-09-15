@@ -139,6 +139,7 @@ Comprobado:
   desde una terminal de agente.
 - Si el carácter lo **teclea `wtype`** o se pegó del portapapeles. El script
   llena los dos caminos a la vez, así que el resultado visible es idéntico.
+  *(Resuelto el mismo día; ver el apartado 8.)*
 
 ## 7. Qué queda en el repositorio
 
@@ -163,5 +164,12 @@ confirma que **`Super + G` funciona y el símbolo llega a Obsidian**. Con eso, l
 incógnita del apartado 2 —si Electron atiende el teclado virtual— queda resuelta
 en la práctica.
 
-Lo único que sigue sin separarse es lo dicho arriba: teclear y copiar ocurren
-los dos, así que a simple vista no se distingue cuál puso el carácter.
+Quedaba separar teclear de copiar, porque el script hace las dos cosas y a
+simple vista dan lo mismo. La prueba que los distingue es mirar si el carácter
+aparece **sin tocar `Ctrl+V`**, y aparece: el usuario lo confirma escribiendo
+`βΓ` por esa vía.
+
+Así que **`wtype` teclea de verdad dentro de Obsidian**, y con ello cae la duda
+de fondo que arrastraba también el apartado 2: **Electron en Wayland nativo sí
+atiende el protocolo de teclado virtual**. El camino del portapapeles se queda
+como lo que era, una red por si alguna aplicación no lo atiende.
