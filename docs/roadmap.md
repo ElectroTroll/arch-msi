@@ -163,7 +163,7 @@ validado.
 | 3.1 | ~~**Kitty** — tema, fuente, opacidad~~ **[OK] Completada** | Bajo | Nulo |
 | 3.2 | ~~**Rofi** — tema y comportamiento~~ **[OK] Completada** | Bajo | Nulo |
 | 3.3 | ~~**yazi** — atajos, previsualizaciones~~ **[OK] Completada** | Bajo | Nulo |
-| 3.4 | **Dolphin** — solo archivos versionables | Medio | Bajo |
+| 3.4 | ~~**Dolphin** — solo archivos versionables~~ **[OK] Completada** | Medio | Bajo |
 | 3.5 | **Theming GTK/Qt coherente** con `nwg-look` | Medio | Bajo |
 | 3.6 | **Spotify** — versionar `spotify-flags.conf` como paquete Stow | Trivial | Nulo |
 | 3.7 | **npm** — versionar `~/.npmrc` como paquete Stow | Trivial | Nulo |
@@ -235,8 +235,11 @@ ancho necesario es la suma de dibujo y texto, y arriba es el máximo de los dos.
 Ya está instalada la fuente `ttf-jetbrains-mono-nerd` y el tema de iconos
 `papirus-icon-theme`, así que hay base para una estética unificada.
 
-En 3.4, cuidado: Dolphin genera muchos archivos de estado y cachés. Versionar
-solo lo relevante (`dolphinrc`, atajos), nunca el directorio completo.
+~~En 3.4, cuidado: Dolphin genera muchos archivos de estado y cachés. Versionar
+solo lo relevante (`dolphinrc`, atajos), nunca el directorio completo.~~
+**Medido al hacer la 3.4 y era falso para Dolphin 26.08**: no esparce nada —cero
+`.directory` en todo el `$HOME`— y el problema resultó ser el contrario, que no
+escribe los ajustes de vista en ningún sitio. Ver la 3.4.
 
 Rofi (3.2) y yazi (3.3) heredan la ventaja de la 3.0: se configuran con
 plantilla y no llegan a tener colores propios. Rofi admite `@import` y yazi no,
@@ -334,6 +337,45 @@ tema, generado. Detalle en `docs/PROJECT_CONTEXT.md` §19.
 > modo que bajo `script` el `theme.toml` no se lee en absoluto — se puede dejar
 > con TOML roto y no protesta ni con `YAZI_LOG=debug`. La verificación buena es
 > abrirlo en kitty y mirarlo. Detalle en §19.
+
+**3.4 Dolphin.** **[OK] Completada (2026-09-16).** Decimoséptimo paquete Stow:
+`dolphinrc`, el `.directory` global de propiedades de vista y `user-places.xbel`,
+enlazados con `--no-folding`. Sin paquetes nuevos y sin servicios. Detalle en
+`docs/PROJECT_CONTEXT.md`.
+
+> **La tarea no era migrar una configuración, era crearla.** Dolphin estaba en
+> valores de fábrica salvo la barra de menú oculta: 178 bytes de `dolphinrc` en
+> los que lo único elegido era `MenuBar=Disabled`. Mismo patrón que Kitty, Rofi
+> y yazi — nace ya versionado. Lo elegido: vista de Detalles, archivos ocultos
+> visibles, carpetas primero y doble clic.
+
+> ⚠️ **Los ajustes de vista no se guardan en ningún archivo por sí solos.**
+> Medido: cambiar a Detalles y mostrar los ocultos no escribió ni `dolphinrc` ni
+> ningún `.directory`. Lo único que cambió fue el estado de sesión
+> (`~/.config/session/dolphin_dolphin_dolphin`, con `RememberOpenedTabs=true` de
+> fábrica), y por eso los ajustes PARECEN persistir aunque no haya nada que
+> versionar. El archivo que sí manda —`view_properties/global/.directory`— hay
+> que escribirlo a mano; Dolphin entonces lo lee y lo obedece.
+
+> ⚠️ **Sin `Version=4`, Dolphin BORRA ese archivo al cerrarse.** Una sonda sin
+> esa clave (valor por defecto `-1`, versión desconocida) se aplicó bien al
+> arrancar y desapareció al salir. Enlazado con Stow eso es grave: el borrado se
+> lleva el symlink por delante, así que la configuración habría aplicado UNA vez
+> por cada `stow` y luego nada, en silencio y con Dolphin funcionando igual. Con
+> `Version=4` sobrevive intacto: mismo md5 y mismo inodo tras una sesión real.
+
+> **Los dos motores de escritura respetan los symlinks**, verificado con el
+> proceso real de Dolphin y no con un sucedáneo: KConfig (`dolphinrc`) y
+> KBookmarkManager (`user-places.xbel`) escriben a través del enlace y lo dejan
+> intacto, aunque reemplacen el archivo de destino. Por eso el paquete es un
+> paquete Stow normal y no hizo falta desplegarlo por copia.
+
+> **Fuera del paquete a propósito:** `kdeglobals` y `kiorc`, que son de todo
+> Qt/KDE y no de Dolphin — y `kdeglobals` es justo donde escribirá la 3.5. El
+> doble clic no necesitó configuración: `SingleClick` está ausente, que ya es el
+> defecto. **El panel de terminal (`F4`) se descartó**: necesita `konsolepart.so`
+> del paquete `konsole`, que no está instalado, y no se quiso un segundo
+> emulador de terminal en un equipo cuyo terminal es kitty.
 
 **3.6 Spotify.** Instalado desde AUR (`paru -S spotify`) el 2026-08-02. El
 2026-08-03 se creó a mano `~/.config/spotify-flags.conf` para forzar Wayland

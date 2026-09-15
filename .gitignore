@@ -49,6 +49,8 @@ dotfiles/claude/.claude/*
 *.tmp
 *.swp
 *~
+# KDE los deja junto a los .xbel de marcadores (KBookmarkManager)
+*.tbcache
 .cache/
 **/.cache/
 __pycache__/

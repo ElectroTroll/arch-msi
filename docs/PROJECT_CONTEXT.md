@@ -1158,6 +1158,48 @@ un único listener es justamente lo que permite garantizar el orden.
     `fastfetch` (§18), y la inversa de la de `~/Wallpapers` (§17), que sí
     quiere el plegado. Afecta igual a `bin/` e `icons/`, que también cuelgan
     de `~/.local`.
+- **Paquete Stow añadido por la tarea 3.4** (2026-09-16):
+  - **dolphin** → `dotfiles/dolphin/` (`.config/dolphinrc`,
+    `.local/share/dolphin/view_properties/global/.directory` y
+    `.local/share/user-places.xbel`). Decimoséptimo paquete. **No añade ningún
+    requisito a `install/services.sh`** ni ningún paquete a `packages/`:
+    Dolphin ya estaba instalado y la tarea no instaló nada.
+    ⚠️ **Los ajustes de vista de Dolphin NO se guardan en ningún archivo por sí
+    solos.** Medido el 2026-09-16: cambiar el modo de vista y mostrar los
+    ocultos no escribe ni `dolphinrc` ni ningún `.directory`; lo único que
+    cambia es `~/.config/session/dolphin_dolphin_dolphin`, el estado de sesión
+    (`RememberOpenedTabs` viene en `true`). Por eso los ajustes PARECEN
+    persistir aunque no exista nada que versionar. El archivo que sí manda hay
+    que escribirlo a mano, y entonces Dolphin lo lee y lo obedece.
+    ⚠️ **`Version=4` es obligatorio en ese `.directory`: sin esa clave, Dolphin
+    lo BORRA al cerrarse.** Una sonda sin ella (valor por defecto `-1`, versión
+    desconocida) se aplicó bien al arrancar y desapareció al salir. Enlazado con
+    Stow eso es grave: el borrado se lleva el symlink, así que la configuración
+    aplicaría UNA vez por cada `stow` y luego nada, en silencio. Con `Version=4`
+    sobrevive intacto — mismo md5 y mismo inodo tras una sesión real.
+    ⚠️ **`HiddenFilesShown` va en el grupo `[Settings]`** y todo lo demás en
+    `[Dolphin]`. La fuente de los valores es
+    `/usr/share/config.kcfg/dolphin_directoryviewpropertysettings.kcfg`, y ahí
+    consta que `ViewMode` es 0 iconos, **1 detalles** y 2 columnas.
+    ⚠️ **Enlazado con `--no-folding`**, para que
+    `~/.local/share/dolphin/view_properties/global` siga siendo un directorio
+    real: si Stow lo plegara, lo que Dolphin escribiera dentro caería en el
+    repositorio. Misma trampa que en `yazi`, `wlogout` y `fastfetch` (§18), y
+    con el mismo aviso que `minecraft`: en un equipo limpio hay que crear los
+    directorios ANTES de invocar a Stow.
+    **Los dos motores de escritura respetan los symlinks**, verificado con el
+    proceso real de Dolphin: KConfig (`dolphinrc`) y KBookmarkManager
+    (`user-places.xbel`) escriben a través del enlace y lo dejan intacto, aunque
+    reemplacen el archivo de destino. Por eso es un paquete Stow normal.
+    **`GlobalViewProps` ya vale `true` por defecto** en Dolphin 26.08, así que
+    no hay que activarlo y Dolphin NO esparce archivos `.directory` por el
+    `$HOME`: cero en todo el árbol, comprobado. La advertencia contraria que
+    llevaba el roadmap era de versiones antiguas.
+    **Fuera del paquete a propósito**: `kdeglobals` y `kiorc`, que son de todo
+    Qt/KDE y no de Dolphin — `kdeglobals` es además donde escribirá la 3.5. El
+    doble clic no necesitó configuración: `SingleClick` está ausente, que ya es
+    el defecto. **El panel de terminal (`F4`) se descartó**: necesita
+    `konsolepart.so`, del paquete `konsole`, que no está instalado.
 - **Paquetes que dejaron de enlazar parte de su config**, porque su formato no
   admite incluir un fragmento y se genera entera (§18): `waybar` (conserva solo
   `claude-usage.sh`), `wlogout` (conserva solo `layout`) y `fastfetch` (que por
@@ -1219,8 +1261,8 @@ un único listener es justamente lo que permite garantizar el orden.
 - **Ya no queda ninguno sin config.** Esta línea decía «sin config todavía:
   `kitty`, `rofi`, `yazi`» y se quedó vieja sin que nada avisara: kitty se
   configuró en la 3.1, rofi en la 3.2 y yazi en la 3.3, los tres con paquete
-  Stow propio. De la fase 3 quedan Dolphin (3.4), el theming GTK/Qt (3.5),
-  Spotify (3.6) y npm (3.7).
+  Stow propio. Dolphin se configuró en la 3.4, también con paquete propio. De la
+  fase 3 quedan el theming GTK/Qt (3.5), Spotify (3.6) y npm (3.7).
 
 ### Dónde vive un script ejecutable (convención del repositorio)
 
