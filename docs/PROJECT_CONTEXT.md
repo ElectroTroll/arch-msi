@@ -19,6 +19,11 @@ en `packages/`, `wtype ""` sale con código 0 (Hyprland expone el protocolo) y e
 usuario confirma que `Super + G` escribe en Obsidian **tecleando**, comprobado
 aparte de la copia: el carácter aparece sin tocar `Ctrl+V`. Diagnóstico en
 `history/2026-09-15-simbolos-griegos.md`).
+El mismo día se investigó, sin tocar el sistema, que **Arch no siempre arranca a
+la primera**: se congela en la carga de GRUB y hay que apagar a botonazo. §4
+gana un **[PEND]** con la medida y la anomalía —un initramfs de **221 MB** por el
+firmware de NVIDIA—; la corrección queda **propuesta y sin aplicar**, y la causa
+**sin probar**. En `history/2026-09-15-cuelgue-arranque-initramfs.md`.
 Antes: 2026-09-14, al final del día (**Spotify se subía el volumen
 solo** — §30 gana el apartado de `OBJETIVOS_MPRIS`: al cambiar de canción el
 volumen volvía al 100 %, y **el mezclador no tenía la culpa** —pasa igual con el
@@ -317,6 +322,19 @@ antes y después de la actualización de 221 paquetes).
   así que los initramfs se construyen con los módulos NVIDIA ya compilados. Con
   `MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)` en `mkinitcpio.conf`,
   el orden inverso dejaría el arranque sin driver.
+- **[PEND] Arranque intermitente sin resolver (2026-09-15).** Cada cierto tiempo,
+  al elegir Arch en GRUB el equipo **se congela en el texto de carga del
+  bootloader** y solo sale manteniendo pulsado el botón de encendido y
+  reintentando varias veces. Medido: un hueco de **10 min 40 s** donde un
+  reinicio normal tarda **16–18 s**, y **cero traza en el journal**. La anomalía
+  señalada es el tamaño del initramfs —**221 MB**, porque ese mismo
+  `MODULES=(nvidia …)` arrastra los **112 MB** de firmware GSP que declara
+  `modinfo nvidia`—, que obliga a GRUB a leer **~252 MB** por Btrfs `zstd:3`
+  antes de que el kernel imprima una letra. **La causa no está probada** (GRUB no
+  deja log) y **no se ha corregido nada**: la propuesta es vaciar `MODULES`, y
+  está sin aplicar. Si se aplicara, la frase del punto anterior sobre el orden de
+  los hooks dejaría de aplicar. Medidas, descartes y comandos de comprobación en
+  [`history/2026-09-15-cuelgue-arranque-initramfs.md`](history/2026-09-15-cuelgue-arranque-initramfs.md).
 - **Tras actualizar el kernel hay que reiniciar antes de seguir trabajando.**
   Pacman borra `/usr/lib/modules/<versión-vieja>`, así que el kernel en
   ejecución se queda sin árbol de módulos: lo ya cargado sigue funcionando,
@@ -1239,6 +1257,10 @@ es un symlink, está mal colocado.
 Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
 
 - Crear configs propias para Kitty, Rofi y yazi, y migrarlas a Stow.
+- **Decidir qué hacer con el arranque intermitente de §4.** El diagnóstico está
+  hecho y la corrección es una línea de `mkinitcpio.conf`, pero **no se ha
+  aplicado**: es decisión del usuario, y validarla exige una tanda larga de
+  reinicios (tasa de fallo observada ≈ 1 de cada 6).
 - **Estado que vive fuera del repositorio y que una restauración NO recupera.**
   **Cinco** agujeros con el mismo final: el fallo es **silencioso**, nada avisa
   de que falta el paso. En los dos primeros los archivos vuelven a su sitio pero
