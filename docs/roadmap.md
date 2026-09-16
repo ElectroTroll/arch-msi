@@ -165,7 +165,7 @@ validado.
 | 3.3 | ~~**yazi** — atajos, previsualizaciones~~ **[OK] Completada** | Bajo | Nulo |
 | 3.4 | ~~**Dolphin** — solo archivos versionables~~ **[OK] Completada** | Medio | Bajo |
 | 3.5 | **Theming GTK/Qt coherente** con `nwg-look` | Medio | Bajo |
-| 3.6 | **Spotify** — versionar `spotify-flags.conf` como paquete Stow | Trivial | Nulo |
+| 3.6 | ~~**Spotify** — versionar `spotify-flags.conf` como paquete Stow~~ **[OK] Completada** | Trivial | Nulo |
 | 3.7 | **npm** — versionar `~/.npmrc` como paquete Stow | Trivial | Nulo |
 | 3.8 | ~~**fastfetch** — config propia dentro del tema~~ **[OK] Completada** | Bajo | Nulo |
 
@@ -377,15 +377,25 @@ enlazados con `--no-folding`. Sin paquetes nuevos y sin servicios. Detalle en
 > del paquete `konsole`, que no está instalado, y no se quiso un segundo
 > emulador de terminal en un equipo cuyo terminal es kitty.
 
-**3.6 Spotify.** Instalado desde AUR (`paru -S spotify`) el 2026-08-02. El
-2026-08-03 se creó a mano `~/.config/spotify-flags.conf` para forzar Wayland
-nativo: en XWayland la app se veía borrosa por la escala 1.60 del panel (detalle
-en `docs/PROJECT_CONTEXT.md` §7). Ese archivo **no está versionado**, así que
-una restauración deja el problema otra vez sin avisar. Es el mismo tipo de
-agujero silencioso que la 6.1, pero aquí basta con un **octavo** paquete Stow
-(`dotfiles/spotify/`), no con `install/services.sh`. Corregir el síntoma ya está
-hecho; falta solo meterlo en el repo.
-(Era el «séptimo» hasta que la tarea 2.2 ocupó ese número con `dotfiles/dunst/`.)
+**3.6 Spotify.** **[OK] Completada (2026-09-16).** Instalado desde AUR
+(`paru -S spotify`) el 2026-08-02. El 2026-08-03 se creó a mano
+`~/.config/spotify-flags.conf` para forzar Wayland nativo: en XWayland la app se
+veía borrosa por la escala 1.60 del panel (detalle en
+`docs/PROJECT_CONTEXT.md` §7). Ese archivo **no estaba versionado**, así que una
+restauración devolvía el problema sin avisar. Ahora es el **decimoctavo**
+paquete Stow (`dotfiles/spotify/`): 211 bytes, sin lógica y sin nada que
+generar. Validado con la app abierta —el wrapper imprime
+`User flags: --ozone-platform=wayland …` y `hyprctl clients` da `class=spotify`
+con `xwayland: false`—, no solo con el enlace en disco.
+
+> ⚠️ **`stow -d dotfiles` depende del directorio desde el que se ejecuta**, y
+> equivocarse **no da ningún error**. En el primer intento los comandos se
+> lanzaron desde `$HOME` en vez del repo: `mkdir -p dotfiles/spotify/.config`
+> creó un `~/dotfiles/` **nuevo** y Stow enlazó desde ahí. Spotify funcionaba
+> igual, porque el contenido era correcto; pero el repositorio seguía vacío,
+> `git status` no mostraba nada y la tarea parecía hecha con el agujero abierto.
+> Lo delata el destino del enlace: debe ser
+> `../Projects/arch-msi/dotfiles/...`, no `../dotfiles/...`.
 
 **3.7 npm.** Detectada el 2026-08-27 auditando la 2.5. `~/.npmrc` contiene
 `prefix=/home/elok/.local`, que es lo que permite `npm -g` **sin sudo** y lo que

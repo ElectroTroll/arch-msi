@@ -713,16 +713,17 @@ Diagnóstico completo: `history/2026-09-12-lapiz-dos-pantallas.md`.
   ```
 
 - Verificado tras reiniciar la app: `hyprctl clients` → `xwayland: False`.
-  **[OK]** · Nitidez a ojo: **[VER]** (pendiente de confirmación visual).
+  **[OK]** · Nitidez a ojo: **[OK]**, confirmada visualmente el 2026-09-16.
 - **La clase de ventana cambia con el backend:** `Spotify` en X11 →
   `spotify` en Wayland. Ninguna `windowrule` de `hyprland.lua` ni módulo de
   Waybar la usaba, pero cualquier regla futura debe escribirse en minúscula.
 - Alternativa **descartada**: `xwayland:force_zero_scaling = true` (global,
   hoy en `false`) más `--force-device-scale-factor` por app. Afectaría a todas
   las apps X11 y obligaría a escalar cada una a mano.
-- ⚠️ **`~/.config/spotify-flags.conf` no está versionado** (no es paquete
-  Stow todavía). Tras una restauración, Spotify vuelve a verse borroso. Ver
-  §14.
+- **[OK] `~/.config/spotify-flags.conf` está versionado** desde el 2026-09-16:
+  paquete Stow `dotfiles/spotify/` (roadmap 3.6). Tras una restauración basta
+  `stow -d dotfiles -t ~ spotify` **desde la raíz del repo**. Ya no es uno de
+  los agujeros silenciosos de §14.
 
 ## 8. Audio, Bluetooth y sesión  **[OK]**
 
@@ -1262,7 +1263,8 @@ un único listener es justamente lo que permite garantizar el orden.
   `kitty`, `rofi`, `yazi`» y se quedó vieja sin que nada avisara: kitty se
   configuró en la 3.1, rofi en la 3.2 y yazi en la 3.3, los tres con paquete
   Stow propio. Dolphin se configuró en la 3.4, también con paquete propio. De la
-  fase 3 quedan el theming GTK/Qt (3.5), Spotify (3.6) y npm (3.7).
+  fase 3 quedan el theming GTK/Qt (3.5) y npm (3.7); Spotify (3.6) se cerró el
+  2026-09-16 con `dotfiles/spotify/`.
 
 ### Dónde vive un script ejecutable (convención del repositorio)
 
@@ -1304,9 +1306,10 @@ Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
   aplicado**: es decisión del usuario, y validarla exige una tanda larga de
   reinicios (tasa de fallo observada ≈ 1 de cada 6).
 - **Estado que vive fuera del repositorio y que una restauración NO recupera.**
-  **Cinco** agujeros con el mismo final: el fallo es **silencioso**, nada avisa
+  **Cuatro** agujeros con el mismo final: el fallo es **silencioso**, nada avisa
   de que falta el paso. En los dos primeros los archivos vuelven a su sitio pero
-  nada los activa; en los tres últimos el archivo ni siquiera vuelve.
+  nada los activa; en los dos últimos el archivo ni siquiera vuelve.
+  (Eran cinco: `spotify-flags.conf` se cerró el 2026-09-16, roadmap 3.6.)
   - `hypridle.service`: el `enable` solo deja rastro en
     `packages/services-enabled.txt`. Sin rehabilitarlo, la sesión no se
     bloquea sola nunca (ver §9).
@@ -1316,10 +1319,6 @@ Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
     versionado y se enlaza con Stow, pero quien lo invoca es este archivo, que
     **no** se versiona porque contiene credenciales y estado de sesión. Sin él,
     el módulo de uso de Claude en Waybar se queda en `—` para siempre.
-  - `~/.config/spotify-flags.conf`: creado a mano el 2026-08-03 y **no
-    versionado**. Sin él, Spotify arranca en XWayland y se ve borroso otra vez
-    (ver §7). Se arregla haciéndolo paquete Stow (`dotfiles/spotify/`), no con
-    `install/services.sh`.
   - `~/.npmrc` (`prefix=/home/elok/.local`): **detectado el 2026-08-27**, en la
     auditoría de la tarea 2.5. Es lo que permite instalar globales de npm **sin
     sudo** y lo que pone a Codex CLI en `~/.local/lib/node_modules` (§10). No
