@@ -4292,8 +4292,23 @@ justamente la parte que no se puede probar sin tocar el aparato.
 
 ### Pendientes
 
-- **Discord**: el nombre que publica no está confirmado en Arch porque no estaba
-  sonando durante las pruebas. `--listar` lo enseña con la app sonando.
+- ~~**Discord**: el nombre que publica no está confirmado en Arch.~~
+  **Confirmado el 2026-09-15** con Discord 1.0.157 sonando: el flujo publica
+  `application.process.binary = "Discord"`, que casa con el `discord` del
+  `SLIDER_MAP`, así que el slider 4 lo coge.
+  > ⚠️ **Y destapó un fallo en «resto», ya corregido.** Ese mismo flujo publica
+  > ADEMÁS `application.name = node.name = "WEBRTC VoiceEngine"`, un alias que
+  > no está asignado a ningún slider. Como «resto» se calculaba **nombre a
+  > nombre**, ese alias suelto colaba el flujo de Discord en el grupo de los no
+  > asignados: Discord acababa movido por DOS sliders a la vez, el suyo y el de
+  > los juegos. Medido con Discord y Minecraft sonando, «resto» alcanzaba los
+  > sink-input 13303 (Discord) y 13712 (java).
+  >
+  > El arreglo cambia el criterio: **«resto» se decide por FLUJO, no por
+  > nombre**. Un flujo es del resto solo si NINGUNO de sus nombres está
+  > asignado, lo que de paso protege igual a `EXCLUIDOS_DE_RESTO` —un intocable
+  > con un alias suelto ya no se cuela—. El backend guarda ahora el mapa
+  > `índice -> nombres` para poder preguntárselo.
 - **OBS**: no está instalado en el portátil, así que sus hotkeys no se han
   probado aquí. Aviso heredado: bajo Wayland los atajos globales solo llegan si
   OBS corre en XWayland (`env -u WAYLAND_DISPLAY obs`).

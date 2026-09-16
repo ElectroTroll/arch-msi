@@ -97,9 +97,12 @@ SLIDER_MAP = {
     3: ["resto"],
 
     # slider 4 -> Discord (confirmado en Windows; abre 2 sesiones y se
-    #             controlan las dos). En Arch esta instalado el Discord oficial,
-    #             pero no se ha podido confirmar el nombre porque no estaba
-    #             sonando: comprueba con --listar la primera vez que lo uses.
+    #             controlan las dos). En Arch tambien confirmado (2026-09-15,
+    #             Discord oficial 1.0.157): el flujo publica
+    #             application.process.binary = "Discord", asi que casa con
+    #             "discord". Publica ademas application.name = node.name =
+    #             "WEBRTC VoiceEngine"; ese alias no va aqui a proposito
+    #             (ver _indices_resto en el backend de Linux).
     4: ["discord", "vesktop", "webcord", "armcord"],
 }
 
@@ -490,6 +493,7 @@ class BackendLinux:
                   "al cambiar de cancion."
                   % ", ".join(sorted(OBJETIVOS_MPRIS)))
         self._entradas = {}   # nombre normalizado -> [indices de sink-input]
+        self._nombres_de_indice = {}   # indice de sink-input -> {nombres}
         self.refrescar()
 
     def _pactl(self, *args):
@@ -499,12 +503,15 @@ class BackendLinux:
 
     def refrescar(self):
         entradas = {}
+        por_indice = {}
         for indice, nombres in self._leer_sink_inputs():
+            por_indice.setdefault(indice, set()).update(nombres)
             for n in nombres:
                 entradas.setdefault(n, [])
                 if indice not in entradas[n]:
                     entradas[n].append(indice)
         self._entradas = entradas
+        self._nombres_de_indice = por_indice
 
     def _nombres_de(self, propiedades):
         """Nombres normalizados con los que se puede referir un flujo de audio.
@@ -621,9 +628,34 @@ class BackendLinux:
             return False   # en PipeWire no existe una sesion "sonidos del sistema"
 
         if obj == "resto":
-            return self._aplicar_indices(self._indices_de(no_asignadas), valor)
+            return self._aplicar_indices(self._indices_resto(no_asignadas), valor)
 
         return self._aplicar_indices(self._entradas.get(obj, []), valor)
+
+    def _indices_resto(self, no_asignadas):
+        """Indices de los FLUJOS que no tiene asignados ningun slider.
+
+        Ojo: "resto" se decide por flujo, no por nombre. Un mismo flujo se
+        publica con varios nombres y basta con que UNO este asignado para que
+        el flujo no sea del resto. Discord es el caso: publica
+        application.process.binary = "Discord" (asignado al slider 4) y
+        application.name = "WEBRTC VoiceEngine" (que no esta asignado a
+        nada). Mirando nombre a nombre, ese alias suelto colaba el flujo de
+        Discord en "resto", y acababa movido por dos sliders a la vez: el
+        suyo y el de los juegos. Medido el 2026-09-15 en el portatil con
+        Discord y Minecraft sonando: "resto" alcanzaba los sink-input
+        13303 (Discord) y 13712 (java).
+
+        Tambien protege a EXCLUIDOS_DE_RESTO por la misma razon: un flujo
+        intocable con un alias suelto ya no se cuela aqui.
+        """
+        indices = []
+        for indice, nombres in self._nombres_de_indice.items():
+            # nombres <= no_asignadas  <=>  ninguno de sus nombres esta
+            # asignado a un slider ni en la lista de intocables.
+            if nombres and nombres <= no_asignadas:
+                indices.append(indice)
+        return sorted(indices)
 
     def _indices_de(self, nombres):
         """Indices de sink-input de varios nombres, SIN repetir.
