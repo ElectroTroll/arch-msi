@@ -287,8 +287,8 @@ if not ok or type(theme) ~= "table" then
         shadow = "rgba(000000ee)",
         border_size = 2, rounding = 10, gaps_in = 5, gaps_out = 20,
         opacity_surface = 0.80,
-        opacity_window_active = 0.90, opacity_window_inactive = 0.75,
-        blur_size = 8, blur_passes = 3, blur_brightness = 0.80,
+        opacity_window_active = 1, opacity_window_inactive = 0.80,
+        blur_size = 3, blur_passes = 3, blur_brightness = 0.80,
         blur_contrast = 0.90, blur_vibrancy = 0.1696, blur_noise = 0.0117,
     }
 end

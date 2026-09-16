@@ -43,12 +43,12 @@ return {
     -- Opacidad de las VENTANAS, que la aplica Hyprland al conjunto y no al
     -- color de una superficie: son los valores de HyDE ([opacity] de
     -- tokens.toml). No se mezclan con `opacity_surface`, que es otra cosa.
-    opacity_window_active   = 0.92,
-    opacity_window_inactive = 0.75,
+    opacity_window_active   = 1,
+    opacity_window_inactive = 0.8,
     -- Desenfoque del fondo tras las ventanas translúcidas ([blur] de
     -- tokens.toml). Va aquí y no cableado en hyprland.lua por lo de siempre:
     -- un valor, un sitio.
-    blur_size       = 4,
+    blur_size       = 3,
     blur_passes     = 3,
     blur_brightness = 0.8,
     blur_contrast   = 0.9,

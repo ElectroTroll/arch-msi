@@ -57,8 +57,10 @@ apareció lo interesante:
 > Con 0.80, lo que queda detrás se oscurece y el texto claro del tema gana
 > contraste. Difuminar más solo emborrona; oscurecer separa.
 
-Los valores finales, tras un par de ajustes del usuario: `size 4`, `passes 3`,
-`brightness 0.80`.
+Los valores al cerrar ese día: `size 4`, `passes 3`, `brightness 0.80`. **Al día
+siguiente el usuario los llevó a `size 3` y dejó la ventana activa OPACA (1)**,
+ya con el escritorio en uso: trabajar sobre un fondo que se transparenta cansa.
+Con la activa opaca el blur solo se percibe en las inactivas y en la barra.
 
 ⚠️ Al añadir la sección `[blur]` a `tokens.toml` se partió `[opacity]` por la
 mitad y **ocho de sus claves acabaron dentro de la nueva sección**. Matugen se

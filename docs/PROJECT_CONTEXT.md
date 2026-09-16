@@ -4816,14 +4816,20 @@ Así que `theme-apply` genera la suya: copia la variante azul a
 
 | Token | Valor | Qué es |
 |---|---|---|
-| `[opacity].window_active` | 0.92 | ventana enfocada |
-| `[opacity].window_inactive` | 0.75 | las de detrás |
-| `[blur].size` | 4 | radio del desenfoque |
+| `[opacity].window_active` | **1** | ventana enfocada: opaca |
+| `[opacity].window_inactive` | 0.80 | las de detrás |
+| `[blur].size` | 3 | radio del desenfoque |
 | `[blur].passes` | 3 | pasadas |
 | `[blur].brightness` | 0.80 | **lo que más ayuda a leer** |
 
 ⚠️ `brightness` por debajo de 1 hace más por la legibilidad que subir el
 desenfoque: oscurece lo que queda detrás, así que el texto claro gana contraste.
+
+⚠️ **Con la activa en 1, el blur no se ve en ella**: no hay nada translúcido que
+desenfocar. Sigue actuando donde queda transparencia —ventanas inactivas, barra y
+notificaciones—, así que `[blur]` no es código muerto, pero deja de notarse en la
+ventana que uno mira. Los valores de HyDE eran 0.90/0.75; se ajustaron con el
+escritorio en uso (2026-09-17).
 
 ⚠️ `[opacity].surface` (0.80) y estas dos NO son lo mismo y por eso son tokens
 distintos: aquella tiñe superficies que dibuja una aplicación metiendo alfa en
