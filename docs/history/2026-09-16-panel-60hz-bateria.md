@@ -151,9 +151,39 @@ Dos cosas, y las dos exigen desenchufar de verdad:
   corrige igual: el peor caso es que tarde hasta un minuto. Al desenchufar debe
   saltar la notificación «Panel a 60 Hz».
 - **Cuánto ahorra.** No se ha medido y no se pone una cifra inventada. Se mide
-  desenchufado y con la pantalla quieta, comparando
-  `/sys/class/power_supply/BAT1/power_now` (µW) entre `power-saver` (60 Hz) y
-  `balanced` (165 Hz), con unos 30 s de margen tras cada cambio.
+  desenchufado y con la pantalla quieta, comparando el consumo entre los dos
+  modos —forzándolos con `hyprctl eval` y con el demonio parado, para que el
+  perfil no contamine la medida—.
+
+## 10. Epílogo del mismo día: el cable, y un archivo que no existe
+
+Minutos después de dar la tarea por cerrada, el usuario desenchufó el portátil.
+`panel-hz --status`: `AC enchufado: no`, perfil `power-saver`, panel **a 60 Hz**.
+El primer punto de §9 queda observado en condiciones reales y sin montar ninguna
+prueba. Lo que **no** se puede afirmar es si lo disparó el uevent o el sondeo de
+respaldo: el log no lleva marcas de tiempo y nadie cronometró el tirón del cable.
+
+El segundo punto se llevó una corrección más fea, porque el error estaba escrito
+en la documentación que se acababa de commitear: **esta batería no expone
+`power_now`**. `/sys/class/power_supply/BAT1/` tiene `current_now` (µA) y
+`voltage_now` (µV); la potencia hay que calcularla. Lo que se había dado por
+supuesto —que el archivo estándar estaría ahí— se cayó al primer `cat`.
+
+Y de esa lectura salió un dato que no se buscaba:
+
+| Medida (2026-09-16, en batería) | Valor |
+|---|---|
+| Consumo | **23,74 W** (1,540 A × 14,913 V) |
+| Carga restante | 2473 de 4410 mAh (56 %) |
+| `runtime_status` de la dGPU | **`active`** |
+| Salidas | `eDP-1` **y `HDMI-A-1`** |
+| Brillo | 52 % |
+
+O sea: el monitor externo seguía conectado, y el HDMI cuelga de la NVIDIA (§6),
+que por eso estaba despierta **en batería**. 23,74 W dan hora y media larga con
+la carga que quedaba. No invalida nada de lo anterior —en clase no habrá monitor
+externo—, pero sí coloca el ahorro del panel en su sitio: con la dGPU despierta,
+los Hz de la pantalla no son el principal culpable.
 
 Queda también sin tocar la pregunta de fondo del encargo —*en clase dura
 poco*—: el panel es un sospechoso, no el único. La dGPU con RTD3 (§6) es el

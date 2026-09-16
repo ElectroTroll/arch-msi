@@ -12,8 +12,13 @@ que re-aplica la regla de eDP-1 y **deshacía el ahorro en silencio**, así que 
 escucha también `configreloaded` además del enchufe (uevent del kernel, no
 UPower) y del `ActiveProfile` de power-profiles-daemon. Se descarta la regla de
 udev, que correría como root y fuera de la sesión. Queda **sin medir** cuánto
-ahorra —hace falta desenchufar y comparar `power_now`— y sin despejar si la
-autonomía corta en clase tiene más culpables, la dGPU entre ellos (§6).
+ahorra. El cable salió de verdad pocos minutos después, y el panel **bajó solo a
+60 Hz**, aunque no se pudo distinguir si lo disparó el uevent o el sondeo de
+respaldo. De paso cayó una suposición escrita en esta misma actualización:
+**esta batería no expone `power_now`**, solo `current_now` y `voltage_now`, y la
+potencia hay que calcularla (§15). Con el monitor externo aún conectado el
+equipo tiraba **23,74 W** y la dGPU estaba **`active`**, que es el otro
+sospechoso de la autonomía corta (§6) y con diferencia el mayor de los dos.
 Diagnóstico en `history/2026-09-16-panel-60hz-bateria.md`).
 Antes: 2026-09-15 (**escribir Δ y γ sin tenerlas en el teclado**
 — §31 nueva: selector de símbolos en `Super + G`, 96 entradas buscables por
@@ -1352,18 +1357,23 @@ Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
   hacer la próxima vez que ocurra.
 - Estado de autenticación de Claude Code (no comprobado; no exponer credenciales).
 - **[VER] Cuánto ahorra bajar el panel de 165 Hz a 60 Hz.** El cambio automático
-  ya está en marcha (§32) pero **el ahorro no se ha medido**, porque medirlo
-  exige desenchufar y desde una terminal no se puede. Prueba: desenchufado y con
-  la pantalla quieta, comparar `/sys/class/power_supply/BAT1/power_now` (en µW)
-  entre `power-saver` (60 Hz) y `balanced` (165 Hz), con ~30 s de margen tras
-  cada cambio. Queda igual de abierto si el panel es el principal culpable de la
-  autonomía corta en clase, o si pesa más la dGPU (§6).
-- **[VER] Que el uevent de desconexión de la corriente llegue al demonio de
-  §32.** Toda la cadena se validó con el gancho `PANEL_HZ_SIMULA_BATERIA=1`, que
-  salta la lectura de sysfs; la señal real del kernel al tirar del cable no se ha
-  visto llegar. Si no llegara, el sondeo de respaldo de 60 s lo corrige igual.
-  Prueba: desenchufar en `power-saver` y ver si salta la notificación «Panel a
-  60 Hz» al momento o hasta un minuto después.
+  ya está en marcha (§32) pero **el ahorro no se ha medido**: hace falta dejar el
+  equipo quieto en batería y comparar el consumo entre los dos modos, forzándolos
+  con `hyprctl eval` y con el demonio parado, para que el perfil no contamine la
+  medida.
+  > ⚠️ **Esta batería NO expone `power_now`.** `/sys/class/power_supply/BAT1/`
+  > tiene `current_now` (µA) y `voltage_now` (µV), y la potencia hay que
+  > calcularla: `current_now/1e6 * voltage_now/1e6` da los vatios. Comprobado el
+  > 2026-09-16, después de haber escrito `power_now` en esta misma sección: el
+  > archivo no existe.
+- ~~**[VER] Que el uevent de desconexión de la corriente llegue al demonio de
+  §32.**~~ **Observado el 2026-09-16**, minutos después de instalarlo y sin
+  buscarlo: el usuario desenchufó y `panel-hz --status` daba `AC enchufado: no`,
+  perfil `power-saver` y el panel **ya a 60 Hz**, con la línea correspondiente en
+  el log del demonio. Lo que **no** se puede afirmar es cuál de los dos caminos
+  lo disparó, el uevent o el sondeo de respaldo: el log no lleva marcas de
+  tiempo y no se cronometró el momento de tirar del cable. Para la práctica da
+  igual —el ahorro entra solo—, pero la distinción sigue sin comprobarse.
 - **[VER] Si algún puerto USB-C saca vídeo por la iGPU.** La Intel expone
   `DP-1`, `DP-2` y `DP-3`, que deberían corresponder a las salidas DisplayPort
   alt-mode de los Type-C, pero **no se ha conectado nada por ahí**. Si
@@ -4406,9 +4416,19 @@ Comprobado el 2026-09-16 con el gancho de batería simulada, leyendo
 `stow -n` da **un solo `LINK` y cero conflictos**, la segunda instancia sale por
 el cerrojo y al matar el demonio no quedan procesos huérfanos.
 
-**Sin comprobar** quedan dos cosas, las dos exigen desenchufar de verdad: que el
-uevent de desconexión llegue —si no llegara, el sondeo lo corrige en menos de un
-minuto— y **cuánto ahorra**, que se mide comparando
-`/sys/class/power_supply/BAT1/power_now` entre los dos modos. Ver §15.
+**Comprobado con el cable fuera el mismo día**: al desenchufar, el panel pasó a
+60 Hz solo. No se pudo distinguir si lo disparó el uevent o el sondeo de
+respaldo; ver §15.
+
+**Sin comprobar** sigue **cuánto ahorra**. Y ojo con cómo se mide: esta batería
+**no expone `power_now`**, solo `current_now` (µA) y `voltage_now` (µV), así que
+la potencia se calcula multiplicándolos. Ver §15.
+
+Una medición suelta del 2026-09-16, que no responde a la pregunta pero sitúa el
+orden de magnitud: en batería, a 60 Hz, con el **monitor externo HDMI
+conectado** y la dGPU en `active` —el HDMI cuelga de ella (§6)—, el equipo tiraba
+**23,74 W**. Con ~36 Wh de carga restante eso es hora y media larga. El panel es
+un sospechoso de la autonomía corta, pero con el externo enchufado no es el
+principal: ahí quien manda es la NVIDIA despierta.
 
 Diagnóstico completo: `history/2026-09-16-panel-60hz-bateria.md`.
