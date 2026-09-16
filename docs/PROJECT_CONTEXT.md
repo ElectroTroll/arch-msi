@@ -1,7 +1,53 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-09-16 (**la pantalla a 60 Hz con batería** — §32
+Última actualización: 2026-09-16, de madrugada (**la estética de HyDE, con
+nuestros colores** — §34 nueva: se adopta el aspecto de
+github.com/Hyde-project/hyde —iconos, tamaños, distribución, transparencias—
+manteniendo la paleta de este repositorio. Los iconos no se eligen sino que se
+**generan**: Tela-circle viene en dieciséis colores fijos y ninguno es el
+acento, así que theme-apply recolorea la variante azul con él (medido: 177 SVG,
+0,55 s). Las ventanas pasan a 0.92/0.75 con blur, y el desenfoque enseña que
+bajar `brightness` hace más por leer que subir el radio. Los widgets Qt los pinta
+**Kvantum**, activado con `QT_STYLE_OVERRIDE` y NO con el `qt6ct` que usa HyDE,
+que es justo lo que rompía ZapZap (§33). Su SVG entra en el repositorio como
+plantilla, **con licencia GPL-3.0 y atribución**, porque los temas del sistema
+llevan sus colores cableados. Tres trampas silenciosas por el camino:
+**597 colores `##RRGGBB`** que Qt no parsea y hacían parecer translúcida la
+ventana, un `reduce_window_opacity` que se sumaba al de Hyprland, y la
+selección, que no la pinta ni Kvantum ni kdeglobals sino el elemento
+`itemview-toggled` del SVG. Queda sin resolver el rayado de filas de Dolphin
+(§15). Diagnóstico en `history/2026-09-16-estetica-hyde.md`).
+Antes, el mismo día: (**las aplicaciones entran en el tema** — §33 nueva, tarea 3.5, **pasos A y B de cuatro**: hasta hoy las apps GTK solo
+sabían que eran oscuras. Ahora el tema es `adw-gtk3-dark` de verdad, los iconos
+son los `Papirus-Dark` que ya usaba rofi, el cursor deja de ser `default` y la
+fuente es la del escritorio. Dos hallazgos que conviene tener escritos: el
+paquete **no se llama `adw-gtk3`** en los repos sino `adw-gtk-theme`, en `extra`
+y no en el AUR; y **`Adwaita-dark`, que el repo llevaba tiempo escribiendo en
+dos sitios, NO EXISTE** en este sistema —funcionaba por `prefer-dark`, pero el
+nombre mentía—. El paquete Stow `gtk` se retira y sus dos `settings.ini` pasan a
+plantilla de matugen, con lo que los paquetes bajan de 18 a 17 y el interruptor
+de claro/oscuro deja de tener la excepción que arrastraba (§18). Y una trampa
+medida, no supuesta: **GSettings gana a `settings.ini`**, así que la fuente no
+se aplicaba hasta fijarla también por `gsettings`. **El paso B** lleva además
+los colores del fondo a las aplicaciones GTK, redefiniendo con `@define-color` las
+constantes sobre las que libadwaita y adw-gtk3 construyen todo su aspecto;
+comprobado preguntándole a GTK con `lookup_color()`, no mirando el archivo, y
+los seis colores coinciden en GTK3 y en GTK4. **El paso C dio un rodeo que vale
+la pena tener escrito**: se intentó con `QT_QPA_PLATFORMTHEME=qt6ct`, la paleta
+entró perfecta y aun así rompió las dos apps Qt —ZapZap se puso en CLARO y se
+llevó por delante el tema de WhatsApp Web, y Dolphin salió claro con trozos
+oscuros—, porque **qt6ct 0.11 no implementa `colorScheme()`** y quien pregunta
+por el modo se queda sin respuesta y asume claro (medido con QStyleHints:
+`Dark` con el portal, `Unknown` con qt6ct). La variable vuelve a
+`xdgdesktopportal` y los colores de Dolphin entran por donde de verdad los lee
+KF6: un esquema KDE que theme-apply **funde** en `kdeglobals` —fundir y no
+generar, porque ahí escribe también Dolphin—. Dolphin gana además la
+transparencia de la barra por una regla de Hyprland. Y el **paso D (Kvantum)
+queda descartado** tras comprobar que es un `QStyle` y que sus SVG pisarían ese
+esquema.
+Diagnóstico en `history/2026-09-16-theming-gtk-qt.md`).
+Antes, el mismo día: (**la pantalla a 60 Hz con batería** — §32
 nueva: la pregunta era a qué frecuencia va el panel en power-saver sin enchufar,
 y la respuesta resultó ser **a 165 Hz igual que enchufado**, comprobado con el
 equipo ya en ese perfil: ni el perfil ni nada del escritorio tocaban el modo de
@@ -1356,6 +1402,38 @@ Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
   que se sabe que `Ctrl+Alt+F3` funciona con Fn Lock, la prueba es fácil de
   hacer la próxima vez que ocurra.
 - Estado de autenticación de Claude Code (no comprobado; no exponer credenciales).
+- **[VER] El rayado de filas de Dolphin no se puede quitar por configuración.**
+  Dolphin pinta el fondo de las filas alternas con un tono que **no expone en
+  ninguna clave**, y lo hace pase lo que pase. Descartado el 2026-09-16 con
+  sondas de color chillón que nunca aparecieron: `alt.base.color` y
+  `button.color` de Kvantum, y `[Colors:View]`, `[Colors:Window]` y
+  `[Colors:Button]` de kdeglobals —verificando que la sonda quedaba escrita—;
+  tampoco bastó quitarle el `inherits` al `[ItemView]`. La paleta Qt efectiva
+  tiene `Base` y `AlternateBase` **idénticos** y aun así alterna. Se probó a
+  disimularlo subiendo el fondo de la vista al mismo tono: las bandas bajaron de
+  23 a 5 puntos de diferencia pero seguían viéndose y la lista quedaba gris
+  opaca, así que **se revirtió**. Queda como limitación conocida.
+- **⚠️ Dolphin BORRÓ el `.directory` versionado el 2026-09-16.** El archivo de
+  `view_properties/global` —el que la 3.4 dejó atado con `Version=4`— apareció
+  **vacío en el repositorio y sin enlace** en `~/.local/share` tras una sesión de
+  pruebas con Dolphin abriéndose y cerrándose muchas veces. Se restauró con
+  `git checkout` + `stow`, pero **no se ha averiguado qué lo provoca**: puede ser
+  el cierre a `pkill` mientras escribía, o un cambio de modo de vista. Es
+  exactamente el fallo silencioso que la 3.4 describía, y conviene mirar el
+  archivo de vez en cuando: si vuelve a vaciarse, se pierden el orden de
+  carpetas, el modo de vista y los ocultos sin que nada avise.
+- **[VER] La paleta de reserva guarda mal los artefactos que NO cuelgan de
+  `~/.config`.** Destapado el 2026-09-16 al regenerarla en la tarea 3.5: el
+  `MANIFEST` que escribe `--save-fallback` anota la ruta ABSOLUTA de la salida
+  de ZapZap (`/home/elok/.local/share/ZapZap/...`), mientras que
+  `instalar_fallback()` compone el destino como `$HOME/.config/$rel`. Al
+  restaurar con `--fallback`, ese archivo acabaría en
+  `~/.config/home/elok/.local/share/...`, una ruta absurda. **No es un fallo de
+  la 3.5**: es del generador, y llevaba ahí desde que §27 añadió esa plantilla;
+  solo que la reserva no se había regenerado desde entonces. Los 13 artefactos
+  restantes, los dos nuevos de GTK incluidos, sí cuelgan de `~/.config` y se
+  restauran bien. Arreglo pendiente de decidir: o el `MANIFEST` guarda rutas
+  relativas a `$HOME`, o `instalar_fallback()` distingue las absolutas.
 - **[VER] Cuánto ahorra bajar el panel de 165 Hz a 60 Hz.** El cambio automático
   ya está en marcha (§32) pero **el ahorro no se ha medido**: hace falta dejar el
   equipo quieto en batería y comparar el consumo entre los dos modos, forzándolos
@@ -2283,7 +2361,7 @@ nadie les estaba diciendo nada.
 | Capa | Quién la lee | Dónde se fija |
 |---|---|---|
 | Portal `org.freedesktop.appearance color-scheme` | Firefox, Electron (VS Code, Obsidian, ZapZap), GTK4/libadwaita, Qt 6 vía plugin | clave gsettings, la pone `theme-apply` |
-| `~/.config/gtk-{3,4}.0/settings.ini` | apps GTK3 que no consultan el portal | paquete Stow `gtk` |
+| `~/.config/gtk-{3,4}.0/settings.ini` | apps GTK3 que no consultan el portal | **plantilla de matugen** desde la 3.5 (antes: paquete Stow `gtk`) |
 | `QT_QPA_PLATFORMTHEME` | Dolphin y demás Qt 6 | `hl.env` en `hyprland.lua` |
 
 **La preferencia del portal la deduce `xdg-desktop-portal-gtk`** de la clave
@@ -2300,13 +2378,18 @@ solo sitio; no hay un segundo lugar donde decir si el sistema es oscuro.
 > valor correcto es **`xdgdesktopportal`**, que da `#323232` de fondo y
 > `#f0f0f0` de texto. La comprobación válida es mirar la PALETA, no el nombre
 > del esquema. Ambos plugins vienen en `qt6-base`; no hace falta instalar
-> `qt6ct`, `breeze` ni `kvantum`.
+> `qt6ct`, `breeze` ni `kvantum` — y el 2026-09-16 se comprobó que instalar
+> `qt6ct` es además CONTRAPRODUCENTE: su plugin no implementa `colorScheme()`.
+> Ver §33.
 
-> ⚠️ **El paquete Stow `gtk` va con `--no-folding`.** `~/.config/gtk-4.0` no
-> existía, así que Stow lo habría enlazado como directorio completo y cualquier
-> cosa que GTK escribiera dentro (los marcadores del selector de archivos, por
-> ejemplo) habría aterrizado en el repositorio. Es el mismo caso de `wlogout` y
-> `fastfetch` descrito arriba.
+> **[HISTÓRICO] El paquete Stow `gtk` iba con `--no-folding`**, porque
+> `~/.config/gtk-4.0` no existía y Stow lo habría enlazado como directorio
+> completo, con lo que cualquier cosa que GTK escribiera dentro —los marcadores
+> del selector de archivos, por ejemplo— habría aterrizado en el repositorio.
+> **El paquete se retiró el 2026-09-16** (tarea 3.5): los dos `settings.ini` los
+> genera ahora matugen y los directorios volvieron a ser reales, así que el
+> problema que resolvía `--no-folding` ya no existe. Se conserva la nota porque
+> el razonamiento sigue valiendo para `wlogout` y `fastfetch`.
 
 **Validado el 2026-09-13** en las tres capas: el portal pasó de `0` a `1`;
 `Gtk.Settings` devuelve `prefer-dark: True` y `Adwaita-dark`; y un proceso
@@ -2315,8 +2398,12 @@ lanzado por Hyprland tras el reload recibe la variable y Qt responde
 reiniciarse: leen la preferencia al arrancar.
 
 > Para volver a claro no se toca ningún archivo de aplicación: basta cambiar
-> `mode` en `theme/tokens.toml` y ejecutar `theme-apply`. El `settings.ini` del
-> paquete `gtk` sí quedaría desfasado —es estático— y habría que editarlo.
+> `mode` en `theme/tokens.toml` y ejecutar `theme-apply`.
+>
+> **Esto último dejó de tener excepción el 2026-09-16.** Hasta la 3.5, el
+> `settings.ini` del paquete `gtk` quedaba desfasado al cambiar de modo —era
+> estático— y había que editarlo a mano. Ahora lo genera matugen desde el mismo
+> `mode`, así que el interruptor es de verdad único. Ver §33.
 
 ---
 
@@ -4432,3 +4519,429 @@ un sospechoso de la autonomía corta, pero con el externo enchufado no es el
 principal: ahí quien manda es la NVIDIA despierta.
 
 Diagnóstico completo: `history/2026-09-16-panel-60hz-bateria.md`.
+
+
+## 33. Aplicaciones GTK y Qt: el tema más allá del escritorio  **[EN CURSO]**
+
+Tarea 3.5. El escritorio entero sale de `tokens.toml` y matugen desde la 3.0
+(§18), pero las **aplicaciones** iban por su cuenta: desde el 2026-09-13 eran
+oscuras, y nada más. Esta tarea las mete en el tema.
+
+Va por pasos. **Pasos A, B y C completados el 2026-09-16**; el D se descartó
+con el sistema delante.
+
+| Paso | Qué | Estado |
+|---|---|---|
+| A | Tema GTK3 real, iconos, cursor y fuente | **[OK]** 2026-09-16 |
+| B | Colores de matugen en GTK3/GTK4 (`gtk.css`) | **[OK]** 2026-09-16 |
+| C | Colores del tema en Dolphin (esquema KDE) | **[OK]** 2026-09-16 |
+| D | ~~Qt6: Kvantum como estilo de widgets~~ | **descartado**, ver abajo |
+
+### Paso A: lo que ve una aplicación GTK
+
+| Ajuste | Antes | Ahora | De dónde sale |
+|---|---|---|---|
+| Tema | `Adwaita-dark` (inexistente) | `adw-gtk3-dark` | `matugen.mode` |
+| Iconos | `Adwaita` | `Papirus-Dark` | `[apps].icon_theme` |
+| Cursor | `default` | `Adwaita`, 24 px | `[apps].cursor_theme` |
+| Fuente | `Adwaita Sans 11` | `JetBrainsMono Nerd Font 10` | `[font]` |
+
+**Una sola familia en todo, decisión del 2026-09-16.** Los menús de las
+aplicaciones usan la misma fuente monoespaciada que el escritorio y el terminal,
+que es lo que ya declaraba la cabecera de `[font]` en `tokens.toml`. Se descartó
+añadir una familia de interfaz aparte.
+
+### ⚠️ `Adwaita-dark` no existía, y llevaba tiempo escrito en dos sitios
+
+El paquete Stow `gtk` y `theme-apply` fijaban `gtk-theme-name=Adwaita-dark`.
+**Ese tema no está instalado**: `/usr/share/themes` solo tenía `Default` y
+`Emacs`. No estaba roto —GTK cae a su Adwaita interno y quien oscurecía era
+`gtk-application-prefer-dark-theme`—, pero el nombre mentía, y el propio aviso
+de §18 sobre `QT_QPA_PLATFORMTHEME=gtk3` ya lo decía mientras el archivo de al
+lado lo seguía escribiendo.
+
+Ahora hay un tema de verdad: **`adw-gtk-theme` 6.5-1**, del repositorio `extra`.
+
+> ⚠️ **No se llama `adw-gtk3` en los repos.** `pacman -S adw-gtk3` no encuentra
+> nada y parece cosa del AUR; el paquete está en `extra` con el nombre
+> **`adw-gtk-theme`**, e instala dos temas, `adw-gtk3` y `adw-gtk3-dark`. La
+> variante oscura es un tema propio, no un modificador del claro.
+
+### El paquete Stow `gtk` se retiró: ahora es plantilla
+
+Los dos `settings.ini` los genera matugen desde `tokens.toml`, igual que
+`style.css` de Waybar desde la 3.0. El motivo es la regla que el propio
+`tokens.toml` declara: el tema, los iconos y la fuente estaban a punto de quedar
+escritos en dos sitios —el archivo estático y el `gsettings` de `theme-apply`—,
+que es precisamente lo que esa regla llama error.
+
+| Pieza | Dónde |
+|---|---|
+| Plantilla | `dotfiles/matugen/.config/matugen/templates/gtk-settings.ini` |
+| Declarada en | `[templates.gtk3]` y `[templates.gtk4]` de `config.toml` |
+| Salidas | `~/.config/gtk-3.0/settings.ini` y `~/.config/gtk-4.0/settings.ini` |
+| Valores | `[apps]` y `[font]` de `theme/tokens.toml` |
+
+**Una plantilla, dos salidas**: GTK3 y GTK4 leen el mismo formato y todas las
+claves valen para las dos. Lo que cambia es qué hace cada una con
+`gtk-theme-name`: GTK3 la obedece; en GTK4 las apps de libadwaita la ignoran y
+siguen el `color-scheme` del portal.
+
+Con el paquete fuera, los paquetes Stow pasan de 18 a **17**.
+
+> ⚠️ El `stow -D` hay que hacerlo **antes** de declarar las plantillas. Si no,
+> `theme-apply` aborta con «es un ENLACE de Stow», que es justo la protección
+> que impone la regla de oro de §18.
+
+### ⚠️ GSettings gana a `settings.ini`, y por eso la fuente no se aplicaba
+
+Escribir la fuente solo en la plantilla **no funciona**. Con el archivo ya
+generado y diciendo `JetBrainsMono Nerd Font 10`, `gtk-query-settings` —que
+muestra los valores EFECTIVOS, no el contenido del archivo— seguía devolviendo
+`Adwaita Sans 11`.
+
+El motivo: en esta sesión GTK3 toma esas claves de GSettings, y `font-name` **ni
+siquiera estaba en dconf**. O sea que `settings.ini` perdía contra el *default
+del esquema* de GNOME, un valor que nadie había elegido.
+
+Por eso `theme-apply` fija también `font-name` por `gsettings`. Y se lee aparte,
+no con el `read -r` posicional del resto de tokens: «JetBrainsMono Nerd Font»
+lleva espacios y aquel `read` la partiría en trozos.
+
+El `settings.ini` se sigue generando igualmente: es lo único que hay en una
+sesión sin dconf.
+
+### Estado de validación
+
+Comprobado el 2026-09-16 con `gtk-query-settings`, que devuelve lo efectivo y no
+lo escrito: `adw-gtk3-dark`, `Papirus-Dark`, `JetBrainsMono Nerd Font 10` y
+cursor `Adwaita`. Los cuatro coinciden con `tokens.toml`.
+
+Además: `stow -n -D` limpio antes de desenlazar, `theme-apply` escribe los 15
+artefactos sin abortar, y **`git status` queda limpio de generados**, que es la
+prueba de la regla de oro.
+
+**Sin confirmar visualmente**: que una ventana GTK recién abierta se vea como
+debe. Las aplicaciones ya lanzadas (`nm-applet`, `blueman`) leen esto al
+arrancar y no se enteran hasta reiniciarlas.
+
+### Paso B: los colores del fondo llegan a las aplicaciones
+
+Con el paso A las apps eran oscuras y coherentes en tema, iconos y fuente, pero
+sus colores seguían siendo los de un Adwaita genérico. Ahora salen del **mismo
+fondo de pantalla** que el resto del escritorio.
+
+| Pieza | Dónde |
+|---|---|
+| Plantilla | `dotfiles/matugen/.config/matugen/templates/gtk-colors.css` |
+| Declarada en | `[templates.gtk3-colors]` y `[templates.gtk4-colors]` |
+| Salidas | `~/.config/gtk-3.0/gtk.css` y `~/.config/gtk-4.0/gtk.css` |
+
+**No se reescribe el tema: se le cambian las constantes.** libadwaita (GTK4) y
+adw-gtk3 (GTK3) construyen todo su aspecto sobre un puñado de colores con
+nombre; redefinirlos con `@define-color` en el `gtk.css` del usuario los
+sustituye en el tema entero sin tocar un solo widget.
+
+El mapeo aprovecha que la escala de contenedores de Material You encaja casi uno
+a uno con la jerarquía de superficies de libadwaita:
+
+| libadwaita | Rol de matugen |
+|---|---|
+| `window_bg_color` | `surface` |
+| `view_bg_color` | `surface_container_lowest` |
+| `headerbar_bg_color` / `popover_bg_color` | `surface_container` |
+| `sidebar_bg_color` / `card_bg_color` | `surface_container_low` |
+| `dialog_bg_color` | `surface_container_high` |
+| `accent_bg_color` / `accent_color` | el `accent` del escritorio |
+
+⚠️ **El acento NO es `colors.primary`.** Es el mismo `accent` que pinta la barra,
+rofi y el borde de la ventana activa, que sale de un TONO de la paleta primaria
+elegido en `tokens.toml` y lo resuelve `theme-apply` porque las plantillas no
+ven `palettes.*`.
+
+⚠️ **Los estados no se derivan del fondo, a propósito.** `success`, `warning` y
+`error` salen de `[colors.state]`: un aviso amarillo tiene que ser el mismo
+amarillo en la barra, en una notificación y en un diálogo.
+
+También se definen los nombres clásicos de GTK3 (`theme_bg_color`,
+`theme_selected_bg_color`, `borders`…), que usaría un tema GTK3 que no fuera
+adw-gtk3 o una aplicación vieja que los consulte directamente. En GTK4 se
+ignoran sin más.
+
+> **Lo que esto no alcanza:** las apps con CSS propio y colores cableados, y las
+> que se pintan solas (Electron, Firefox con su tema), que van por
+> `color-scheme` del portal (§18).
+
+**Validación del paso B (2026-09-16).** No se miró el archivo generado, sino lo
+que GTK resuelve de verdad: una ventana de prueba de GTK3 y otra de GTK4,
+preguntando por `lookup_color()`. Los seis colores comprobados coinciden con la
+plantilla, **en las dos versiones**:
+
+```
+window_bg_color   #0c141b      headerbar_bg_color   #1d252c
+view_bg_color     #040b11      accent_bg_color      #58b4ef
+theme_bg_color    #0c141b      theme_selected_bg…   #58b4ef
+```
+
+Y el CSS se carga **sin un solo aviso de parseo** en ninguna de las dos.
+
+### Paso C: Dolphin con los colores del tema, y por qué no fue por donde parecía
+
+El primer intento fue `QT_QPA_PLATFORMTHEME=qt6ct`, que lee una **paleta
+completa** donde el portal solo sabe decir «oscuro o claro». La paleta se
+aplicó perfecta —`Window #0c141b`, `Highlight` con el acento del escritorio— y
+aun así **rompió las dos aplicaciones Qt del equipo**:
+
+- **ZapZap se puso en claro** y se llevó por delante el tema de WhatsApp Web
+  (§27). Su ajuste es `theme=auto`, y su código hace literalmente
+  `if color_scheme == Dark: return Dark` y si no, `return Light`
+  (`zapzap/core/theme/theme_manager.py`).
+- **Dolphin salió claro con trozos oscuros**: los widgets tomaban la paleta de
+  qt6ct, pero todo lo que pinta `KColorScheme` caía a Breeze **claro**.
+
+La causa, medida con `QStyleHints` en vez de deducida:
+
+```
+PLATFORMTHEME=xdgdesktopportal -> colorScheme=Dark     Window=#323232
+PLATFORMTHEME=qt6ct            -> colorScheme=Unknown  Window=#0c141b
+```
+
+> ⚠️ **`qt6ct` 0.11 no implementa `colorScheme()`.** Una paleta bonita no
+> sustituye a esa señal: quien pregunta se queda sin respuesta y **asume claro**.
+> Es el mismo tipo de trampa que ya documentaba §18 con `gtk3` —parece funcionar
+> y no funciona—, pero al revés: allí el nombre del esquema era correcto y la
+> paleta falsa; aquí la paleta es correcta y falta el nombre.
+
+**La vía buena no pasa por el platformtheme.** Dolphin es KF6 y sus colores los
+pone `KColorScheme`, que lee `~/.config/kdeglobals` y no la paleta de Qt. Así
+que la variable **vuelve a `xdgdesktopportal`** —que sí da la señal— y los
+colores entran por un esquema KDE:
+
+| Pieza | Dónde |
+|---|---|
+| Plantilla | `templates/kde-colors.conf` |
+| Declarada en | `[templates.kde-colors]` |
+| Artefacto intermedio | `~/.config/kdeglobals-arch-msi.conf` |
+| Destino final | secciones de color de `~/.config/kdeglobals` |
+
+**Siete conjuntos de color** (`Window`, `View`, `Button`, `Selection`,
+`Tooltip`, `Header`, `Complementary`) con el mismo mapeo que GTK y Qt: `View` ←
+`surface_container_lowest` (la lista de archivos), `Selection` ← el acento del
+escritorio. Las doce claves de cada conjunto salen del propio binario
+(`strings /usr/lib/libKF6ColorScheme.so`), no de una lista de internet.
+
+> ⚠️ **`kdeglobals` NO se puede generar entero, y por eso hay fusión.** Ahí
+> escribe también Dolphin: `[KFileDialog Settings]` guarda el ancho de la barra
+> lateral y el orden de las columnas. Generar el archivo los borraría en cada
+> arranque. `theme-apply` funde solo las secciones de color y deja el resto
+> intacto — comprobado: las 15 claves de Dolphin siguen idénticas tras la
+> fusión.
+
+> ⚠️ **En `kdeglobals` los colores van en `R,G,B` decimal.** La plantilla los
+> escribe en hex porque se revisa mejor, y la fusión los convierte. `#58b4ef`
+> acaba como `88,180,239`.
+
+### Dolphin translúcido
+
+La transparencia no la pone el tema Qt, sino Hyprland, con la **misma opacidad
+que la barra y las notificaciones** (`[opacity].surface`). El token viaja por
+`theme.lua`, que es el único camino que tiene `hyprland.lua` para leer
+`tokens.toml` sin repetir el número.
+
+> ⚠️ **Hyprland aplica la opacidad a la VENTANA ENTERA**, con su texto y sus
+> iconos dentro, no solo al fondo como haría un tema Qt. Si el texto se lee mal,
+> se sube `[opacity].surface` —lo comparte con la barra— o se le da a la regla un
+> valor propio.
+
+> ⚠️ **`opacity` es una CADENA** en `hl.window_rule`, con los dos valores
+> separados por espacio. Con tabla o número, el parser responde «field
+> 'opacity': string type requires a string» y **la regla entera se cae**; lo
+> delató `hyprctl configerrors`, no un aviso al recargar.
+
+La clase es `org.kde.dolphin`, leída de `hyprctl clients` con la ventana abierta:
+en Wayland nativo las apps de KDE usan el ID de aplicación con dominio invertido.
+
+### Paso D (Kvantum): descartado antes de empezar
+
+Medido el 2026-09-16: **Kvantum no es un platformtheme, es un `QStyle`**
+(`/usr/lib/qt6/plugins/styles/libkvantum.so`), así que se activaría con
+`QT_STYLE_OVERRIDE` o desde qt6ct. Y ahí está el problema: sus temas traen sus
+propios colores en SVG, que pisarían el esquema KDE que acaba de resolver
+Dolphin. Aportaría forma de widgets a cambio de romper el color, para las dos
+únicas aplicaciones Qt del equipo —una de las cuales es una ventana web—.
+
+`qt6ct` y `kvantum` quedan instalados y **sin usar**. Se pueden quitar con
+`sudo pacman -Rns qt6ct kvantum`.
+
+Diagnóstico completo: `history/2026-09-16-theming-gtk-qt.md`.
+
+---
+
+## 34. La estética de HyDE, con nuestros colores  **[OK]**
+
+Ampliación pedida el 2026-09-16, ya cerrada la 3.5: adoptar el aspecto de
+**HyDE** (github.com/Hyde-project/hyde) —iconos, redondeos, tamaños,
+distribución— **manteniendo el esquema de colores y las transparencias de este
+repositorio**. Se clonó su repositorio (163 MB) y se leyó el original en vez de
+ir de memoria.
+
+### Qué se trajo y qué ya coincidía
+
+| Aspecto | HyDE | Aquí |
+|---|---|---|
+| Config de Hyprland | Lua | Lua — **ya coincidía** |
+| Radio de esquinas | 10pt | `metrics_radius = 10` — **ya coincidía** |
+| Iconos | Tela-circle | adoptado, **recoloreado** (ver abajo) |
+| Cursor | Bibata-Modern-Ice | adoptado tal cual |
+| Opacidad de ventanas | 0.90 / 0.75 | adoptado y ajustado a **0.92 / 0.75** |
+| Widgets Qt | Kvantum | adoptado, con su SVG |
+| Dolphin | toolbar 16 px, sin barra de estado… | adoptado, con matices |
+| Colores | wallbash (su motor) | **los nuestros**, matugen |
+
+### Los iconos se generan, no se eligen
+
+Tela-circle viene en dieciséis colores fijos y **ninguno es el acento**: el más
+azul, `blue`, es un índigo `#5677fc`. Como el acento sale del fondo de pantalla,
+ninguna variante fija iba a casar nunca.
+
+Así que `theme-apply` genera la suya: copia la variante azul a
+`~/.local/share/icons/Tela-circle-arch-msi` y sustituye ese índigo por el acento.
+
+> **Se midió antes de escribirlo**: el tema son 110 MB aparentes pero **44 MB
+> reales** —16 752 de sus 27 000 entradas son symlinks— y el azul aparece en
+> solo **177 SVG**. Copia y reemplazo: **0,55 s**. Aun así no se rehace en cada
+> arranque: guarda el acento usado en `.acento` y solo regenera si cambia.
+
+### Transparencia y desenfoque
+
+| Token | Valor | Qué es |
+|---|---|---|
+| `[opacity].window_active` | 0.92 | ventana enfocada |
+| `[opacity].window_inactive` | 0.75 | las de detrás |
+| `[blur].size` | 4 | radio del desenfoque |
+| `[blur].passes` | 3 | pasadas |
+| `[blur].brightness` | 0.80 | **lo que más ayuda a leer** |
+
+⚠️ `brightness` por debajo de 1 hace más por la legibilidad que subir el
+desenfoque: oscurece lo que queda detrás, así que el texto claro gana contraste.
+
+⚠️ `[opacity].surface` (0.80) y estas dos NO son lo mismo y por eso son tokens
+distintos: aquella tiñe superficies que dibuja una aplicación metiendo alfa en
+el color; estas las aplica Hyprland a la ventana entera, contenido incluido.
+
+### Kvantum: el estilo que sí pinta los widgets
+
+La paleta de una app Qt la pone el `platformtheme`, y el del portal —el único
+que da la señal de modo oscuro (§33)— no lee `kdeglobals`. Kvantum es un
+**QStyle**: pinta los widgets él mismo.
+
+> ⚠️ **HyDE lo activa con `QT_QPA_PLATFORMTHEME=qt6ct`, que aquí NO se puede
+> usar**: ese plugin no implementa `colorScheme()` y deja a ZapZap en claro
+> (§33). Se activa con **`QT_STYLE_OVERRIDE=kvantum`**, que carga el estilo sin
+> tocar el platformtheme. El portal sigue dando la señal Y los widgets los pinta
+> Kvantum. Es la mitad buena de lo que hace HyDE, sin la que rompía cosas.
+
+| Pieza | Dónde |
+|---|---|
+| Plantilla del tema | `templates/kvantum-theme.kvconfig` |
+| Plantilla de las formas | `templates/kvantum-theme.svg` |
+| Selector | `templates/kvantum-select.kvconfig` |
+| Salidas | `~/.config/Kvantum/arch-msi/` y `~/.config/Kvantum/kvantum.kvconfig` |
+
+### ⚠️ El SVG viene de HyDE y es GPL-3.0
+
+Un tema de Kvantum son dos archivos: el INI con los colores y **un SVG con las
+formas de cada widget**. Los 37 temas que trae el sistema llevan su arte con
+**colores cableados**, y por eso resistían: la cabecera de columnas salía gris y
+la barra de herramientas con un degradado que no venía de ningún token.
+
+El SVG de HyDE está hecho justo para lo contrario: todo su color entra desde
+fuera, por diez marcadores. Se trajo y se convirtió en plantilla de matugen.
+
+> **El mapeo de marcadores se dedujo, no se adivinó**: comparando su plantilla
+> `.dcol` con el SVG ya generado, posición a posición. Cada marcador resultó
+> tener un único color, así que la correspondencia es exacta:
+> `pry1`→`surface`, `1xa1`→`surface_container_lowest`,
+> `1xa2`→`surface_container`, `1xa3`→`surface_container_high`,
+> `1xa4`→`outline`, `1xa9`→`on_surface`, `4xa6`/`4xa9`→`accent`,
+> `4xa7`→`state_crit`, `4xa8`→`tertiary`.
+
+> ⚠️ **LICENCIA.** `kvantum-theme.svg` y `kvantum-theme.kvconfig` son obra de
+> HyDE bajo **GPL-3.0**, con la atribución en su cabecera. Este repositorio no
+> tiene archivo de licencia propio; si algún día se le pone uno, tiene que ser
+> compatible.
+
+### ⚠️ Tres trampas del SVG, las tres silenciosas
+
+1. **`##RRGGBB`.** Los marcadores del original venían precedidos de `#`, así que
+   la sustitución generaba colores con doble almohadilla: **597 en el SVG y 52
+   en el INI**. Qt no los parsea y no protesta — la ventana se veía casi
+   transparente, y parecía que el tema era translúcido cuando en realidad no se
+   pintaba nada.
+2. **`reduce_window_opacity=10`.** Kvantum resta ese porcentaje por su cuenta y
+   se sumaba al 0.92 de Hyprland. Puesto a 0: la transparencia se decide en un
+   solo sitio, `tokens.toml`.
+3. **`itemview-toggled` sin opacidad.** Ver abajo.
+
+### La selección la pintan tres sitios, y solo manda uno
+
+Costó tres intentos porque el color de la fila seleccionada **no sale de donde
+parece**:
+
+| Candidato | Resultado |
+|---|---|
+| `highlight.color` de Kvantum | ignorado |
+| `[Colors:Selection]` de `kdeglobals` | no es quien pinta (pero se le añadió soporte de alfa igualmente) |
+| **`itemview-toggled` del SVG** | **es este** |
+
+El SVG traía `itemview-toggled` con `fill:{{accent}}` **a pelo**, mientras
+`itemview-focused` —el resalte del ratón— sí llevaba `opacity:0.2`. De ahí que
+el hover se viera bien y la selección fuera un bloque macizo.
+
+Ahora la selección usa un tono **más saturado** de la misma paleta primaria y
+con alfa. Los dos valores se declaran una vez, en `[apps]`:
+
+```toml
+selection_tone  = 50     # rampa: 40 #006492 · 50 #007eb6 · 70 #58b4ef (acento)
+selection_alpha = "D9"   # 85 %
+```
+
+⚠️ El alfa se declara **una sola vez y en hexadecimal**; `theme-apply` lo
+convierte a `0-1` para el SVG y a `R,G,B,A` para KDE, que son las dos unidades
+que hacían falta. Y el color sale de `palettes.primary`, que las plantillas no
+ven: lo resuelve el script, como ya hacía con el acento.
+
+### Dolphin
+
+Distribución de HyDE: barra de herramientas de 16 px solo iconos y no movible,
+sin barra de selección, iconos de Places a 16, vista de iconos con preview 112 y
+una línea de texto, y sus quince miniaturizadores —**verificados uno a uno**
+contra `/usr/lib/qt6/plugins/kf6/thumbcreator/`, no copiados a ciegas—.
+
+**No se copió su `dolphinui.rc`**: es XML de kxmlgui atado a una versión concreta
+(el suyo declara `version="40"`) y Dolphin lo reescribe solo.
+
+> **Regalo de su `kdeglobals`: `TerminalApplication=kitty`.** Cierra el pendiente
+> que la 3.4 dejó abierto —«el "Abrir terminal aquí" no aparece en ningún `.kcfg`
+> de Dolphin y no se localizó dónde se configura»—. No es de Dolphin, es de KDE
+> entero.
+
+> ⚠️ **`ShowStatusBar=true` a propósito, al revés que HyDE.** Con la barra
+> oculta, Dolphin dibuja el recuento como un recuadro **flotante encima de la
+> lista**. Dándole sitio fijo abajo, desaparece de en medio.
+
+### Estado de validación
+
+Todo lo de esta sección se comprobó **midiendo píxeles de capturas reales**
+(`grim` + ImageMagick), no a ojo:
+
+- Barra de herramientas: de un degradado `(67,71,76)`→`(3,12,22)` a un plano
+  `(9,18,30)`.
+- Cabecera de columnas: de `(59,64,78)` gris a `(4,11,19)`.
+- Opacidades y blur: leídos con `hyprctl getoption`.
+- Iconos: 177 SVG con el acento, 0 con el azul original.
+- Selección: `itemview-toggled` con `opacity:0.85` y `fill:#007eb6` en el
+  artefacto generado.
+
+Diagnóstico completo, con los callejones sin salida: `history/2026-09-16-estetica-hyde.md`.
+

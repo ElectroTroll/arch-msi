@@ -164,7 +164,7 @@ validado.
 | 3.2 | ~~**Rofi** — tema y comportamiento~~ **[OK] Completada** | Bajo | Nulo |
 | 3.3 | ~~**yazi** — atajos, previsualizaciones~~ **[OK] Completada** | Bajo | Nulo |
 | 3.4 | ~~**Dolphin** — solo archivos versionables~~ **[OK] Completada** | Medio | Bajo |
-| 3.5 | **Theming GTK/Qt coherente** con `nwg-look` | Medio | Bajo |
+| 3.5 | **Theming GTK/Qt coherente** — **[OK]** A, B y C; D descartado | Medio | Bajo |
 | 3.6 | ~~**Spotify** — versionar `spotify-flags.conf` como paquete Stow~~ **[OK] Completada** | Trivial | Nulo |
 | 3.7 | **npm** — versionar `~/.npmrc` como paquete Stow | Trivial | Nulo |
 | 3.8 | ~~**fastfetch** — config propia dentro del tema~~ **[OK] Completada** | Bajo | Nulo |
@@ -376,6 +376,48 @@ enlazados con `--no-folding`. Sin paquetes nuevos y sin servicios. Detalle en
 > defecto. **El panel de terminal (`F4`) se descartó**: necesita `konsolepart.so`
 > del paquete `konsole`, que no está instalado, y no se quiso un segundo
 > emulador de terminal en un equipo cuyo terminal es kitty.
+
+**3.5 Theming GTK/Qt.** **[OK] Completada el 2026-09-16**: pasos A, B y C, y el
+D descartado con el sistema delante. La tarea tenía más hecho de lo que decía la tabla: el paquete Stow
+`gtk`, `QT_QPA_PLATFORMTHEME` y el `color-scheme` por gsettings ya existían
+desde la tarea del modo oscuro (2026-09-13). Lo que faltaba no era que las apps
+fueran oscuras, sino que siguieran EL TEMA.
+
+Fue por pasos: **A** tema GTK3 real, iconos, cursor y fuente; **B** colores de
+matugen en GTK3/GTK4; **C** colores del tema en Dolphin por esquema KDE, más su
+transparencia. El **D** (Kvantum) se descartó: es un `QStyle`, no un
+platformtheme, y sus SVG pisarían el esquema que el paso C acababa de resolver.
+Detalle y hallazgos en §33 de `PROJECT_CONTEXT.md`.
+
+> **AMPLIACIÓN DEL MISMO DÍA: la estética de HyDE** (§34). Ya cerrada la 3.5, se
+> adoptó el aspecto de github.com/Hyde-project/hyde —iconos Tela-circle
+> recoloreados con el acento, cursor Bibata, opacidades 0.92/0.75 con blur,
+> Kvantum para los widgets Qt y la distribución de su Dolphin— manteniendo la
+> paleta de este repositorio. Su SVG de Kvantum entra como plantilla **bajo
+> GPL-3.0 y con atribución**: los temas del sistema llevan sus colores cableados
+> y por eso no había forma de teñir la cabecera ni la barra de herramientas.
+> Kvantum se activa con `QT_STYLE_OVERRIDE` y NO con el `qt6ct` que usa HyDE.
+
+> ⚠️ **El paso C se intentó primero con `qt6ct` y salió mal**, que es el hallazgo
+> que más vale del día: la paleta se aplicaba perfecta pero **qt6ct 0.11 no
+> implementa `colorScheme()`**, así que ZapZap —`theme=auto`— se puso en claro y
+> perdió el tema de WhatsApp Web, y Dolphin salió claro con trozos oscuros. Una
+> paleta no sustituye a la señal de modo. `qt6ct` y `kvantum` se instalaron para
+> esta tarea y quedan **sin usar**: se pueden quitar.
+
+> ⚠️ **`nwg-look` no se usa para escribir, y esto contradice el enunciado de
+> arriba.** La herramienta que esta tarea nombraba escribe en
+> `~/.config/gtk-3.0/settings.ini`; mientras eso fue un enlace de Stow, usarla
+> significaba o romper el enlace o meter su salida en el repositorio —la trampa
+> que se midió con KConfig en la 3.4—. Desde el paso A ese archivo es un
+> artefacto generado, así que ahora lo que haría `nwg-look` es perderse en la
+> siguiente ejecución de `theme-apply`. Se queda como visor. El enunciado se
+> deja como estaba, con este aviso al lado.
+
+> **Dos hallazgos del paso A.** El paquete del tema **no se llama `adw-gtk3`**
+> sino `adw-gtk-theme`, y está en `extra`, no en el AUR. Y `Adwaita-dark`, que
+> el repo escribía en dos sitios, **no existe en este sistema**: funcionaba de
+> rebote por `gtk-application-prefer-dark-theme`.
 
 **3.6 Spotify.** **[OK] Completada (2026-09-16).** Instalado desde AUR
 (`paru -S spotify`) el 2026-08-02. El 2026-08-03 se creó a mano

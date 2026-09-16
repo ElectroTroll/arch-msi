@@ -41,6 +41,49 @@ size_lg_px   = 15   # wlogout (era 15) · botones grandes del menú de apagado
 size_term_pt = 11   # kitty · en PUNTOS, como dunst, no en píxeles
 
 
+# --- Aplicaciones (GTK / Qt) -------------------------------------------------
+#
+# Tarea 3.5. Esto NO es el escritorio —Waybar, rofi, kitty, dunst, hyprlock—,
+# que lo pinta matugen entero. Esto es lo que ven las APLICACIONES: Dolphin,
+# ZapZap, el applet de red, los diálogos de archivos del portal.
+#
+# La fuente no se declara aquí a propósito: es `[font].family`, la misma del
+# escritorio. La decisión fue deliberada (2026-09-16): UNA SOLA FAMILIA en todo,
+# menús de aplicaciones incluidos, que es lo que ya decía la cabecera de [font].
+#
+# ⚠️ `cursor_size` está REPETIDO en hyprland.lua, que fija XCURSOR_SIZE=24 y
+# HYPRCURSOR_SIZE=24 como variables de entorno. No se ha unificado porque
+# hyprland.lua no es una plantilla de matugen y sacarlo de ahí es una tarea
+# aparte. Si se cambia este valor, hay que cambiar también aquellos dos.
+# ⚠️ ICONOS Y CURSOR SALEN DE HyDE (github.com/Hyde-project/hyde), adoptados el
+# 2026-09-16 a petición del usuario: su estética, nuestros colores. Los dos
+# paquetes vienen del AUR y NO son parte de una instalación base.
+#
+# `Tela-circle-blue` es una de las DIECISÉIS variantes de color que instala
+# `tela-circle-icon-theme-all-git`. Se eligió el azul porque casa con el acento
+# que sale del fondo actual (#58b4ef), pero el icono NO sigue al fondo: si algún
+# día el wallpaper tira a rojo, aquí se pone `Tela-circle-red` y `theme-apply`
+# lo aplica. Esa es toda la gracia de haber instalado las dieciséis.
+[apps]
+icon_theme   = "Tela-circle-arch-msi"  # generado: Tela-circle-blue teñido con el acento
+cursor_theme = "Bibata-Modern-Ice"  # el de HyDE, tal cual
+cursor_size  = 24                   # ⚠️ repetido en hyprland.lua (ver arriba)
+
+# --- Color de la SELECCIÓN ----------------------------------------------------
+# La fila seleccionada de un gestor de archivos es un bloque grande de color, y
+# el acento del escritorio (tono 70, un azul claro) resultaba demasiado pálido y
+# macizo ahí. Se le da un tono más bajo de la MISMA paleta primaria —más
+# saturado— y algo de alfa, para que deje ver la fila por debajo.
+#
+# La rampa de esta paleta, para elegir con criterio:
+#   40 #006492 · 50 #007eb6 · 60 #3799d2 · 70 #58b4ef (acento) · 80 #8aceff
+#
+# ⚠️ EL ALFA VA EN HEXADECIMAL Y DELANTE (#AARRGGBB), que es como lo leen Qt y
+# Kvantum: D9 = 217/255 = 85 %.
+selection_tone  = 50     # tono de la paleta primaria
+selection_alpha = "D9"   # 85 % de opacidad
+
+
 # --- Métricas ----------------------------------------------------------------
 #
 # UNIFICACIÓN DEL 2026-08-27. Había CINCO radios distintos para lo mismo:
@@ -150,6 +193,25 @@ launcher_icon = 28
 # una sola unidad; que cada aplicación tenga su capricho es problema del script.
 surface   = 0.80
 
+# --- Opacidad de las VENTANAS -------------------------------------------------
+#
+# Esto NO es lo de arriba. `surface` tiñe superficies del escritorio que dibuja
+# una aplicación (la barra, las notificaciones) poniéndoles alfa al color. Estas
+# dos las aplica HYPRLAND a la ventana ENTERA, con su contenido dentro: texto,
+# iconos y todo. Son cosas distintas y por eso no comparten valor.
+#
+# Los números son los de HyDE (github.com/Hyde-project/hyde), adoptados el
+# 2026-09-16: su `defaults.lua` trae 0.90 y 0.75. La ventana activa se ve casi
+# opaca y la de detrás se apaga, que es lo que da la sensación de profundidad de
+# ese escritorio.
+#
+# ⚠️ PANTALLA COMPLETA SE QUEDA OPACA, y no es un descuido: un vídeo o una foto
+# a pantalla completa con el fondo transparentándose detrás se ve mal. HyDE hace
+# lo mismo (`fullscreen_opacity = 1`).
+window_active   = 0.90
+window_inactive = 0.80
+
+
 # Botones del menú de apagado. Más transparentes que las superficies flotantes
 # (0.80) a propósito: se dibujan SOBRE el velo de pantalla completa, que ya
 # oscurece el escritorio, así que aquí la transparencia no compite con ningún
@@ -178,6 +240,31 @@ overlay   = 0.88   # fondo del menú de apagado sobre el escritorio
 #
 # Son los valores que ya usaba Waybar, ahora en un solo sitio en vez de
 # repetidos a mano en waybar/style.css, dunstrc y wlogout/style.css.
+
+
+# --- Desenfoque del fondo (blur) ---------------------------------------------
+#
+# Lo que se ve DETRÁS de una ventana translúcida. Con las opacidades de arriba,
+# el escritorio entero deja pasar el wallpaper, y un fondo con detalle compite
+# con el texto: el blur es lo que lo convierte en una mancha de color y devuelve
+# la legibilidad. Sin él, la transparencia es bonita en una captura e incómoda
+# al trabajar.
+#
+# ⚠️ `brightness` POR DEBAJO DE 1 ES LO QUE MÁS AYUDA A LEER, más que subir el
+# desenfoque: oscurece lo que queda detrás, así que el texto claro del tema gana
+# contraste contra él. Subir `passes` difumina más pero no cambia el brillo.
+#
+# `passes` es lo caro: cada pasada es otra vuelta del shader sobre la misma
+# superficie, así que el coste crece con `size × passes`. Tres pasadas es el
+# punto donde el fondo deja de reconocerse; más, no se nota y se paga.
+[blur]
+size       = 4      # radio del desenfoque (Hyprland trae 8 de serie; aquí, la mitad)
+passes     = 3      # veces que se repite; el coste va con size × passes
+brightness = 0.80   # < 1 oscurece el fondo -> el texto claro contrasta más
+contrast   = 0.90
+vibrancy   = 0.1696 # satura un poco lo desenfocado, para que el color no muera
+noise      = 0.0117 # grano finísimo; disimula las bandas del degradado
+
 [colors.state]
 crit = "#f7768e"   # rosa/rojo · batería crítica, urgencia alta, red caída, apagar
 warn = "#e0af68"   # ámbar     · batería baja, dato de Claude caducado

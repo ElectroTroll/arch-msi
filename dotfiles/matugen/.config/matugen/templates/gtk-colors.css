@@ -1,0 +1,115 @@
+/* gtk.css — PLANTILLA de los colores de las aplicaciones GTK (arch-msi)
+ *
+ * Fuente:  dotfiles/matugen/.config/matugen/templates/gtk-colors.css   (esto)
+ * Salidas: ~/.config/gtk-3.0/gtk.css                                   (artefacto)
+ *          ~/.config/gtk-4.0/gtk.css                                   (artefacto)
+ *
+ * ⚠️ NO EDITAR las salidas: las reescribe matugen en cada arranque.
+ *
+ * Tarea 3.5, paso B. El paso A puso el tema, los iconos, el cursor y la fuente;
+ * esto es lo que faltaba para que las aplicaciones dejen de ser «oscuras» y
+ * pasen a llevar LOS COLORES DEL FONDO DE PANTALLA, como el resto del
+ * escritorio desde la 3.0.
+ *
+ * CÓMO FUNCIONA. Tanto libadwaita (GTK4) como adw-gtk3 (GTK3, paso A)
+ * construyen su aspecto sobre un puñado de colores con nombre. Redefinirlos con
+ * @define-color en el gtk.css del usuario los sustituye en todo el tema sin
+ * tocar un solo widget: no se reescribe el tema, se le cambian las constantes.
+ *
+ * ⚠️ HASTA DÓNDE LLEGA ESTO, para no prometer de más:
+ *   · Las apps que traen su propio CSS con colores cableados lo ignoran.
+ *   · GTK3 sin adw-gtk3 usaría los nombres clásicos `theme_*`, que por eso se
+ *     definen también más abajo.
+ *   · Las que se pintan solas (Electron, Firefox con su tema propio) no leen
+ *     nada de esto: van por `color-scheme` del portal, ver §18.
+ *
+ * LOS NOMBRES NO SON INVENTADOS: son los de la API de libadwaita
+ * (AdwStyleManager, «Style Classes» y «Named Colors» de su documentación). Los
+ * valores sí salen de aquí: roles de Material You que genera matugen desde el
+ * fondo, con los mismos nombres que usan las demás plantillas del repo.
+ */
+
+/* --- Ventana y contenido -------------------------------------------------- */
+/* `window_bg_color` es el fondo general; `view_bg_color` el de las zonas de
+ * contenido (listas, vistas de archivos), que en Material You corresponde al
+ * contenedor más bajo: por eso NO son el mismo color. */
+@define-color window_bg_color {{colors.surface.default.hex}};
+@define-color window_fg_color {{colors.on_surface.default.hex}};
+@define-color view_bg_color {{colors.surface_container_lowest.default.hex}};
+@define-color view_fg_color {{colors.on_surface.default.hex}};
+
+/* --- Barra de título, barras laterales, tarjetas y diálogos ---------------- */
+/* La escala de contenedores de Material You encaja con la jerarquía de
+ * libadwaita casi uno a uno: cuanto más «encima» está la superficie, más alto
+ * el contenedor. */
+@define-color headerbar_bg_color {{colors.surface_container.default.hex}};
+@define-color headerbar_fg_color {{colors.on_surface.default.hex}};
+@define-color headerbar_border_color {{colors.outline_variant.default.hex}};
+@define-color headerbar_backdrop_color {{colors.surface.default.hex}};
+
+@define-color sidebar_bg_color {{colors.surface_container_low.default.hex}};
+@define-color sidebar_fg_color {{colors.on_surface.default.hex}};
+@define-color sidebar_backdrop_color {{colors.surface.default.hex}};
+@define-color sidebar_border_color {{colors.outline_variant.default.hex}};
+@define-color secondary_sidebar_bg_color {{colors.surface_container_low.default.hex}};
+@define-color secondary_sidebar_fg_color {{colors.on_surface.default.hex}};
+
+@define-color card_bg_color {{colors.surface_container_low.default.hex}};
+@define-color card_fg_color {{colors.on_surface.default.hex}};
+
+@define-color dialog_bg_color {{colors.surface_container_high.default.hex}};
+@define-color dialog_fg_color {{colors.on_surface.default.hex}};
+
+@define-color popover_bg_color {{colors.surface_container.default.hex}};
+@define-color popover_fg_color {{colors.on_surface.default.hex}};
+
+@define-color thumbnail_bg_color {{colors.surface_container.default.hex}};
+@define-color thumbnail_fg_color {{colors.on_surface.default.hex}};
+
+/* --- Acento ---------------------------------------------------------------- */
+/* EL MISMO `accent` que pinta la barra, rofi y el borde de la ventana activa.
+ * No es `colors.primary`: sale de un TONO de la paleta primaria elegido en
+ * tokens.toml, y lo resuelve theme-apply porque las plantillas no ven
+ * `palettes.*`. Ver la sección «Pasada 1» del script.
+ *
+ * `accent_bg_color` es el fondo de un botón sugerido y `accent_color` el mismo
+ * acento cuando va como TEXTO sobre el fondo de la ventana; libadwaita los
+ * distingue a propósito. */
+@define-color accent_bg_color {{accent}};
+@define-color accent_fg_color {{colors.on_primary.default.hex}};
+@define-color accent_color {{accent}};
+
+/* --- Estados --------------------------------------------------------------- */
+/* Salen de [colors.state] de tokens.toml, los MISMOS que ya usan Waybar y
+ * dunst: un aviso amarillo tiene que ser el mismo amarillo en la barra y en un
+ * diálogo. No se derivan del fondo a propósito. */
+@define-color success_color {{state_ok}};
+@define-color success_bg_color {{state_ok}};
+@define-color success_fg_color {{colors.on_primary.default.hex}};
+
+@define-color warning_color {{state_warn}};
+@define-color warning_bg_color {{state_warn}};
+@define-color warning_fg_color {{colors.on_primary.default.hex}};
+
+@define-color error_color {{state_crit}};
+@define-color error_bg_color {{state_crit}};
+@define-color error_fg_color {{colors.on_error.default.hex}};
+
+@define-color destructive_color {{state_crit}};
+@define-color destructive_bg_color {{state_crit}};
+@define-color destructive_fg_color {{colors.on_error.default.hex}};
+
+/* --- Nombres clásicos de GTK3 ---------------------------------------------- */
+/* adw-gtk3 entiende los de arriba, pero un tema GTK3 que no sea adw-gtk3 —o una
+ * aplicación vieja que los consulte directamente— usa estos otros. Definirlos
+ * cuesta cinco líneas y evita que media interfaz se quede sin teñir; en GTK4 se
+ * ignoran sin más. */
+@define-color theme_bg_color {{colors.surface.default.hex}};
+@define-color theme_fg_color {{colors.on_surface.default.hex}};
+@define-color theme_base_color {{colors.surface_container_lowest.default.hex}};
+@define-color theme_text_color {{colors.on_surface.default.hex}};
+@define-color theme_selected_bg_color {{accent}};
+@define-color theme_selected_fg_color {{colors.on_primary.default.hex}};
+@define-color insensitive_bg_color {{colors.surface_container.default.hex}};
+@define-color insensitive_fg_color {{colors.outline.default.hex}};
+@define-color borders {{colors.outline_variant.default.hex}};

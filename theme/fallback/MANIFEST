@@ -11,3 +11,12 @@ fastfetch__config.jsonc  fastfetch/config.jsonc
 wlogout__style.css  wlogout/style.css
 rofi__theme.rasi  rofi/theme.rasi
 yazi__theme.toml  yazi/theme.toml
+__home__elok__.local__share__ZapZap__customizations__global__css__arch-msi.css  /home/elok/.local/share/ZapZap/customizations/global/css/arch-msi.css
+gtk-3.0__settings.ini  gtk-3.0/settings.ini
+gtk-4.0__settings.ini  gtk-4.0/settings.ini
+gtk-3.0__gtk.css  gtk-3.0/gtk.css
+gtk-4.0__gtk.css  gtk-4.0/gtk.css
+kdeglobals-arch-msi.conf  kdeglobals-arch-msi.conf
+Kvantum__arch-msi__arch-msi.kvconfig  Kvantum/arch-msi/arch-msi.kvconfig
+Kvantum__arch-msi__arch-msi.svg  Kvantum/arch-msi/arch-msi.svg
+Kvantum__kvantum.kvconfig  Kvantum/kvantum.kvconfig

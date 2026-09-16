@@ -156,17 +156,36 @@ for k in list(flat):
 import os
 flat["home"] = os.path.expanduser("~")
 
+#   GTK quiere el NOMBRE de un tema instalado, no el modo. `matugen.mode` dice
+#   dark/light/smart y de ahí salen las dos claves que necesita settings.ini.
+#   El tema es adw-gtk-theme (repositorio `extra`), que instala DOS temas
+#   distintos, adw-gtk3 y adw-gtk3-dark: la variante oscura es un tema propio y
+#   no un modificador del claro.
+#   `smart` deja la decisión a cada aplicación, así que no se impone oscuro.
+#   El SVG de Kvantum mide la opacidad en 0-1 y el resto del tema en
+#   hexadecimal (#AARRGGBB). El token se declara UNA vez, en hexadecimal, y la
+#   conversión se hace aquí en vez de repetir el número en otra unidad.
+_alfa = flat.get("apps_selection_alpha")
+if isinstance(_alfa, str):
+    flat["selection_opacity"] = round(int(_alfa, 16) / 255, 3)
+
+_modo = d.get("matugen", {}).get("mode", "dark")
+flat["gtk_theme_name"]  = "adw-gtk3-dark" if _modo == "dark" else "adw-gtk3"
+flat["gtk_prefer_dark"] = 1 if _modo == "dark" else 0
+
 json.dump(flat, open(sys.argv[2], "w"), ensure_ascii=False)
 PY
 
-read -r TYPE CONTRAST TONE IDX MODE BLUE PINK MAGENTA FALLBACK ALTFAM ALTTONE <<<"$(
+read -r TYPE CONTRAST TONE IDX MODE BLUE PINK MAGENTA FALLBACK ALTFAM ALTTONE ICONOS CURSOR SELTONE SELALPHA <<<"$(
 python3 - "$TOKENS" <<'PY'
 import sys, tomllib
 d = tomllib.load(open(sys.argv[1], "rb"))
 m, i = d["matugen"], d["colors"]["identity"]
+a = d["apps"]
 print(m["type"], m["contrast"], m["accent_tone"], m["source_color_index"],
       m["mode"], i["blue"], i["pink"], i["magenta"], i["seed_fallback"],
-      m["accent_alt_family"], m["accent_alt_tone"])
+      m["accent_alt_family"], m["accent_alt_tone"],
+      a["icon_theme"], a["cursor_theme"], a["selection_tone"], a["selection_alpha"])
 PY
 )"
 
@@ -232,12 +251,18 @@ ACCENT="$(printf '%s' "$PAL" | jq -er ".palettes.primary.\"$TONE\".color")" \
 # el marco de la ventana enfocada tiene que venir del wallpaper entero.
 ACCENT_ALT="$(printf '%s' "$PAL" | jq -er ".palettes.\"$ALTFAM\".\"$ALTTONE\".color")" \
     || die "no hay $ALTFAM tono $ALTTONE en la paleta"
+# Color de la SELECCIÓN (filas de Dolphin y demás). Sale de la misma paleta
+# primaria que el acento pero de un tono más bajo, o sea más saturado: como
+# bloque grande, el acento claro quedaba pálido. Ver [apps] en tokens.toml.
+ACCENT_SEL="$(printf '%s' "$PAL" | jq -er ".palettes.primary.\"$SELTONE\".color")" \
+    || die "no hay tono $SELTONE en la paleta primaria"
 # `wallpaper` es la ruta de la imagen en uso: hyprlock la pinta desenfocada como
 # fondo del bloqueo. Va vacía si el tema se generó desde una semilla, y entonces
 # hyprlock cae a su color liso.
 jq --arg a "$ACCENT" --arg s "${ACCENT#\#}" --arg w "${WP:-}" \
    --arg a2 "$ACCENT_ALT" --arg s2 "${ACCENT_ALT#\#}" \
-   '. + {accent:$a, accent_stripped:$s, wallpaper:$w, accent_alt:$a2, accent_alt_stripped:$s2} + (to_entries|map(select(.value|type=="string" and startswith("#")))|map({key:(.key+"_stripped"), value:(.value[1:])})|from_entries)' \
+   --arg sel "$ACCENT_SEL" --arg sels "${ACCENT_SEL#\#}" --arg sela "$SELALPHA" \
+   '. + {accent:$a, accent_stripped:$s, wallpaper:$w, accent_alt:$a2, accent_alt_stripped:$s2, accent_sel:$sel, accent_sel_stripped:$sels, selection_alpha:$sela} + (to_entries|map(select(.value|type=="string" and startswith("#")))|map({key:(.key+"_stripped"), value:(.value[1:])})|from_entries)' \
    "$TMP/resolved.json" > "$TMP/render.json"
 
 # --- 4. Contraste ------------------------------------------------------------
@@ -314,6 +339,104 @@ if command -v magick >/dev/null && [ -d /usr/share/wlogout/icons ]; then
     echo "theme-apply: iconos de wlogout teñidos con $ACCENT"
 fi
 
+# --- 5e. Iconos teñidos con el acento -----------------------------------------
+# Tela-circle (el tema de iconos de HyDE) viene en dieciséis colores FIJOS, y
+# ninguno es el acento de este escritorio: el más azul, `blue`, es un índigo
+# #5677fc bastante más oscuro. Como el acento sale del fondo de pantalla y
+# cambia con él, ninguna variante fija iba a casar nunca.
+#
+# Así que se genera una: se copia la variante azul a ~/.local/share/icons y se
+# sustituye su azul por el acento. Es el mismo recurso que ya se usa con los
+# iconos de wlogout (5b), a otra escala.
+#
+# ⚠️ CUESTA MENOS DE LO QUE PARECE, y se midió antes de escribirlo: el tema son
+# 110 MB aparentes pero solo 44 MB reales —16 752 de sus 27 000 entradas son
+# symlinks— y el azul aparece en apenas 177 SVG. La copia y el reemplazo tardan
+# 0,55 s.
+#
+# Aun así NO se rehace en cada arranque: se guarda el acento usado en un archivo
+# marca y solo se regenera cuando cambia. Con el mismo fondo, esto no hace nada.
+ICO_BASE="/usr/share/icons/Tela-circle-blue"
+ICO_DST="$HOME/.local/share/icons/Tela-circle-arch-msi"
+ICO_AZUL="#5677fc"
+if [ -d "$ICO_BASE" ]; then
+    if [ "$(cat "$ICO_DST/.acento" 2>/dev/null)" != "$ACCENT" ]; then
+        rm -rf "$ICO_DST"
+        mkdir -p "$(dirname "$ICO_DST")"
+        # `-a` conserva los symlinks: sin él, la copia pasaría de 44 MB a 110 MB.
+        cp -a "$ICO_BASE" "$ICO_DST"
+        sed -i "s/^Name=.*/Name=Tela-circle-arch-msi/" "$ICO_DST/index.theme"
+        grep -rl "${ICO_AZUL#\#}" "$ICO_DST" --include='*.svg' 2>/dev/null \
+            | xargs -r sed -i "s/$ICO_AZUL/$ACCENT/gI"
+        printf '%s' "$ACCENT" > "$ICO_DST/.acento"
+        # El caché de iconos de GTK guarda el tema por nombre; tocar el
+        # directorio evita que una app recién abierta siga viendo los viejos.
+        touch "$ICO_DST"
+        echo "theme-apply: iconos regenerados con el acento $ACCENT"
+    fi
+else
+    echo "theme-apply: falta $ICO_BASE (¿falta tela-circle-icon-theme-all-git?)" >&2
+fi
+
+# --- 5c. Esquema de color de KDE (Dolphin) ------------------------------------
+# Dolphin es KF6 y sus colores NO salen de la paleta de Qt: los pone
+# KColorScheme, que lee ~/.config/kdeglobals. Por eso el tema de las apps Qt no
+# se arregla eligiendo un `QT_QPA_PLATFORMTHEME` —se intentó con qt6ct el
+# 2026-09-16 y salió peor, ver §33—, sino escribiendo ese esquema.
+#
+# ⚠️ kdeglobals NO SE PUEDE GENERAR ENTERO. Ahí escribe también Dolphin, que
+# guarda [KFileDialog Settings] con el tamaño de la barra lateral y el orden de
+# las columnas. Sobrescribirlo borraría esos ajustes en cada arranque. Se funden
+# SOLO las secciones de color, y el resto del archivo se conserva tal cual.
+#
+# La conversión de hex a "R,G,B" se hace aquí y no en la plantilla: el artefacto
+# se lee mejor en hex al revisarlo, y KDE escribe siempre en decimal.
+KDE_SRC="$HOME/.config/kdeglobals-arch-msi.conf"
+KDE_DST="$HOME/.config/kdeglobals"
+if [ -f "$KDE_SRC" ]; then
+    if [ -L "$KDE_DST" ]; then
+        echo "theme-apply: $KDE_DST es un ENLACE de Stow, no lo toco" >&2
+    else
+        python3 - "$KDE_SRC" "$KDE_DST" <<'PYKDE'
+import configparser, sys
+
+def leer(ruta):
+    c = configparser.ConfigParser(strict=False, interpolation=None)
+    c.optionxform = str
+    try:
+        c.read(ruta, encoding="utf-8")
+    except FileNotFoundError:
+        pass
+    return c
+
+def a_rgb(v):
+    # KDE escribe los colores en decimal. Acepta tres componentes (R,G,B) y
+    # tambien cuatro (R,G,B,A), que es lo que hace falta para que la fila
+    # seleccionada de Dolphin sea translucida: en hexadecimal ese alfa va
+    # DELANTE (#AARRGGBB), como en Qt, y aqui pasa al final.
+    v = v.strip()
+    if not v.startswith("#"):
+        return v
+    if len(v) == 7:
+        return "{},{},{}".format(int(v[1:3], 16), int(v[3:5], 16), int(v[5:7], 16))
+    if len(v) == 9:
+        return "{},{},{},{}".format(int(v[3:5], 16), int(v[5:7], 16), int(v[7:9], 16), int(v[1:3], 16))
+    return v
+
+src, dst = leer(sys.argv[1]), leer(sys.argv[2])
+for sec in src.sections():
+    if not dst.has_section(sec):
+        dst.add_section(sec)
+    for k, v in src.items(sec):
+        dst.set(sec, k, a_rgb(v))
+
+with open(sys.argv[2], "w", encoding="utf-8") as f:
+    dst.write(f, space_around_delimiters=False)
+PYKDE
+        echo "theme-apply: esquema de color de KDE fundido en kdeglobals"
+    fi
+fi
+
 # --- 5c. Modo claro/oscuro de las APLICACIONES --------------------------------
 # El escritorio (Waybar, rofi, kitty, dunst, hyprlock...) ya toma el modo de
 # `matugen.mode` en tokens.toml, porque lo pinta matugen. Las APLICACIONES no:
@@ -324,17 +447,24 @@ fi
 # y Qt 6 no miran ningún archivo de tema: consultan la preferencia
 # `org.freedesktop.appearance color-scheme` que publica xdg-desktop-portal-gtk,
 # y ESE portal la deduce de la clave gsettings que se fija aquí. Las apps GTK3
-# que no consultan el portal quedan cubiertas por el paquete Stow `gtk`
-# (~/.config/gtk-3.0/settings.ini).
+# que no consultan el portal quedan cubiertas por los settings.ini de GTK3 y
+# GTK4, que desde la tarea 3.5 los GENERA matugen desde esta misma tokens.toml
+# (antes eran el paquete Stow `gtk`, retirado el 2026-09-16).
 #
 # POR QUÉ AQUÍ Y NO EN UN ARCHIVO DEL REPOSITORIO. La clave vive en dconf, una
 # base de datos binaria: no hay archivo que enlazar con Stow. Ponerla en cada
 # arranque desde el `mode` ya declarado en tokens.toml mantiene una sola fuente
 # de verdad, en vez de un segundo sitio donde decir si el sistema es oscuro.
 if command -v gsettings >/dev/null; then
+    # ⚠️ EL NOMBRE DEL TEMA CAMBIÓ EN LA 3.5. Antes se fijaba `Adwaita-dark`, que
+    # NO EXISTE como tema instalado: /usr/share/themes solo tenía Default y
+    # Emacs. No estaba roto —GTK cae a su Adwaita interno y quien oscurecía era
+    # `gtk-application-prefer-dark-theme`—, pero el nombre mentía y habría
+    # cambiado el aspecto solo si alguien llegaba a instalar un tema con ese
+    # nombre. Ahora se nombra un tema real, de `adw-gtk-theme`.
     case "$MODE" in
-        dark)  ESQUEMA="prefer-dark";  GTK_TEMA="Adwaita-dark" ;;
-        light) ESQUEMA="prefer-light"; GTK_TEMA="Adwaita" ;;
+        dark)  ESQUEMA="prefer-dark";  GTK_TEMA="adw-gtk3-dark" ;;
+        light) ESQUEMA="prefer-light"; GTK_TEMA="adw-gtk3" ;;
         # `smart` deja que decida cada app: no se impone nada.
         *)     ESQUEMA=""; GTK_TEMA="" ;;
     esac
@@ -343,8 +473,33 @@ if command -v gsettings >/dev/null; then
         # suelto) abortaría el script entero por el `set -e`.
         gsettings set org.gnome.desktop.interface color-scheme "$ESQUEMA" 2>/dev/null || true
         gsettings set org.gnome.desktop.interface gtk-theme "$GTK_TEMA" 2>/dev/null || true
-        echo "theme-apply: aplicaciones en $ESQUEMA ($GTK_TEMA)"
+        # Iconos y cursor: los MISMOS valores que la plantilla escribe en los
+        # settings.ini, para que no haya dos respuestas según a quién pregunte
+        # cada aplicación. Salen de [apps] en tokens.toml.
+        gsettings set org.gnome.desktop.interface icon-theme "$ICONOS" 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface cursor-theme "$CURSOR" 2>/dev/null || true
+        echo "theme-apply: aplicaciones en $ESQUEMA ($GTK_TEMA · $ICONOS · cursor $CURSOR)"
     fi
+    # ⚠️ LA FUENTE SÍ HAY QUE FIJARLA AQUÍ, y esto se midió en vez de suponerse.
+    # Escribirla solo en los settings.ini NO FUNCIONA: con la plantilla ya
+    # aplicada, `gtk-query-settings` —que enseña los valores EFECTIVOS, no el
+    # archivo— seguía devolviendo "Adwaita Sans 11" mientras el archivo decía
+    # "JetBrainsMono Nerd Font 10". El motivo es que en esta sesión GTK3 toma
+    # esas claves de GSettings, y `font-name` ni siquiera estaba en dconf: gana
+    # el DEFAULT DEL ESQUEMA de GNOME. O sea que settings.ini pierde contra un
+    # valor que nadie ha elegido.
+    #
+    # Por eso la fuente se lee aparte y no con el `read -r` posicional de más
+    # arriba: "JetBrainsMono Nerd Font" lleva ESPACIOS y aquel read la partiría
+    # en trozos.
+    FUENTE_UI="$(python3 - "$TOKENS" <<'PYFONT'
+import sys, tomllib
+d = tomllib.load(open(sys.argv[1], "rb"))
+print(f'{d["font"]["family"]} {d["font"]["size_base_pt"]}')
+PYFONT
+)"
+    gsettings set org.gnome.desktop.interface font-name "$FUENTE_UI" 2>/dev/null || true
+    echo "theme-apply: fuente de las aplicaciones -> $FUENTE_UI"
 fi
 
 # --- 6. Recargas -------------------------------------------------------------

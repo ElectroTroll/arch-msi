@@ -129,3 +129,72 @@ output_path = "~/.config/yazi/theme.toml"
 [templates.zapzap]
 input_path  = "~/.config/matugen/templates/zapzap-waweb.css"
 output_path = "~/.local/share/ZapZap/customizations/global/css/arch-msi.css"
+
+# Aplicaciones GTK3 y GTK4 (tarea 3.5). UNA plantilla y DOS salidas: las dos
+# versiones leen el mismo formato y aquí todas las claves valen para ambas.
+#
+# ⚠️ ESTAS DOS RUTAS ERAN ENLACES DE STOW hasta el 2026-09-16. El paquete
+# `dotfiles/gtk/` se retiró en esta misma tarea y los enlaces se deshicieron con
+# `stow -D` ANTES de declarar esto: de lo contrario theme-apply.sh habría
+# abortado con "es un ENLACE de Stow", que es exactamente la protección que la
+# regla de oro pone aquí. Si algún día `git status` muestra un settings.ini
+# modificado dentro del repo, es que alguien volvió a enlazarlos.
+[templates.gtk3]
+input_path  = "~/.config/matugen/templates/gtk-settings.ini"
+output_path = "~/.config/gtk-3.0/settings.ini"
+
+[templates.gtk4]
+input_path  = "~/.config/matugen/templates/gtk-settings.ini"
+output_path = "~/.config/gtk-4.0/settings.ini"
+
+# Colores de las aplicaciones GTK (tarea 3.5, paso B). Otra vez UNA plantilla y
+# DOS salidas: los nombres de libadwaita valen igual para GTK4 y para adw-gtk3.
+#
+# ⚠️ `gtk.css` NO EXISTÍA en ninguna de las dos rutas antes de esto, así que no
+# pisa nada del usuario. Si algún día se quisiera CSS propio a mano, tendría que
+# entrar por esta plantilla: un archivo suelto ahí lo borraría theme-apply.
+[templates.gtk3-colors]
+input_path  = "~/.config/matugen/templates/gtk-colors.css"
+output_path = "~/.config/gtk-3.0/gtk.css"
+
+[templates.gtk4-colors]
+input_path  = "~/.config/matugen/templates/gtk-colors.css"
+output_path = "~/.config/gtk-4.0/gtk.css"
+
+# Esquema de color de KDE (tarea 3.5, paso C). Dolphin es KF6 y sus colores los
+# pone KColorScheme, que lee ~/.config/kdeglobals y NO la paleta de Qt: por eso
+# el paso C no se resuelve con un platformtheme. Ver §33.
+#
+# ⚠️ La salida es un INTERMEDIO. `theme-apply` funde sus secciones de color en
+# ~/.config/kdeglobals, que no se puede generar entero porque ahí escribe
+# también Dolphin. El nombre de este artefacto no existe en el repo, así que la
+# regla de oro se cumple.
+[templates.kde-colors]
+input_path  = "~/.config/matugen/templates/kde-colors.conf"
+output_path = "~/.config/kdeglobals-arch-msi.conf"
+
+# Tema de Kvantum (tarea 3.5). Kvantum es un QStyle: pinta los widgets de las
+# aplicaciones Qt él mismo, que es la única forma de que Dolphin lleve los
+# colores del tema sin cambiar el `platformtheme` —cambiarlo rompía la señal de
+# modo oscuro que necesita ZapZap, ver §33—.
+#
+# ⚠️ Un tema de Kvantum son DOS archivos: este INI y un SVG con las formas de
+# cada widget. El SVG no es una plantilla ni se versiona: lo copia theme-apply
+# de un tema del sistema. Ver la sección 5d del script.
+[templates.kvantum]
+input_path  = "~/.config/matugen/templates/kvantum-theme.kvconfig"
+output_path = "~/.config/Kvantum/arch-msi/arch-msi.kvconfig"
+
+# Las FORMAS de los widgets. Desde el 2026-09-16 también se generan: el SVG es
+# el de HyDE (GPL-3.0) con sus marcadores de color sustituidos por variables de
+# matugen. Antes se copiaba uno del sistema, pero los del sistema llevan sus
+# colores cableados y por eso la cabecera y las filas de Dolphin no había forma
+# de teñirlas. Ver §33.
+[templates.kvantum-svg]
+input_path  = "~/.config/matugen/templates/kvantum-theme.svg"
+output_path = "~/.config/Kvantum/arch-msi/arch-msi.svg"
+
+[templates.kvantum-select]
+input_path  = "~/.config/matugen/templates/kvantum-select.kvconfig"
+output_path = "~/.config/Kvantum/kvantum.kvconfig"
+

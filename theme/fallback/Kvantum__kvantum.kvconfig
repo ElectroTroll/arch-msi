@@ -1,0 +1,10 @@
+# kvantum.kvconfig — PLANTILLA del selector de tema de Kvantum (arch-msi)
+#
+# Fuente: dotfiles/matugen/.config/matugen/templates/kvantum-select.kvconfig
+# Salida: ~/.config/Kvantum/kvantum.kvconfig                     (artefacto)
+#
+# Un archivo de dos líneas cuya única función es decir qué tema usa Kvantum.
+# Se genera en vez de escribirse a mano porque `kvantummanager` —la GUI— lo
+# reescribe, y así una ejecución de theme-apply lo devuelve a su sitio.
+[General]
+theme=arch-msi

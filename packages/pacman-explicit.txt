@@ -1,16 +1,18 @@
 # Paquetes instalados explícitamente (pacman -Qqe)
-# Fuente: auditoría 2026-09-15 en elok-archmsi
+# Fuente: auditoría 2026-09-17 en elok-archmsi
 # Regenerar con: pacman -Qqe > packages/pacman-explicit.txt
 # AVISO: al regenerar, esta cabecera se pierde. Debe volver a añadirse a mano
 # (o usar scripts/update-inventories.sh, que la conserva).
 
 7zip
+adw-gtk-theme
 alsa-utils
 anydesk-bin
 ark
 base
 base-devel
 bat
+bibata-cursor-theme-bin
 blueman
 bluez
 bluez-utils
@@ -55,6 +57,7 @@ jre8-openjdk
 kdegraphics-thumbnailers
 kio-admin
 kitty
+kvantum
 lazygit
 less
 linux
@@ -104,6 +107,7 @@ proton-vpn-gtk-app
 python-gobject
 python-pyserial
 qt5-wayland
+qt6ct
 reflector
 ripgrep
 rofi
@@ -120,6 +124,7 @@ stow
 sudo
 swappy
 teamviewer
+tela-circle-icon-theme-all-git
 tree
 ttf-jetbrains-mono-nerd
 udiskie

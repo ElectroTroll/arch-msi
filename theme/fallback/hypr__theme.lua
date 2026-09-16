@@ -34,4 +34,24 @@ return {
     rounding    = 10,
     gaps_in     = 6,
     gaps_out    = 20,
+    -- Opacidad de las SUPERFICIES del escritorio ([opacity].surface de
+    -- tokens.toml, el mismo 0.80 de la barra y las notificaciones). Viaja por
+    -- aquí para que la regla de ventana de Dolphin no lo repita a mano: es el
+    -- único camino que tiene hyprland.lua para leer un token, porque no es una
+    -- plantilla.
+    opacity_surface = 0.8,
+    -- Opacidad de las VENTANAS, que la aplica Hyprland al conjunto y no al
+    -- color de una superficie: son los valores de HyDE ([opacity] de
+    -- tokens.toml). No se mezclan con `opacity_surface`, que es otra cosa.
+    opacity_window_active   = 0.92,
+    opacity_window_inactive = 0.75,
+    -- Desenfoque del fondo tras las ventanas translúcidas ([blur] de
+    -- tokens.toml). Va aquí y no cableado en hyprland.lua por lo de siempre:
+    -- un valor, un sitio.
+    blur_size       = 4,
+    blur_passes     = 3,
+    blur_brightness = 0.8,
+    blur_contrast   = 0.9,
+    blur_vibrancy   = 0.17,
+    blur_noise      = 0.01,
 }

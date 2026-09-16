@@ -1,0 +1,304 @@
+/* zapzap-waweb.css — PLANTILLA del tema de WhatsApp Web (arch-msi)
+ *
+ * Fuente:  dotfiles/matugen/.config/matugen/templates/zapzap-waweb.css (esto)
+ * Salida:  ~/.local/share/ZapZap/customizations/global/css/arch-msi.css
+ *
+ * ⚠️ NO EDITAR la salida: la reescribe matugen en cada `theme-apply`.
+ *
+ * La salida NO es una ruta de Stow —vive en los datos de la app, no en el
+ * repositorio— así que la regla de oro de §18 se sigue cumpliendo.
+ *
+ * ZapZap inyecta este archivo en la página con un <style>. La personalización
+ * por JavaScript de la app NO sirve aquí: crea un <script> inline y la CSP de
+ * WhatsApp lo bloquea. Los <style> sí pasan.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:root:root {
+    /* ---- Escala neutra (de aquí cuelga casi todo lo demás) ---- */
+    --WDS-neutral-gray-1000: #040b11;
+    --WDS-neutral-gray-900:  #0c141b;
+    --WDS-neutral-gray-850:  #1d252c;
+    --WDS-neutral-gray-800:  #283037;
+    --WDS-neutral-gray-500:  #6d757e;
+    --WDS-neutral-gray-300:  #bfc7d1;
+    --WDS-neutral-gray-50:   #edf6ff;
+
+    /* ---- El verde de WhatsApp pasa a ser el azul del sistema ---- */
+    --WDS-green-100: #c9e6ff;
+    --WDS-green-400: #8aceff;
+    --WDS-green-450: #58b4ef;
+    --WDS-green-500: #007cb2;
+    --WDS-green-750: #004565;
+    --WDS-green-800: #002337;
+    --WDS-emerald-400: #8aceff;
+
+    /* ---- Superficies ---- */
+    /* El fondo del <body> sale de aquí: `background: var(--WDS-app-wash, ...)`.
+       Es de la escala «warm-gray», aparte de la neutra, y sin esto quedaba el
+       #262524 original asomando por detrás de toda la aplicación. */
+    --WDS-app-wash:                      #0c141b;
+
+    --WDS-surface-default:               #0c141b;
+    --WDS-background-wash-plain:         #0c141b;
+    --WDS-background-wash-inset:         #0c141b;
+    --WDS-systems-chat-background-wallpaper: #0c141b;
+    --WDS-systems-chat-surface-tray:     #0c141b;
+    --WDS-surface-elevated-default:      #1d252c;
+    --WDS-surface-emphasized:            #1d252c;
+    --WDS-background-elevated-wash-plain:  #1d252c;
+    --WDS-background-elevated-wash-inset:  #1d252c;
+    --WDS-components-surface-nav-bar:    #1d252c;
+    --WDS-surface-elevated-emphasized:   #283037;
+    --WDS-systems-chat-surface-composer: #1d252c;
+
+    /* ---- Burbujas ---- */
+    --WDS-systems-bubble-surface-incoming: #1d252c;
+    --WDS-systems-bubble-surface-outgoing: #004565;
+    --WDS-systems-bubble-surface-business: #1d252c;
+    --WDS-systems-bubble-surface-e2e:      #1d252c;
+    --WDS-systems-bubble-surface-system:   #1d252c;
+    --WDS-systems-bubble-content-business: #8aceff;
+
+    /* ---- Acento y texto ---- */
+    --WDS-accent:                     #58b4ef;
+    --WDS-accent-deemphasized:        #002337;
+    --WDS-accent-emphasized:          #c9e6ff;
+    --WDS-content-on-accent:          #0c141b;
+    --WDS-content-action-emphasized:  #58b4ef;
+    --WDS-content-external-link:      #58b4ef;
+    --WDS-persistent-always-branded:  #58b4ef;
+    --WDS-persistent-activity-indicator: #8aceff;
+    --WDS-secondary-positive-deemphasized: #002337;
+    --WDS-components-filter-surface-selected: #002337;
+    --WDS-content-default:            #edf6ff;
+    --WDS-content-action-default:     #edf6ff;
+    --WDS-lines-outline-default:      #6d757e;
+    --WDS-systems-status-seen:        #6d757e;
+
+    /* ---- Capa antigua: quedan componentes sin migrar a WDS ---- */
+    --app-background: #0c141b;
+    --background-default: #0c141b;
+    --background-default-hover: #1d252c;
+    --panel-background-colored: #1d252c;
+    --panel-header-background: #1d252c;
+    --panel-input-background: #1d252c;
+    --conversation-panel-background: #0c141b;
+    --drawer-background: #0c141b;
+    --search-input-background: #1d252c;
+    --search-container-background: #0c141b;
+    --dropdown-background: #1d252c;
+    --incoming-background: #1d252c;
+    --rich-text-panel-background: #1d252c;
+    --panel-background-deeper: #0c141b;
+    --background-wash: #0c141b;
+    --primary: #edf6ff;
+    --icon: #edf6ff;
+    --text-primary: #edf6ff;
+    --primary-title: #edf6ff;
+    --panel-header-icon: #edf6ff;
+    --secondary: #6d757e;
+    --text-secondary: #6d757e;
+    --icon-lighter: #6d757e;
+    --bubble-meta-icon: #6d757e;
+    --border-stronger: #6d757e;
+    --teal: #58b4ef;
+    --teal-light: #58b4ef;
+    --app-highlight: #58b4ef;
+    --highlight: #58b4ef;
+    --unread-marker-background: #58b4ef;
+    --badge-unread: #58b4ef;
+    --checkmark-read: #58b4ef;
+    --icon-primary: #58b4ef;
+    --text-action: #58b4ef;
+  }
+
+  /* ================================================================
+   * SEGUNDO NIVEL: la capa heredada, definida en `.dark` SOBRE EL <body>.
+   *
+   * Esto es lo que faltaba en el primer intento. Las variables heredan, así
+   * que una definición en `.dark` (el body) gana a la mía en `:root` (el html)
+   * por cercanía al elemento, por mucha especificidad que le ponga arriba.
+   * Hay que pisarla en su mismo nivel: `body.dark.dark` da 0,2,1 contra el
+   * 0,1,0 de `.dark`.
+   *
+   * Muchos de estos tokens ya apuntan a WDS (`var(--WDS-...)`) y siguen el
+   * bloque de arriba solos; aquí van solo los que llevan color fijo.
+   * ================================================================ */
+  body.dark.dark {
+    /* Fondo del <body>: `background: var(--WDS-app-wash, ...)` */
+    --WDS-app-wash: #0c141b;
+
+    /* ---- Superficies ---- */
+    --panel-background: #0c141b;
+    --panel-background-deep: #040b11;
+    --panel-input-background: #1d252c;
+    --compose-panel-background-hover: #1d252c;
+    --avatar-background: #1d252c;
+    --modal-backdrop-solid: #0c141b;
+    --background-document-with-captions: #1d252c;
+    --product-thumb-background: #1d252c;
+    --empty-state-background: #1d252c;
+    --pill-background: #1d252c;
+    --notification-biz-background: #1d252c;
+    --notification-non-e2e-background: #1d252c;
+    --bot-suggestion-background-color: #1d252c;
+    --bot-command-pill-background-color: #1d252c;
+    --poll-modal-footer-background-color: #1d252c;
+    --button-reject-background: #1d252c;
+    --button-reject-background-hover: #283037;
+    --button-round-background-inverted: #283037;
+    --picker-background: #1d252c;
+    --pip-player-background: #1d252c;
+    --cover-image-background: #1d252c;
+    --chip-button-background: #283037;
+    --qc-button-border: #283037;
+    --qc-button-border-active: #333b42;
+    --avatar-circle-gray-light: #283037;
+    --multi-skin-tone-picker-emoji-selected-background: #283037;
+    --ptt-ooc-background: #283037;
+    --ptt-draft-waveform-background: #283037;
+    --ptt-draft-waveform-background-border: #0c141b;
+    --overlay: #0c141b;
+    --transient-background: #0c141b;
+    --comments-modal-background: #0c141b;
+    --icon-in-cell-frame-background: #0c141b;
+    --video-player-background: #040b11;
+    --app-background-deeper: #040b11;
+    --labels-plus-icon-color: #0c141b;
+
+    /* ---- Verdes sueltos que quedaban fuera de WDS ---- */
+    --icon-high-emphasis: #58b4ef;
+    --text-action: #58b4ef;
+    --sender-superpower-title: #58b4ef;
+    --qc-quantity-label-highlighted-background: #58b4ef;
+    --status-ring-unread: #58b4ef;
+    --ptt-green: #58b4ef;
+    --ptt-thumb-incoming-unplayed: #58b4ef;
+    --badge-pending: #007eb6;
+    --link-alt: #007eb6;
+    --button-bubble: #58b4efb3;
+    --audio-progress-incoming: #8aceff;
+    --audio-progress-outgoing: #007cb2;
+    --audio-track-outgoing: #004565;
+    --spinner-outgoing: #637593;
+    --ptt-waveform-outgoing-unplayed: #637593;
+    --ptt-waveform-outgoing-played: #b4c7e9;
+
+    /* ---- Texto y grises ---- */
+    --text-primary-strong: #edf6ff;
+    --modal-title: #edf6ff;
+    --map-overlay-foreground: #edf6ff;
+    --text-muted: #6d757e;
+    --primary-muted: #6d757e;
+    --intro-secondary: #6d757e;
+    --button-reject: #6d757e;
+    --label-disabled-text: #6d757e;
+    --link-preview-placeholder-image: #6d757e;
+    --media-editor-icon-secondary-color: #6d757e;
+    --labels-plus-icon-background: #6d757e;
+    --icon-disabled: #3f484f;
+    --text-disabled: #3f484f;
+    --media-gallery-thumb-icon: #3f484f;
+    --poll-button-disabled-receiver: #3f484f;
+    --avatar-border: #6d757e;
+    --business-name-subtitle: #6d757e;
+    --button-reject-hover: #bfc7d1;
+
+  }
+}
+
+/* ====================================================================
+ * LISTA DE CHATS COLAPSADA EN VENTANAS ESTRECHAS
+ *
+ * Cuando la ventana es pequeña, la columna de chats se reduce a los avatares y
+ * el chat abierto se queda con el resto. No es función de WhatsApp ni de ZapZap.
+ *
+ * ⚠️ QUÉ HAY QUE COLAPSAR, que no es lo obvio. `#pane-side` es SOLO la lista.
+ * El buscador y los filtros («Todos / No leídos») son HERMANOS suyos dentro de
+ * `#side`, y por encima hay una columna con `flex: 0 0 45%` que es la que fija
+ * el ancho de verdad. Colapsar solo `#pane-side` deja la columna reservando su
+ * 45%: la lista se encoge, la cabecera se queda ancha y aparece un hueco negro
+ * debajo. Comprobado en pantalla el 2026-09-13.
+ *
+ * Esa columna no tiene `id` y sus clases son ofuscadas, así que se la señala
+ * por su contenido con `:has(> #side)`, que no depende de nombres que Meta
+ * regenera.
+ *
+ * Dentro, se ocultan el título, el buscador y los filtros: en 76 px no caben, y
+ * sus funciones están en la barra de iconos de la izquierda, que sigue visible.
+ *
+ * Las FILAS no se tocan por selector: se les fuerza un `min-width` al grid para
+ * que se RECORTEN en vez de reorganizarse, y así el avatar conserva su tamaño.
+ * `overflow-x` y no `overflow`: `#pane-side` es el contenedor con scroll
+ * vertical y taparlo entero dejaría la lista sin poder recorrerse.
+ *
+ * El umbral está en px de la PÁGINA. Referencia medida: una ventana de 770 px
+ * lógicos en el panel interno da `innerWidth` 682.
+ * ==================================================================== */
+
+@media (max-width: 900px) {
+  /* 76 px es el valor exacto: la fila separa el avatar 24 px del borde y el
+     avatar mide 48 (24 + 48 = 72), y el texto del nombre empieza justo en 76.
+     Un píxel más y asoma la primera letra; menos, y se corta el avatar.
+     Depende de que la barra de scroll esté oculta — ver abajo—, porque si no
+     se come 10 px de los 76 y vuelve a cortar. */
+
+  /* La columna entera, no solo la lista */
+  div:has(> #side) {
+    flex: 0 0 76px !important;
+    width: 76px !important;
+    min-width: 76px !important;
+    max-width: 76px !important;
+  }
+  /* Título y cabecera de la columna */
+  div:has(> #side) > *:not(#side) { display: none !important; }
+
+  #side {
+    width: 76px !important;
+    min-width: 76px !important;
+    overflow-x: hidden !important;
+  }
+  /* Buscador y filtros */
+  #side > *:not(#pane-side) { display: none !important; }
+
+  #pane-side {
+    flex: 1 1 auto !important;
+    width: 76px !important;
+    min-width: 76px !important;
+    max-width: 76px !important;
+    overflow-x: hidden !important;
+    /* La barra de scroll se comía 10 px de los 96 y volvía a cortar el avatar.
+       La lista se sigue recorriendo con la rueda. */
+    scrollbar-width: none !important;
+  }
+  #pane-side::-webkit-scrollbar { width: 0 !important; height: 0 !important; }
+
+  #pane-side [role="grid"] { min-width: 340px !important; }
+
+  /* ⚠️ LA LÍNEA GRIS EN MITAD DEL CHAT.
+     `.two` lleva varias capas de superposición VACÍAS y `position: absolute`
+     —solo spans sin contenido— cuyo único cometido es dibujar los separadores
+     entre paneles. Conservan la división original (45% / resto), así que al
+     colapsar la columna real su borde se queda flotando sobre la conversación.
+     Al ser absolutas NO ocupan espacio: no empujan nada, solo pintan la raya.
+     Por eso basta con quitarles el borde; no hay que tocar su ancho.
+
+     ⚠️ NO colapsarlas por posición. Un intento anterior usó
+     `.two > div > div:first-child`, que con la lista vacía cogía la capa
+     correcta pero **con un chat abierto cogía también el panel de
+     conversación** y lo comprimía a 76 px: la conversación entera, composer
+     incluido, apilada sobre la lista. El selector de abajo se apoya en la
+     FIRMA del contenido (un div con un único span vacío), comprobado en la
+     página: coge 3 elementos, ninguno es la lista ni la conversación ni las
+     contiene. */
+  .two div:has(> div > span:only-child:empty) {
+    border-left-color: transparent !important;
+    border-right-color: transparent !important;
+  }
+
+  /* WhatsApp impone un ancho mínimo al contenedor de la aplicación (~750 px).
+     Por debajo de eso el contenido desborda y aparece scroll horizontal, con
+     una franja muerta a la derecha. Pasa con o sin el colapso: es de ellos.
+     `.two` es una clase REAL y estable de WhatsApp Web, no de las ofuscadas. */
+  .two { min-width: 0 !important; }
+}

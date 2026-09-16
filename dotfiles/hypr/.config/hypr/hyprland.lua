@@ -193,7 +193,52 @@ hl.env("HYPRCURSOR_SIZE", "24")
 -- devuelve `ColorScheme.Dark`, pero pinta el fondo en #faf9f8 (blanco), porque
 -- en este sistema no hay ningún tema Adwaita-dark de GTK3 en /usr/share/themes.
 -- Comprobado el 2026-09-13 mirando la paleta, no el nombre del esquema.
+--
+-- ⚠️ SEGUNDA TRAMPA, MÁS CARA: `qt6ct` TAMPOCO SIRVE, y por un motivo que no se
+-- ve mirando colores. Se probó el 2026-09-16 (tarea 3.5, paso C) porque lee una
+-- PALETA COMPLETA y el portal solo sabe decir «oscuro o claro»: la paleta se
+-- aplicó perfecta —Window #0c141b, Highlight con el acento del escritorio—, y
+-- aun así rompió dos aplicaciones:
+--
+--   · ZapZap se puso en CLARO. Su ajuste es `theme=auto`, y su código hace
+--     literalmente `if color_scheme == Dark: return Dark; return Light`
+--     (zapzap/core/theme/theme_manager.py). Al no recibir Dark, cae a claro y
+--     WhatsApp Web se lleva por delante el CSS del tema (§27).
+--   · Dolphin salió CLARO CON TROZOS OSCUROS: los widgets tomaban la paleta de
+--     qt6ct, pero todo lo que pinta KColorScheme (KF6) caía a Breeze claro.
+--
+-- La causa, medida con QStyleHints:
+--     PLATFORMTHEME=xdgdesktopportal -> colorScheme=Dark     Window=#323232
+--     PLATFORMTHEME=qt6ct            -> colorScheme=Unknown  Window=#0c141b
+--
+-- **qt6ct 0.11 no implementa `colorScheme()`**, así que Qt no sabe decirle a
+-- nadie si el sistema es oscuro. Una paleta bonita no sustituye a esa señal:
+-- quien pregunta se queda sin respuesta y asume claro.
+--
+-- Por eso se vuelve a `xdgdesktopportal`, que es quien SÍ da la señal. Los
+-- colores propios de Dolphin entran por otra vía que no depende de este plugin:
+-- el esquema KDE que theme-apply funde en ~/.config/kdeglobals, que es de donde
+-- lee KColorScheme. Ver §33.
 hl.env("QT_QPA_PLATFORMTHEME", "xdgdesktopportal")
+
+-- ESTILO DE LOS WIDGETS QT: Kvantum, adoptado el 2026-09-16 con la estética de
+-- HyDE (github.com/Hyde-project/hyde).
+--
+-- ⚠️ ESTO NO SUSTITUYE A LA LÍNEA DE ARRIBA, LA COMPLEMENTA, y esa es toda la
+-- gracia. HyDE activa Kvantum a través de `QT_QPA_PLATFORMTHEME=qt6ct`, que
+-- aquí NO se puede usar: qt6ct no implementa `colorScheme()` y sin esa señal
+-- ZapZap se pone en claro (comprobado el 2026-09-16, ver §33).
+--
+-- `QT_STYLE_OVERRIDE` es la otra puerta: Kvantum es un QStyle, así que se
+-- carga como estilo sin tocar el platformtheme. El portal sigue dando la señal
+-- de modo oscuro Y los widgets los pinta Kvantum con los colores del tema. Es
+-- la mitad buena de lo que hace HyDE, sin la que rompía cosas.
+--
+-- POR QUÉ HACE FALTA: la paleta de una app Qt la pone el platformtheme, y el
+-- del portal no lee kdeglobals —ahí solo mira KColorScheme, o sea partes
+-- sueltas—. Por eso Dolphin salía con el gris genérico aunque su esquema de
+-- color estuviera bien escrito.
+hl.env("QT_STYLE_OVERRIDE", "kvantum")
 
 
 -----------------------
@@ -241,6 +286,10 @@ if not ok or type(theme) ~= "table" then
         surface = "rgba(16181dff)", outline = "rgba(595959aa)",
         shadow = "rgba(000000ee)",
         border_size = 2, rounding = 10, gaps_in = 5, gaps_out = 20,
+        opacity_surface = 0.80,
+        opacity_window_active = 0.90, opacity_window_inactive = 0.75,
+        blur_size = 8, blur_passes = 3, blur_brightness = 0.80,
+        blur_contrast = 0.90, blur_vibrancy = 0.1696, blur_noise = 0.0117,
     }
 end
 
@@ -276,9 +325,22 @@ hl.config({
         rounding       = theme.rounding,
         rounding_power = 2,
 
-        -- Change transparency of focused and unfocused windows
-        active_opacity   = 1.0,
-        inactive_opacity = 1.0,
+        -- TRANSPARENCIA DE LAS VENTANAS, con los valores de HyDE
+        -- (github.com/Hyde-project/hyde), adoptados el 2026-09-16: la activa
+        -- casi opaca y la de detrás apagada, que es lo que da la sensación de
+        -- profundidad de ese escritorio. Salen de [opacity] en tokens.toml y
+        -- llegan por theme.lua.
+        --
+        -- ⚠️ Esto tiñe la ventana ENTERA, contenido incluido, y no es lo mismo
+        -- que la opacidad de las superficies de la barra o las notificaciones,
+        -- que va en el canal alfa del color. Por eso son tokens distintos.
+        --
+        -- `fullscreen_opacity` se queda en 1: un vídeo o una foto a pantalla
+        -- completa con el escritorio transparentándose detrás se ve mal. HyDE
+        -- hace lo mismo.
+        active_opacity     = theme.opacity_window_active,
+        inactive_opacity   = theme.opacity_window_inactive,
+        fullscreen_opacity = 1.0,
 
         shadow = {
             enabled      = true,
@@ -287,11 +349,34 @@ hl.config({
             color        = theme.shadow,
         },
 
+        -- DESENFOQUE DEL FONDO. Con las opacidades de arriba el escritorio
+        -- deja pasar el wallpaper, y un fondo con detalle compite con el
+        -- texto; esto lo convierte en una mancha de color y devuelve la
+        -- legibilidad. Los valores salen de [blur] en tokens.toml.
+        --
+        -- ⚠️ `brightness` por debajo de 1 es lo que más ayuda a leer, más que
+        -- subir el desenfoque: oscurece lo que queda detrás, así que el texto
+        -- claro del tema gana contraste. Antes esto estaba en size 3 / passes 1
+        -- y el blur apenas se notaba, que es justo lo que se quería arreglar.
         blur = {
-            enabled   = true,
-            size      = 3,
-            passes    = 1,
-            vibrancy  = 0.1696,
+            enabled    = true,
+            size       = theme.blur_size,
+            passes     = theme.blur_passes,
+            brightness = theme.blur_brightness,
+            contrast   = theme.blur_contrast,
+            vibrancy   = theme.blur_vibrancy,
+            noise      = theme.blur_noise,
+
+            -- `xray` deja ver el FONDO DE ESCRITORIO a través de las ventanas,
+            -- ignorando lo que haya debajo. Se queda apagado: con él, una
+            -- ventana sobre otra no muestra la de abajo desenfocada sino el
+            -- wallpaper, y se pierde la sensación de pila que dan las
+            -- opacidades distintas de activa e inactiva.
+            xray = false,
+
+            -- Desenfoca también menús y desplegables, que es donde más se nota
+            -- la diferencia al usarlo.
+            popups = true,
         },
     },
 
@@ -676,3 +761,15 @@ hl.window_rule({
     move  = "20 monitor_h-120",
     float = true,
 })
+
+-- DOLPHIN: SU TRANSPARENCIA YA NO SE HACE AQUÍ, y conviene saber por qué.
+--
+-- Del 2026-09-16 al mismo día hubo aquí una `hl.window_rule` que le ponía la
+-- opacidad de la barra a la ventana entera. Se retiró al copiar la estética de
+-- HyDE, que resuelve esto mucho mejor: en su `kdeglobals`, el fondo de la VISTA
+-- —la lista de archivos— es `#00000000`, transparente del todo, y el resto de
+-- la ventana se queda opaco. Así la barra de herramientas y los paneles siguen
+-- legibles y lo que se transparenta es justo lo que tiene sentido.
+--
+-- Dolphin queda con las opacidades generales de arriba, como cualquier otra
+-- ventana. La parte transparente la pone el esquema de color; ver §33.

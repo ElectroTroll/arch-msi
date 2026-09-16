@@ -44,7 +44,7 @@ y [`AGENTS.md`](AGENTS.md).
 |---------------|-----------------------------------------------------|
 | Documentación | `docs/` — contexto, hardware, cronología            |
 | Inventarios   | `packages/` — pacman, AUR, npm, servicios           |
-| Dotfiles      | `dotfiles/` — 18 paquetes Stow desplegados          |
+| Dotfiles      | `dotfiles/` — 17 paquetes Stow desplegados          |
 | Scripts       | `scripts/` — mantenimiento y utilidades de sesión   |
 | Sistema       | `system/` — fuera de `$HOME` (SDDM, perfil UCM)     |
 | Obsidian      | `obsidian/` — 3 plugins propios, enlazados al vault |
@@ -73,7 +73,7 @@ arch-msi/
 │   ├── keybindings.md
 │   └── history/       # cronología: incidentes y trampas, un archivo por episodio
 ├── dotfiles/          # paquetes GNU Stow, uno por componente
-│   ├── bin/        claude/     dunst/      gtk/
+│   ├── bin/        claude/     dolphin/    dunst/
 │   ├── hypr/       icons/      kitty/      matugen/
 │   ├── minecraft/  rofi/       shell/      spotify/
 │   ├── swappy/     waybar/     wlogout/    yazi/
@@ -137,3 +137,17 @@ stow    -v -d dotfiles -t ~ <paquete>   # enlazar
 dejada ahí aterrice en el repositorio. **No crear `~/Wallpapers` a mano antes de
 invocar a Stow**: si el directorio ya existe, Stow enlaza archivo por archivo y
 las imágenes nuevas dejan de versionarse, en silencio. Ver `PROJECT_CONTEXT` §17.
+
+## Archivos de terceros
+
+Dos archivos de este repositorio no son propios:
+
+| Archivo | Origen | Licencia |
+|---|---|---|
+| `dotfiles/matugen/.config/matugen/templates/kvantum-theme.svg` | [HyDE](https://github.com/Hyde-project/hyde) | GPL-3.0 |
+| `dotfiles/matugen/.config/matugen/templates/kvantum-theme.kvconfig` | [HyDE](https://github.com/Hyde-project/hyde) | GPL-3.0 |
+
+Son el tema de Kvantum `wallbash`, adaptado el 2026-09-16: las formas de los
+widgets son suyas y solo se han sustituido los colores por las variables de
+`theme/tokens.toml`. La atribución completa está en la cabecera de cada archivo
+y el porqué en `docs/PROJECT_CONTEXT.md` §34.
