@@ -2586,6 +2586,14 @@ cuatro de los directorios de `~`. De ahí `sort_translit = true`. `sort_by =
 "natural"` va en el mismo lote por otra razón: ordena `archivo2` antes que
 `archivo10`.
 
+**`show_hidden = true` desde el 2026-09-17.** Lo que más se navega en este equipo
+son dotfiles, y los paquetes Stow de este repositorio reproducen la ruta tal como
+cuelga de `$HOME`: `dotfiles/hypr/` contiene **una sola entrada y es `.config`**.
+Con los ocultos apagados, media docena de carpetas del repositorio parecen
+vacías. La tecla `.` sigue alternándolos sobre la marcha —es el atajo de fábrica
+de yazi, y el `keymap.toml` de este repo no lo toca—; el ajuste solo decide con
+qué estado arranca.
+
 ### Lo que la 3.3 cambió fuera de su propio paquete
 
 Es la primera tarea de la fase 3 que toca otro paquete Stow, `shell`, y las dos

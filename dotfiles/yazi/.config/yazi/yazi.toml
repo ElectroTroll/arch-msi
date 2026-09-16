@@ -26,6 +26,16 @@
 
 
 [mgr]
+# ARCHIVOS OCULTOS SIEMPRE A LA VISTA. En este equipo el contenido que más se
+# navega son dotfiles: los paquetes Stow de este repositorio reproducen la ruta
+# tal como cuelga de $HOME, así que `dotfiles/hypr/` contiene UNA entrada y es
+# `.config`. Con los ocultos apagados, media docena de carpetas del repositorio
+# parecen vacías —que es justo la duda que provocó este cambio, el 2026-09-17—.
+#
+# Sigue valiendo la tecla `.` para alternarlos sobre la marcha: esto solo cambia
+# con qué estado arranca yazi, no el atajo.
+show_hidden = true
+
 # ORDEN NATURAL, no alfabético. Medido el 2026-08-28 en un directorio de prueba:
 #     alphabetical  →  archivo1  archivo10  archivo2
 #     natural       →  archivo1  archivo2   archivo10
