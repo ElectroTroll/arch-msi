@@ -201,14 +201,19 @@ surface   = 0.80
 # iconos y todo. Son cosas distintas y por eso no comparten valor.
 #
 # Los números son los de HyDE (github.com/Hyde-project/hyde), adoptados el
-# 2026-09-16: su `defaults.lua` trae 0.90 y 0.75. La ventana activa se ve casi
-# opaca y la de detrás se apaga, que es lo que da la sensación de profundidad de
-# ese escritorio.
+# 2026-09-16: su `defaults.lua` trae 0.90 y 0.75, y de ahí se partió. Ajustado
+# después a mano: la ventana ACTIVA se deja OPACA (1) —trabajar sobre un fondo
+# que se transparenta cansa— y la profundidad la da solo el apagado de las de
+# detrás.
+#
+# ⚠️ CON LA ACTIVA EN 1, EL BLUR NO SE VE EN ELLA: no hay nada translúcido que
+# desenfocar. El desenfoque de [blur] sigue actuando donde queda transparencia:
+# las ventanas inactivas, la barra y las notificaciones.
 #
 # ⚠️ PANTALLA COMPLETA SE QUEDA OPACA, y no es un descuido: un vídeo o una foto
 # a pantalla completa con el fondo transparentándose detrás se ve mal. HyDE hace
 # lo mismo (`fullscreen_opacity = 1`).
-window_active   = 0.90
+window_active   = 1
 window_inactive = 0.80
 
 
@@ -258,7 +263,7 @@ overlay   = 0.88   # fondo del menú de apagado sobre el escritorio
 # superficie, así que el coste crece con `size × passes`. Tres pasadas es el
 # punto donde el fondo deja de reconocerse; más, no se nota y se paga.
 [blur]
-size       = 4      # radio del desenfoque (Hyprland trae 8 de serie; aquí, la mitad)
+size       = 3      # radio del desenfoque (Hyprland trae 8 de serie)
 passes     = 3      # veces que se repite; el coste va con size × passes
 brightness = 0.80   # < 1 oscurece el fondo -> el texto claro contrasta más
 contrast   = 0.90
