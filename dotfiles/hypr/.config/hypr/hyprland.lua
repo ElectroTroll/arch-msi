@@ -150,6 +150,21 @@ hl.on("hyprland.start", function ()
     -- Igual que theme-apply, se invoca POR NOMBRE: lo enlaza el paquete Stow
     -- `bin` en ~/.local/bin, que está en el PATH de la sesión.
     hl.exec_cmd("vpn-autoconnect")
+
+    -- BAJA EL PANEL A 60 Hz con batería en el perfil power-saver, y lo devuelve
+    -- a 165 Hz en cuanto se enchufa o se cambia de perfil. El panel solo ofrece
+    -- esos dos modos (`hyprctl monitors`: availableModes), y el de arriba —el
+    -- que fija la regla de eDP-1 de este archivo— es el nativo de 165 Hz, que
+    -- con batería se paga en autonomía.
+    --
+    -- El demonio se queda escuchando tres cosas: los uevents de power_supply
+    -- (enchufar/desenchufar), la señal ActiveProfile de power-profiles-daemon
+    -- (cambio de perfil) y el `configreloaded` del socket2 —porque un
+    -- `hyprctl reload`, que es justo con lo que termina `theme-apply`, re-aplica
+    -- la regla de arriba y devolvería el panel a 165 Hz sin avisar—.
+    --
+    -- Igual que los dos anteriores, POR NOMBRE: lo enlaza el paquete Stow `bin`.
+    hl.exec_cmd("panel-hz")
 end)
 
 

@@ -1,7 +1,21 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-09-15 (**escribir Δ y γ sin tenerlas en el teclado**
+Última actualización: 2026-09-16 (**la pantalla a 60 Hz con batería** — §32
+nueva: la pregunta era a qué frecuencia va el panel en power-saver sin enchufar,
+y la respuesta resultó ser **a 165 Hz igual que enchufado**, comprobado con el
+equipo ya en ese perfil: ni el perfil ni nada del escritorio tocaban el modo de
+vídeo. Ahora un demonio de sesión lo baja a 60 Hz con batería **y**
+power-saver, y lo devuelve a 165 en cuanto se enchufa o se cambia de perfil. El
+hallazgo que cambió el diseño: `theme-apply` termina con un `hyprctl reload`,
+que re-aplica la regla de eDP-1 y **deshacía el ahorro en silencio**, así que se
+escucha también `configreloaded` además del enchufe (uevent del kernel, no
+UPower) y del `ActiveProfile` de power-profiles-daemon. Se descarta la regla de
+udev, que correría como root y fuera de la sesión. Queda **sin medir** cuánto
+ahorra —hace falta desenchufar y comparar `power_now`— y sin despejar si la
+autonomía corta en clase tiene más culpables, la dGPU entre ellos (§6).
+Diagnóstico en `history/2026-09-16-panel-60hz-bateria.md`).
+Antes: 2026-09-15 (**escribir Δ y γ sin tenerlas en el teclado**
 — §31 nueva: selector de símbolos en `Super + G`, 96 entradas buscables por
 nombre en castellano. Las otras tres vías se evaluaron con el sistema delante y
 perdieron. La de la tecla Compose por un motivo que conviene tener escrito: el
@@ -1337,6 +1351,19 @@ Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
   que se sabe que `Ctrl+Alt+F3` funciona con Fn Lock, la prueba es fácil de
   hacer la próxima vez que ocurra.
 - Estado de autenticación de Claude Code (no comprobado; no exponer credenciales).
+- **[VER] Cuánto ahorra bajar el panel de 165 Hz a 60 Hz.** El cambio automático
+  ya está en marcha (§32) pero **el ahorro no se ha medido**, porque medirlo
+  exige desenchufar y desde una terminal no se puede. Prueba: desenchufado y con
+  la pantalla quieta, comparar `/sys/class/power_supply/BAT1/power_now` (en µW)
+  entre `power-saver` (60 Hz) y `balanced` (165 Hz), con ~30 s de margen tras
+  cada cambio. Queda igual de abierto si el panel es el principal culpable de la
+  autonomía corta en clase, o si pesa más la dGPU (§6).
+- **[VER] Que el uevent de desconexión de la corriente llegue al demonio de
+  §32.** Toda la cadena se validó con el gancho `PANEL_HZ_SIMULA_BATERIA=1`, que
+  salta la lectura de sysfs; la señal real del kernel al tirar del cable no se ha
+  visto llegar. Si no llegara, el sondeo de respaldo de 60 s lo corrige igual.
+  Prueba: desenchufar en `power-saver` y ver si salta la notificación «Panel a
+  60 Hz» al momento o hasta un minuto después.
 - **[VER] Si algún puerto USB-C saca vídeo por la iGPU.** La Intel expone
   `DP-1`, `DP-2` y `DP-3`, que deberían corresponder a las salidas DisplayPort
   alt-mode de los Type-C, pero **no se ha conectado nada por ahí**. Si
@@ -4279,3 +4306,109 @@ Eso responde de paso la duda de fondo que arrastraba también la vía de Compose
 
 Diagnóstico completo, con las cuatro vías y por qué se descartaron tres:
 `history/2026-09-15-simbolos-griegos.md`.
+
+
+## 32. Frecuencia del panel según la corriente  **[OK]**
+
+El panel interno (AU Optronics 0xD298) es de **165 Hz** y `hyprland.lua` lo fija
+así en la regla de `eDP-1`. Con batería eso se paga en autonomía, y hasta el
+2026-09-16 **no había nada que lo bajara**: el equipo podía estar en
+`power-saver` y desenchufado, y seguía a 165 Hz.
+
+La regla, entera:
+
+| Situación | Frecuencia |
+|---|---|
+| AC enchufado, cualquier perfil | **165 Hz** |
+| Batería + `power-saver` | **60 Hz** |
+| Batería + `balanced` o `performance` | **165 Hz** |
+
+El perfil es el interruptor deliberado: en clase se pone `power-saver` y la
+pantalla acompaña; si hace falta fluidez, se cambia de perfil y vuelve a 165 sin
+enchufar nada.
+
+| Pieza | Dónde |
+|---|---|
+| Script | `scripts/panel-hz.sh` |
+| En el `PATH` | `dotfiles/bin/.local/bin/panel-hz` (symlink, paquete Stow `bin`) |
+| Autoarranque | `hl.exec_cmd("panel-hz")` en `hyprland.start` (`hyprland.lua`) |
+| Depende de | `udevadm`, `dbus-monitor`, `socat`, `jq`, `powerprofilesctl` — todo ya instalado |
+
+El panel **solo ofrece dos modos** (`hyprctl monitors` → `availableModes`):
+`165.04Hz` y `60.04Hz`. No hay nada intermedio que elegir, y `vrr` está en
+`false`, así que tampoco hay refresco adaptativo de por medio.
+
+### Se cambia con `eval`, no con `keyword`
+
+Con configuración Lua, `hyprctl keyword` responde «keyword can't work with
+non-legacy parsers» (§7). Se evalúa la misma llamada que usa el archivo:
+
+```
+hyprctl eval 'hl.monitor({ output = "eDP-1", mode = "2560x1600@60.04", position = "0x0", scale = 1.6 })'
+```
+
+⚠️ La resolución, la posición y la escala se repiten en esa llamada porque
+`hl.monitor()` describe el monitor **entero**, no un delta. Si cambian en la
+regla de `hyprland.lua`, hay que cambiarlas también en el script.
+
+### ⚠️ `theme-apply` deshacía el ahorro en silencio
+
+`scripts/theme-apply.sh` termina con un `hyprctl reload`, y un reload re-aplica
+`hyprland.lua` de arriba abajo: la regla de `eDP-1` vuelve a poner 165 Hz.
+Cambiar el fondo o el tema en mitad de una clase bastaba para perder el ahorro
+**sin que saltara ningún aviso**.
+
+Por eso el demonio escucha tres cosas y no solo el enchufe:
+
+| Fuente | Qué detecta |
+|---|---|
+| `udevadm monitor --udev --subsystem-match=power_supply` | enchufar / desenchufar |
+| `dbus-monitor --system`, `/net/hadess/PowerProfiles` | `ActiveProfile` (cambio de perfil) |
+| socket2 de Hyprland, filtrando `configreloaded` | los `hyprctl reload` |
+
+El enchufe se lee **al kernel y no a UPower**: es la fuente de verdad y no
+depende de que ese demonio esté vivo. Y los eventos del socket2 se filtran en la
+fuente, no en el bucle: si no, cada cambio de ventana despertaría al demonio y
+se gastaría batería vigilando la batería.
+
+Por encima hay un **sondeo de respaldo cada 60 s**, pensado para el caso en que
+una señal se pierda al volver de suspensión: el peor caso deja de ser «se queda
+mal» y pasa a ser «se corrige solo en menos de un minuto».
+
+### Por qué no es una regla de udev
+
+Es la respuesta obvia y aquí es la mala: correría **como root y fuera de la
+sesión gráfica**, y para hablar con Hyprland hacen falta su socket y el entorno
+del usuario; pide tocar `/etc` para algo que no lo necesita; y no cubriría ni el
+cambio de perfil ni el `hyprctl reload`. Tampoco se abre una unidad de systemd,
+por la convención que ya razona `vpn-autoconnect.sh` (§7): el autoarranque de la
+sesión vive en `hyprland.lua`.
+
+### Detalles del script
+
+- **`flock`** en `$XDG_RUNTIME_DIR/panel-hz.lock`: reiniciar solo la sesión
+  gráfica no debe dejar dos demonios peleándose por el modo.
+- **`LC_NUMERIC=C`**, y no por capricho: el locale es `es_ES`, con coma decimal,
+  y `printf '%.0f' 165.04` falla con «número inválido». Los números vienen de
+  `hyprctl` en formato C. Se fija solo esa categoría para que las
+  notificaciones sigan saliendo con acentos.
+- **`PANEL_HZ_SIMULA_BATERIA=1`** finge que no hay corriente. Existe porque
+  desde una terminal no se puede desenchufar el portátil, y sin ese gancho la
+  lógica quedaría sin probar hasta la primera clase.
+- `panel-hz --status` dice qué ve y qué haría; `--once` aplica y sale.
+
+### Estado de validación
+
+Comprobado el 2026-09-16 con el gancho de batería simulada, leyendo
+`refreshRate` en cada paso: arranque en batería + `power-saver` → **60.04300**;
+`balanced` → **165.03999**; vuelta a `power-saver` → **60.04300**; y tras un
+`hyprctl reload` → **60.04300**, que es el caso de `theme-apply`. Además,
+`stow -n` da **un solo `LINK` y cero conflictos**, la segunda instancia sale por
+el cerrojo y al matar el demonio no quedan procesos huérfanos.
+
+**Sin comprobar** quedan dos cosas, las dos exigen desenchufar de verdad: que el
+uevent de desconexión llegue —si no llegara, el sondeo lo corrige en menos de un
+minuto— y **cuánto ahorra**, que se mide comparando
+`/sys/class/power_supply/BAT1/power_now` entre los dos modos. Ver §15.
+
+Diagnóstico completo: `history/2026-09-16-panel-60hz-bateria.md`.
