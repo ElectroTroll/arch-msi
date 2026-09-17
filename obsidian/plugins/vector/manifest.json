@@ -1,0 +1,9 @@
+{
+  "id": "vector",
+  "name": "Vector",
+  "version": "1.0.0",
+  "minAppVersion": "1.8.7",
+  "description": "Comando para escribir vectores en LaTeX, asignado a Ctrl+Alt+V. Sin selección deja $\\vec{}$ con el cursor dentro de las llaves, listo para teclear la letra. Con selección envuelve, y usa \\overrightarrow si son dos o más caracteres.",
+  "author": "elok",
+  "isDesktopOnly": false
+}

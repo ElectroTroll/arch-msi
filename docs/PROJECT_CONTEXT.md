@@ -1,7 +1,25 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-09-17 (**suite ofimática y visor de PDF** — §35
+Última actualización: 2026-09-17 (**la flecha de vector en Obsidian** — §26
+gana un cuarto plugin propio, `vector` (`Ctrl+Alt+V`), y con él el primer caso
+de la familia en el que **la respuesta correcta es LaTeX y no HTML**, al revés
+que los subíndices del día 14: para poner algo *encima* de un carácter **no hay
+etiqueta HTML** que compita, y un vector sí es notación matemática, así que la
+cursiva de MathJax que allí estorbaba aquí es la que se quiere. El Unicode
+combinante (U+20D7) se descarta porque pocas fuentes lo alinean sobre la letra.
+`editor:toggle-inline-math` no valía: abre los `$…$` vacíos y el `\vec{}` de
+dentro hay que teclearlo igual. El comando deja la fórmula entera con **el
+cursor entre las llaves**, y con selección elige la orden según el tamaño —
+`\vec` para un carácter, `\overrightarrow` para dos o más, porque la flecha
+corta se descoloca—. A diferencia del `Super+,` del día 14, el atajo se
+**verificó libre antes de elegirlo** en los dos lados: Hyprland no tiene ningún
+bind con `Ctrl+Alt`, y en el bundle de Obsidian 1.13.7 los únicos `Mod+Alt` de
+fábrica son `←`, `→`, `Enter` y `F`, sin ningún atajo por defecto con la tecla
+V. La lógica se probó con un editor simulado, 8 casos; queda **sin observar la
+pulsación real** de la tecla dentro de una nota. Diagnóstico en
+`history/2026-09-17-obsidian-vector-latex.md`).
+Antes, el mismo día: (**suite ofimática y visor de PDF** — §35
 nueva: el equipo no tenía ninguna suite, y el PDF lo abría Xournal++ **sin que
 nadie lo hubiera elegido** —no había línea en `mimeapps.list`, así que mandaba
 el orden de `mimeinfo.cache`, donde figuraba el primero—. Ahora el PDF es de
@@ -3628,6 +3646,39 @@ estaba activado en `community-plugins.json`, así que no está descartado que
 `Super+,` sirva. Se cambió a `Ctrl+Alt+,`, que sí responde. `Ctrl+,` a secas no
 vale: lo ocupan los ajustes de Obsidian.
 
+### Vector: `Ctrl+Alt+V`
+
+Cuarto plugin propio, **`vector`**, y el primero de la familia que no escribe
+HTML sino **LaTeX**: la flecha sobre la letra es `$\vec{v}$`, que MathJax
+renderiza de serie. El carácter Unicode combinante (U+20D7, `v⃗`) se descartó
+porque pocas fuentes lo alinean sobre la letra.
+
+Obsidian solo ofrece `editor:toggle-inline-math`, que abre los `$…$` vacíos; el
+`\vec{}` de dentro hay que teclearlo igual. El comando escribe la fórmula
+entera y **deja el cursor entre las llaves**, como los índices: atajo → `v` →
+`End`.
+
+Con selección envuelve lo seleccionado, y ahí elige la orden según el tamaño:
+
+| Selección | Sale | Por qué |
+|-----------|------|---------|
+| un carácter | `$\vec{v}$` | la flecha corta se centra sobre una letra |
+| dos o más | `$\overrightarrow{AB}$` | `\vec` se descoloca con dos, y es la notación del segmento orientado |
+
+Alterna igual que sus hermanos, reconociendo las dos órdenes.
+
+`Ctrl+Alt+V` se eligió por la familia de los índices y **verificado libre en los
+dos lados**: Hyprland no tiene ningún bind con `Ctrl+Alt` (todos son `Super +`,
+`XF86` o `Print`), y en el bundle de Obsidian 1.13.7 los únicos `Mod+Alt` de
+fábrica son `←`, `→`, `Enter` y `F` — de hecho **no hay ningún atajo por defecto
+con la tecla V**.
+
+La lógica se validó con un editor simulado (8 casos), no dentro de Obsidian: el
+plugin **carga** —la propia aplicación reescribió `community-plugins.json`
+conservando el `id`—, pero la pulsación real de la tecla en una nota queda
+**sin observar**. Alternativas descartadas y detalle en
+`history/2026-09-17-obsidian-vector-latex.md`.
+
 ### Griegas y símbolos matemáticos: `Super + G`, fuera de Obsidian
 
 El mismo razonamiento de los subíndices lleva a la misma conclusión un escalón
@@ -3646,21 +3697,21 @@ Anotado al contrastarlo contra el bundle de Obsidian: el comando
 declara `hotkeys`— y el `hotkeys.json` del vault está vacío, así que vive solo
 en la paleta de comandos mientras no se le asigne uno.
 
-### Los tres plugins propios: symlink, no Stow
+### Los cuatro plugins propios: symlink, no Stow
 
-`subrayar`, `subindice` y `superindice` son el **único componente del vault que
-sí se versiona**, porque es código propio y son dos archivos pequeños cada uno.
-Viven en `obsidian/plugins/` y llegan al vault por **symlink**, no por Stow: el
-resto de `~/Documentos/Apuntes` está fuera del repositorio, así que no hay
-ningún paquete Stow que pueda cubrirlo.
+`subrayar`, `subindice`, `superindice` y `vector` son el **único componente del
+vault que sí se versiona**, porque es código propio y son dos archivos pequeños
+cada uno. Viven en `obsidian/plugins/` y llegan al vault por **symlink**, no por
+Stow: el resto de `~/Documentos/Apuntes` está fuera del repositorio, así que no
+hay ningún paquete Stow que pueda cubrirlo.
 
 ```
 ~/Documentos/Apuntes/.obsidian/plugins/<id>
   -> ~/Projects/arch-msi/obsidian/plugins/<id>
 ```
 
-Al restaurar hay que rehacer los tres enlaces a mano y añadir los tres `id` a
-`community-plugins.json`.
+Al restaurar hay que rehacer los cuatro enlaces a mano y añadir los cuatro `id`
+a `community-plugins.json`.
 
 ⚠️ **Obsidian no ve un plugin enlazado mientras está abierto.** Escanea la
 carpeta al arrancar, así que un symlink creado después no aparece en la lista de
