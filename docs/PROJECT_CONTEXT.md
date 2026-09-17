@@ -1,7 +1,23 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-09-16, de madrugada (**la estética de HyDE, con
+Última actualización: 2026-09-17 (**suite ofimática y visor de PDF** — §35
+nueva: el equipo no tenía ninguna suite, y el PDF lo abría Xournal++ **sin que
+nadie lo hubiera elegido** —no había línea en `mimeapps.list`, así que mandaba
+el orden de `mimeinfo.cache`, donde figuraba el primero—. Ahora el PDF es de
+Firefox por preferencia explícita. Se instala `libreoffice-fresh` con los
+diccionarios de inglés, castellano y catalán, y la elección de suite la decidió
+el formato: para **`.xls`** —el binario de Excel 97-2003, no `.xlsx`— ONLYOFFICE
+no vale, porque lo abre convirtiendo pero **no escribe en ese formato**. Tres
+trampas del catalán: **`hunspell-ca` no está en los repos** sino en el AUR —solo
+hay `aspell-ca`, que LibreOffice no usa—; **no existe guionado catalán** en
+ningún sitio; y el tesauro `mythes-ca` del AUR **está roto desde 2015**, con el
+PKGBUILD apuntando a una URL de Softcatalà que da 404 porque el proyecto se mudó
+a GitHub. Se resuelve con la extensión `.oxt` oficial instalada con `unopkg` a
+nivel de usuario, que además es **2.3.1 en vez de la 1.5.0** del AUR — pero al
+no controlarla pacman queda como **quinto agujero** de §14. Diagnóstico en
+`history/2026-09-17-libreoffice-y-pdf.md`).
+Antes: 2026-09-16, de madrugada (**la estética de HyDE, con
 nuestros colores** — §34 nueva: se adopta el aspecto de
 github.com/Hyde-project/hyde —iconos, tamaños, distribución, transparencias—
 manteniendo la paleta de este repositorio. Los iconos no se eligen sino que se
@@ -1371,9 +1387,9 @@ Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
   aplicado**: es decisión del usuario, y validarla exige una tanda larga de
   reinicios (tasa de fallo observada ≈ 1 de cada 6).
 - **Estado que vive fuera del repositorio y que una restauración NO recupera.**
-  **Cuatro** agujeros con el mismo final: el fallo es **silencioso**, nada avisa
+  **Cinco** agujeros con el mismo final: el fallo es **silencioso**, nada avisa
   de que falta el paso. En los dos primeros los archivos vuelven a su sitio pero
-  nada los activa; en los dos últimos el archivo ni siquiera vuelve.
+  nada los activa; en los tres últimos el archivo ni siquiera vuelve.
   (Eran cinco: `spotify-flags.conf` se cerró el 2026-09-16, roadmap 3.6.)
   - `hypridle.service`: el `enable` solo deja rastro en
     `packages/services-enabled.txt`. Sin rehabilitarlo, la sesión no se
@@ -1391,6 +1407,13 @@ Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
     en `/usr` pidiendo sudo y la ruta que documenta §10 dejaría de ser cierta,
     sin un solo aviso. Mismo patrón y misma solución que `spotify-flags.conf`:
     un paquete Stow, no `install/services.sh` (roadmap 3.7).
+  - **El tesauro catalán de LibreOffice** (§35): es una extensión `.oxt`
+    instalada con `unopkg`, no un paquete, así que **no aparece en
+    `packages/`** por mucho que se regeneren los inventarios. Tras una
+    restauración el corrector catalán volvería —ese sí es `hunspell-ca`— pero
+    los sinónimos no, y nada lo avisaría. Detectado el 2026-09-17. No sirve un
+    paquete Stow: hay que volver a descargar el `.oxt` y ejecutar `unopkg add`,
+    así que encaja en `install/` (roadmap 3.9).
   Decidir cómo cubrirlos: encaja con `install/services.sh` de la fase 6 (ver
   roadmap 6.1, marcado como requisito bloqueante).
 
@@ -1402,6 +1425,10 @@ Las tareas de la fase inicial están completadas. Posibles siguientes pasos:
   que se sabe que `Ctrl+Alt+F3` funciona con Fn Lock, la prueba es fácil de
   hacer la próxima vez que ocurra.
 - Estado de autenticación de Claude Code (no comprobado; no exponer credenciales).
+- **Los diccionarios de LibreOffice dentro de la interfaz** (§35). Están
+  verificados en disco y con `unopkg list`, pero falta abrir Writer y confirmar
+  que los tres idiomas salen en *Herramientas → Idioma* y que `Ctrl+F7` da
+  sinónimos sobre una palabra en catalán. Requiere sesión gráfica.
 - **[VER] El rayado de filas de Dolphin no se puede quitar por configuración.**
   Dolphin pinta el fondo de las filas alternas con un tono que **no expone en
   ninguna clave**, y lo hace pase lo que pase. Descartado el 2026-09-16 con
@@ -4974,3 +5001,101 @@ Todo lo de esta sección se comprobó **midiendo píxeles de capturas reales**
 
 Diagnóstico completo, con los callejones sin salida: `history/2026-09-16-estetica-hyde.md`.
 
+
+
+## 35. Suite ofimática y visor de PDF  **[OK]**
+
+Instalado el 2026-09-17. Hasta entonces el equipo **no tenía ninguna suite
+ofimática**, y el visor de PDF era Xournal++ sin que nadie lo hubiera elegido.
+
+### El PDF lo abre Firefox, y antes no lo decidía nadie
+
+`~/.config/mimeapps.list` **no tenía línea para `application/pdf`**. Sin
+preferencia explícita manda `/usr/share/applications/mimeinfo.cache`, y ahí
+Xournal++ figuraba el primero de la lista: se instaló para anotar con el lápiz
+(§26) y de paso se quedó con la lectura. Corregido con
+
+```
+xdg-mime default firefox.desktop application/pdf
+```
+
+Xournal++ sigue registrado y disponible en «Abrir con».
+
+> ⚠️ Al instalar LibreOffice, `libreoffice-draw.desktop` **también** se registró
+> para `application/pdf`. Mientras la preferencia explícita esté puesta no
+> importa; si se pierde `mimeapps.list`, el visor vuelve a elegirse solo entre
+> tres candidatos.
+
+### LibreOffice, y por qué no ONLYOFFICE
+
+`libreoffice-fresh` 26.8.0-2 (423 MiB en disco). La elección se decidió al
+concretarse el formato: **`.xls`**, el binario antiguo de Excel (97-2003,
+BIFF8). LibreOffice Calc lo lee **y lo guarda**; ONLYOFFICE lo abre convirtiendo
+pero **no escribe en ese formato** —devuelve `.xlsx` u `.ods`—, así que no sirve
+para devolver un archivo en el formato en que llegó. Se descartaron también WPS
+(propietario) y Calligra (poco mantenido).
+
+Las asociaciones las registran los `.desktop` del paquete, no hubo que tocarlas:
+
+| Tipo | Aplicación |
+|---|---|
+| `.xls`, `.xlsx`, `.ods` | `libreoffice-calc.desktop` |
+| `.doc`, `.docx`, `.odt` | `libreoffice-writer.desktop` |
+| `.pdf` | `firefox.desktop` (explícito, ver arriba) |
+
+### Diccionarios: inglés, castellano y catalán
+
+| | Castellano | Catalán | Inglés |
+|---|---|---|---|
+| Interfaz | `libreoffice-fresh-es` | `libreoffice-fresh-ca` | de serie |
+| Ortografía | `hunspell-es_es` | `hunspell-ca` **(AUR)** | `hunspell-en_us`, `hunspell-en_gb` |
+| Sinónimos | `mythes-es` | extensión `.oxt` (abajo) | `mythes-en` |
+| Guionado | `hyphen-es` | **no existe** | `hyphen-en` |
+
+> ⚠️ **`hunspell-ca` no está en los repos oficiales.** Solo hay `aspell-ca`, y
+> LibreOffice corrige con hunspell, no con aspell. Viene del AUR (3.0.9-1, 27
+> votos) y trae `ca_ES`, `ca_ES-valencia`, `ca_AD`, `ca_FR` y `ca_IT`.
+
+No existe paquete de guionado catalán en ningún sitio. Es una carencia asumida.
+
+### ⚠️ El tesauro catalán es una extensión, no un paquete
+
+`mythes-ca` del AUR **está roto**: su PKGBUILD descarga de una ruta de
+`softcatala.org` que hoy da **404**, porque el proyecto se mudó a GitHub. El
+paquete no se toca desde **junio de 2015** (versión 1.5.0); está abandonado.
+
+> ⚠️ El langpack `libreoffice-fresh-ca` **no** trae los sinónimos, aunque la web
+> de Softcatalà diga que vienen con «el LibreOffice en català»: eso vale para la
+> compilación de Softcatalà, no para la de Arch. Comprobado con `pacman -Ql` y
+> buscando `th_ca*` en todo el sistema.
+
+Se instaló en su lugar el `.oxt` oficial vigente, **como usuario y sin AUR**:
+
+| | |
+|---|---|
+| Origen | `github.com/Softcatala/sinonims-cat/releases/download/2.3.1/thesaurus-ca.oxt` |
+| Versión | **2.3.1** (frente a la 1.5.0 del AUR) |
+| Licencia | CC-BY 4.0 — Jaume Ortolà / Softcatalà |
+| Instalación | `unopkg add thesaurus-ca.oxt` |
+| Identificador | `catalan.thesaurus.dictionary.from.Softcatalà.by.Joan.Montané` |
+| Datos | `~/.config/libreoffice/4/user/` |
+| Desinstalar | `unopkg remove <identificador>` |
+
+> ⚠️ **`unopkg add` exige un stdin interactivo.** Pide aceptar la licencia
+> escribiendo «sí» y, sin terminal, muere con `reading from stdin failed`. En
+> esta versión **no existe** ningún `--suppress-license`: hay que darle la
+> respuesta por tubería.
+
+**Esta extensión no la controla pacman y no sale en `packages/`.** Es el quinto
+agujero de reproducibilidad de §14.
+
+### Estado de validación
+
+- `pacman -Q` confirma los once paquetes instalados.
+- `xdg-mime query default` y `gio mime`, de acuerdo: PDF → `firefox.desktop`.
+- Las seis asociaciones ofimáticas, consultadas una a una (tabla de arriba).
+- `unopkg list` devuelve la extensión 2.3.1; los `.dat`/`.idx` están en disco.
+
+**Sin comprobar**: que los tres idiomas aparezcan en *Herramientas → Idioma* de
+Writer y que `Ctrl+F7` dé sinónimos sobre una palabra catalana. Exige abrir la
+interfaz gráfica. Ver §15.

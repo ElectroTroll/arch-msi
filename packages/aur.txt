@@ -6,6 +6,7 @@
 anydesk-bin
 bibata-cursor-theme-bin
 claude-desktop
+hunspell-ca
 minecraft-launcher
 multimc-bin
 paru

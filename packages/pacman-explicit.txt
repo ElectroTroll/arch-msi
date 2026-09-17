@@ -43,6 +43,12 @@ grub
 grub-btrfs
 gvfs
 gvfs-mtp
+hunspell-ca
+hunspell-en_gb
+hunspell-en_us
+hunspell-es_es
+hyphen-en
+hyphen-es
 hypridle
 hyprland
 hyprlock
@@ -60,6 +66,9 @@ kitty
 kvantum
 lazygit
 less
+libreoffice-fresh
+libreoffice-fresh-ca
+libreoffice-fresh-es
 linux
 linux-firmware
 linux-headers
@@ -74,6 +83,8 @@ minecraft-launcher
 minizip
 mpv
 multimc-bin
+mythes-en
+mythes-es
 nano
 network-manager-applet
 networkmanager
@@ -107,7 +118,6 @@ proton-vpn-gtk-app
 python-gobject
 python-pyserial
 qt5-wayland
-qt6ct
 reflector
 ripgrep
 rofi

@@ -168,6 +168,7 @@ validado.
 | 3.6 | ~~**Spotify** — versionar `spotify-flags.conf` como paquete Stow~~ **[OK] Completada** | Trivial | Nulo |
 | 3.7 | **npm** — versionar `~/.npmrc` como paquete Stow | Trivial | Nulo |
 | 3.8 | ~~**fastfetch** — config propia dentro del tema~~ **[OK] Completada** | Bajo | Nulo |
+| 3.9 | **Asociaciones de archivo y extensión de LibreOffice** — versionar `mimeapps.list` y reponer el `.oxt` catalán | Bajo | Nulo |
 
 **3.0 Tema centralizado.** **[OK] Completada (2026-08-27/28).** Es la tarea que
 hizo falta ANTES que las demás de esta fase: cada componente definía sus colores
@@ -445,6 +446,21 @@ sitúa a Codex CLI en `~/.local/lib/node_modules` (`PROJECT_CONTEXT.md` §10). N
 está versionado: es el mismo agujero silencioso que la 3.6 —el archivo no vuelve
 tras una restauración y nada lo avisa— y se cierra igual, con un paquete Stow
 (`dotfiles/npm/`). Añadida a la lista de §14.
+
+**3.9 Asociaciones de archivo y tesauro catalán.** Detectada el 2026-09-17 al
+instalar LibreOffice (`PROJECT_CONTEXT.md` §35). Son **dos piezas con soluciones
+distintas**, y por eso van juntas:
+
+- **`~/.config/mimeapps.list`** sí encaja en un paquete Stow (`dotfiles/mime/`),
+  como la 3.6 y la 3.7. Guarda el PDF → Firefox y los dos esquemas de Claude.
+  Sin él, el visor de PDF vuelve a decidirse por el orden de `mimeinfo.cache`,
+  donde ahora hay **tres** candidatos: Xournal++, Firefox y LibreOffice Draw.
+- **El tesauro catalán NO.** Es una extensión `.oxt` instalada con `unopkg`, no
+  un archivo que baste con enlazar: hay que volver a descargarla de la release
+  de Softcatalà en GitHub y ejecutar `unopkg add`, aceptando la licencia por
+  tubería porque el comando exige stdin interactivo. Eso es un script de
+  `install/`, no Stow. Y no vale volver al AUR: `mythes-ca` lleva roto desde
+  2015.
 
 ---
 
