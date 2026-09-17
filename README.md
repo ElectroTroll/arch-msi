@@ -71,6 +71,7 @@ arch-msi/
 │   ├── roadmap.md
 │   ├── hardware.md
 │   ├── keybindings.md
+│   ├── obsidian-latex-suite.md   # abreviaturas LaTeX en Obsidian (§26)
 │   └── history/       # cronología: incidentes y trampas, un archivo por episodio
 ├── dotfiles/          # paquetes GNU Stow, uno por componente
 │   ├── bin/        claude/     dolphin/    dunst/

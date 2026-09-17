@@ -3509,9 +3509,9 @@ Historia y diagnóstico completo: `history/2026-09-09-teamviewer-ipad.md`.
 
 ## 26. Apuntes con teclado y lápiz (Obsidian)  **[OK]**
 
-`extra/obsidian 1.13.7-2` (sobre `electron43`) con dos plugins de comunidad:
-**Ink 0.5.6** y **Excalidraw 2.27.3**. Más `extra/xournalpp 1.3.7-1` como
-herramienta aparte para PDF y página fija.
+`extra/obsidian 1.13.7-2` (sobre `electron43`) con tres plugins de comunidad:
+**Ink 0.5.6**, **Excalidraw 2.27.3** y **Latex Suite 1.13.1**. Más
+`extra/xournalpp 1.3.7-1` como herramienta aparte para PDF y página fija.
 
 **Para qué está**: tomar apuntes escribiendo con el teclado y **dibujar con el
 lápiz dentro del mismo documento**, sin cambiar de aplicación. Ink es el que da
@@ -3697,6 +3697,36 @@ Anotado al contrastarlo contra el bundle de Obsidian: el comando
 declara `hotkeys`— y el `hotkeys.json` del vault está vacío, así que vive solo
 en la paleta de comandos mientras no se le asigne uno.
 
+### Fórmulas por abreviatura: Latex Suite  **[PENDIENTE DE ACTIVAR]**
+
+Instalado el 2026-09-17. Convierte texto corto en LaTeX largo **solo dentro de
+`$…$`**: `dm` abre el bloque, `//` monta una fracción, `nabl` da `\nabla`, `pafx`
++ Tab da `\frac{ \partial f }{ \partial x }`, `@a` da `\alpha`.
+
+Es el punto donde el patrón de los plugins propios deja de servir: uno resuelve
+**una** sintaxis con **una** tecla, y eso no escala a fórmulas enteras.
+
+**Catálogo completo en `obsidian-latex-suite.md`** — 165 abreviaturas
+literales más las reglas con patrón, extraídas del `main.js` instalado, no de la
+documentación del proyecto.
+
+- **No pisa nada**: registra seis comandos y **ninguno declara atajo por
+  defecto**, así que `Ctrl+Alt+,`, `Ctrl+Alt+.` y `Ctrl+Alt+V` siguen libres.
+- **No se mete en la prosa**: las cuatro reglas que actuarían sobre texto normal
+  —entre ellas convertir `gamma` en `$\gamma$`— vienen **comentadas de fábrica**.
+  Por eso no choca con el `Super + G` de §31, que sigue siendo la vía para un
+  símbolo suelto fuera de una fórmula.
+- ⚠️ **Conceal viene apagado** (`concealEnabled: false`). Es lo que enseña `α` y
+  las fracciones montadas mientras escribes; sin él se escribe rápido pero
+  viendo el código.
+- ⚠️ **Es código de terceros y NO se versiona**: vive solo en el vault. Al
+  restaurar hay que volver a bajar la release de
+  `artisticat1/obsidian-latex-suite` a `.obsidian/plugins/obsidian-latex-suite/`.
+
+**Sin verificar**: que el plugin cargue y que las abreviaturas disparen. Se
+copió con Obsidian abierto, así que la aplicación aún no había escaneado la
+carpeta. Investigación: `history/2026-09-17-latex-suite.md`.
+
 ### Los cuatro plugins propios: symlink, no Stow
 
 `subrayar`, `subindice`, `superindice` y `vector` son el **único componente del
@@ -3711,7 +3741,8 @@ hay ningún paquete Stow que pueda cubrirlo.
 ```
 
 Al restaurar hay que rehacer los cuatro enlaces a mano y añadir los cuatro `id`
-a `community-plugins.json`.
+a `community-plugins.json` —además de volver a descargar los de terceros: Ink,
+Excalidraw y Latex Suite.
 
 ⚠️ **Obsidian no ve un plugin enlazado mientras está abierto.** Escanea la
 carpeta al arrancar, así que un symlink creado después no aparece en la lista de
