@@ -35,13 +35,25 @@ fastfetch() {
 
 
 # --- Editor ------------------------------------------------------------------
-# ARREGLA UN FALLO REAL, no es una preferencia. `EDITOR` estaba sin definir, y
-# el opener de texto de yazi es `${EDITOR:-vi} %s`: caía a `vi`, que en este
-# equipo NO EXISTE —comprobado, ningún paquete lo provee; solo está `vim`—, así
+# DEFINIR ESTA VARIABLE ARREGLA UN FALLO REAL, no es una preferencia. `EDITOR`
+# estaba sin definir, y el opener de texto de yazi es `${EDITOR:-vi} %s`: caía a
+# `vi`, que en este equipo NO EXISTE —comprobado, ningún paquete lo provee—, así
 # que abrir un archivo de texto desde yazi fallaba. Definirlo aquí lo arregla de
 # raíz y de paso sirve a git, `systemctl edit` y cualquier otro programa que
 # respete la variable.
-export EDITOR=vim
+#
+# QUÉ EDITOR es lo único que cambió el 2026-09-18: `vim` -> `nvim`, al migrar a
+# Neovim (config en dotfiles/nvim/, LSP de C++ con clangd).
+#
+# ⚠️ `vim` SIGUE INSTALADO Y NO SE TOCA, a propósito. Es la red de seguridad: si
+# Neovim fallara, yazi, git y `systemctl edit` se quedan sin editor a la vez, y
+# la vuelta atrás es cambiar esta línea y nada más. Tampoco hay `alias vim=nvim`,
+# también a propósito: `vim` invoca a Vim y `nvim` a Neovim, sin ambigüedad.
+#
+# ⚠️ Neovim TAMPOCO provee `vi` ni `vim` (comprobado: `pacman -Fl neovim` solo
+# lista /usr/bin/nvim), así que la razón original de arriba sigue vigente tal
+# cual.
+export EDITOR=nvim
 
 
 # --- yazi --------------------------------------------------------------------

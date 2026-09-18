@@ -19,7 +19,7 @@ RTX 4060 (híbrido) · 16 GB LPDDR5 · NVMe 1 TB · Wi-Fi 7. Detalle completo en
 
 En construcción. La documentación de base ya refleja una auditoría no
 destructiva completa del sistema real (2026-07-22). La migración de dotfiles a
-Stow **está en curso**: son 17 los paquetes ya migrados y validados. Ver el
+Stow **está en curso**: son 18 los paquetes ya migrados y validados. Ver el
 estado detallado en [`docs/PROJECT_CONTEXT.md`](docs/PROJECT_CONTEXT.md).
 
 ## ⚠️ Advertencia de dual boot
@@ -44,7 +44,7 @@ y [`AGENTS.md`](AGENTS.md).
 |---------------|-----------------------------------------------------|
 | Documentación | `docs/` — contexto, hardware, cronología            |
 | Inventarios   | `packages/` — pacman, AUR, npm, servicios           |
-| Dotfiles      | `dotfiles/` — 17 paquetes Stow desplegados          |
+| Dotfiles      | `dotfiles/` — 18 paquetes Stow desplegados          |
 | Scripts       | `scripts/` — mantenimiento y utilidades de sesión   |
 | Sistema       | `system/` — fuera de `$HOME` (SDDM, perfil UCM)     |
 | Obsidian      | `obsidian/` — 3 plugins propios, enlazados al vault |
@@ -76,8 +76,9 @@ arch-msi/
 ├── dotfiles/          # paquetes GNU Stow, uno por componente
 │   ├── bin/        claude/     dolphin/    dunst/
 │   ├── hypr/       icons/      kitty/      matugen/
-│   ├── minecraft/  rofi/       shell/      spotify/
-│   ├── swappy/     waybar/     wlogout/    yazi/
+│   ├── minecraft/  nvim/       rofi/       shell/
+│   ├── spotify/    swappy/     waybar/     wlogout/
+│   ├── yazi/
 │   └── wallpapers/    # -> ~/Wallpapers (imágenes de fondo, ver PROJECT_CONTEXT §17)
 ├── packages/
 │   ├── pacman-explicit.txt

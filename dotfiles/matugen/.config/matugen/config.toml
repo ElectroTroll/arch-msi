@@ -119,6 +119,27 @@ output_path = "~/.config/rofi/theme.rasi"
 input_path  = "~/.config/matugen/templates/yazi-theme.toml"
 output_path = "~/.config/yazi/theme.toml"
 
+# Neovim: conserva su `init.lua` enlazado por Stow y carga este artefacto con
+# `dofile`, igual que Hyprland con su theme.lua. Sigue el patrón de
+# dunst/kitty/hyprlock —config versionada + fragmento de tema generado— y no el
+# de Waybar, porque en init.lua sí hay comportamiento que separar del color.
+#
+# ⚠️ El artefacto se llama `theme.lua` y ese nombre NO existe en el repositorio
+# (el paquete Stow `nvim` solo trae `init.lua`), que es lo que mantiene la regla
+# de oro. Y hay una segunda red: ~/.config/nvim se enlazó con `--no-folding`, o
+# sea que es un directorio REAL. Con un `stow nvim` normal sería un enlace al
+# repositorio y este archivo acabaría versionado —el fallo de wlogout del
+# 2026-08-28—. Si algún día `git status` muestra un theme.lua sin seguimiento
+# dentro de dotfiles/nvim/, es que alguien volvió a plegar el paquete.
+#
+# ⚠️ NO hay recarga en theme-apply para Neovim, y es a propósito: init.lua lee
+# este archivo AL ARRANCAR. Las instancias ya abiertas conservan los colores
+# viejos hasta que se reinician, que para un editor es comportamiento aceptable
+# —a diferencia de la barra, que debe cuadrar con el fondo al instante—.
+[templates.nvim]
+input_path  = "~/.config/matugen/templates/nvim-theme.lua"
+output_path = "~/.config/nvim/theme.lua"
+
 # ZapZap (WhatsApp Web). La salida va a los datos de la APLICACIÓN, no a
 # ~/.config: ZapZap lee de ahí los CSS de «personalización avanzada» y los
 # inyecta en la página. No es ruta de Stow, así que la regla de oro se cumple.

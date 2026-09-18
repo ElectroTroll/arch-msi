@@ -1,7 +1,31 @@
 # PROJECT_CONTEXT
 
 Estado técnico vigente del sistema `arch-msi`. Fuente de verdad detallada.
-Última actualización: 2026-09-17 (**la flecha de vector en Obsidian** — §26
+Última actualización: 2026-09-18 (**de Vim a Neovim** — §36 nueva: `EDITOR`
+pasa de `vim` a `nvim`, y la razón no es estética sino el **completado de C++**.
+Mientras el editor solo era de paso —el opener de yazi, `git commit`,
+`systemctl edit`— migrar no ganaba nada: no había ni `~/.vimrc`, así que los dos
+programas eran el mismo. Con LSP de por medio sí gana Neovim, porque **el
+cliente es parte del núcleo** y en Vim arrastra Node.js. Dos hallazgos previos
+que acortaron la tarea: **`clangd` ya estaba instalado** (lo trae `clang`, §21) y
+**0.12 trae completado automático nativo**, comprobado con `--headless` antes de
+escribir configuración, así que el paquete va **sin plugins, sin lockfile y sin
+descargas**. `vim` **sigue instalado y sin alias**, a propósito: `EDITOR` toca
+yazi, git y `systemctl edit` a la vez, y la vuelta atrás es una línea. El
+paquete Stow va con **`--no-folding`** o el `theme.lua` de matugen acabaría
+dentro del repositorio —el fallo de wlogout del 08-28—. Dos correcciones
+medidas: el fondo va en `NONE` porque kitty solo hace translúcidas las celdas
+con fondo por defecto, y los comentarios se cambiaron del ANSI *bright black*
+(**2.08:1**, ilegible) a `outline_variant` (**3.97:1**). Validado en headless:
+clangd engancha y da **41 candidatos** para un `std::vector<int>`, entre ellos
+`append_range`, que es de C++23 y prueba que los flags llegaron. Queda **sin
+observar el popup** en sesión interactiva, y sin Tree-sitter para C++, que
+Neovim no incluye. **§21 crece** con `cmake` y `bear`, que son lo que genera el
+`compile_commands.json` sin el cual clangd adivina los flags: las dos vías
+quedan comprobadas, y con la de CMake el editor completa miembros de una
+cabecera **del propio proyecto** sin errores falsos. Diagnóstico en
+`history/2026-09-18-neovim.md`).
+Antes: 2026-09-17 (**la flecha de vector en Obsidian** — §26
 gana un cuarto plugin propio, `vector` (`Ctrl+Alt+V`), y con él el primer caso
 de la familia en el que **la respuesta correcta es LaTeX y no HTML**, al revés
 que los subíndices del día 14: para poner algo *encima* de un carácter **no hay
@@ -2906,14 +2930,49 @@ hallazgo en lugar de fabricar una instalación.
 | `g++` / `gcc` | 16.2.1 20260810 (`gcc 16.2.1+r23+gd564253eb6c8-1`) | `/usr/bin/g++`, `/usr/bin/gcc` | **dependencia**, no explícito |
 | `binutils`, `make`, `pkgconf` | — | `/usr/bin` | dependencia |
 | `gdb` | 17.2-1 | `/usr/bin/gdb` | dependencia |
-| `clang` | 22.1.8-1 | `/usr/bin/clang` | dependencia |
+| `clang` | 22.1.8-1 | `/usr/bin/clang`, **`/usr/bin/clangd`** | dependencia |
+| `cmake` | 4.4.3-2 | `/usr/bin/cmake` | **explícito**, 2026-09-18 (§36) |
+| `bear` | 4.2.2-1 | `/usr/bin/bear` | **explícito**, 2026-09-18 (§36) |
 
 Target: `x86_64-pc-linux-gnu`. `gcc` se instaló el **2026-08-24**, en la
 actualización completa posterior al incidente de arranque (§3).
 
-**No instalados:** `cmake`, `ninja`, `valgrind`, `ccache`, `lldb`. Si alguno
-hace falta, entra por su propia tarea y **sí** debe quedar explícito en
+**No instalados:** `ninja`, `valgrind`, `ccache`, `lldb`. Si alguno hace falta,
+entra por su propia tarea y **sí** debe quedar explícito en
 `packages/pacman-explicit.txt`.
+
+`cmake` y `bear` **entraron el 2026-09-18** por esa vía, con la migración a
+Neovim (§36): los dos generan el `compile_commands.json` que `clangd` necesita
+para no adivinar los flags. Comprobado que quedan como `Explicitly installed` y
+que aparecen en `pacman -Qqe`, o sea que el inventario los recupera.
+
+**Sin `ninja`, CMake usa el generador Make** por defecto. No es un problema —el
+`compile_commands.json` sale igual, comprobado— pero conviene saberlo antes de
+copiar de internet un `cmake -G Ninja` que aquí fallaría.
+
+### El `compile_commands.json`, comprobado por las dos vías
+
+`clangd` sin él adivina los flags y marca errores falsos en cuanto se usan
+cabeceras propias. Las dos formas de generarlo, validadas el 2026-09-18 con
+proyectos de prueba fuera del repositorio:
+
+| Vía | Comando | Resultado |
+|---|---|---|
+| CMake | `cmake -S . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON` | 1 entrada, `-std=gnu++23`, el `target_include_directories` incluido |
+| Make | `bear -- make` | 1 entrada, `-std=c++23`, `-Iinclude` incluido |
+
+⚠️ **CMake lo deja dentro de `build/`**, no en la raíz, y `clangd` lo busca
+arriba. Hace falta un enlace (`ln -s build/compile_commands.json .`) o poner
+`CMAKE_EXPORT_COMPILE_COMMANDS` en un preset. `bear` sí lo deja en la raíz.
+
+Con el de CMake, Neovim completó `p.` —siendo `Punto` un tipo declarado en una
+cabecera **del propio proyecto**— con `norma`, `x` e `y`, y **cero errores
+falsos**. Es decir: se validó que la cadena entera funciona, no solo que el
+binario existe.
+
+⚠️ Ojo al `-std=gnu++23` que sale por la vía CMake: es lo que pone
+`CMAKE_CXX_STANDARD 23` sin `CXX_EXTENSIONS OFF`. Coherente con lo que ya dice
+esta sección sobre los defectos de GCC, y una razón más para ser explícito.
 
 ### ⚠️ `gcc` no aparece en el inventario, y aun así la restauración lo recupera
 
@@ -5181,3 +5240,126 @@ agujero de reproducibilidad de §14.
 **Sin comprobar**: que los tres idiomas aparezcan en *Herramientas → Idioma* de
 Writer y que `Ctrl+F7` dé sinónimos sobre una palabra catalana. Exige abrir la
 interfaz gráfica. Ver §15.
+
+---
+
+## 36. Neovim como editor, con LSP de C++  **[OK]**
+
+**Fecha:** 2026-09-18. Sustituye a `vim` como valor de `EDITOR`; **`vim` sigue
+instalado y no se toca**.
+
+### Por qué, y por qué no antes
+
+La pregunta de partida no era «¿vim o neovim?» sino **«¿hace falta un editor
+modal configurado?»**. Mientras el editor solo servía de paso —el opener de
+yazi, `git commit`, `systemctl edit`— la respuesta era no: sin configuración,
+los dos son el mismo programa. Lo que inclinó la balanza fue querer
+**autocompletado de C++**, y ahí Neovim gana por una razón concreta: el cliente
+LSP es parte del núcleo, mientras que en Vim depende de un plugin que arrastra
+Node.js.
+
+| Componente | Versión | Estado |
+|------------|---------|--------|
+| `neovim` | 0.12.5-1 (`extra`) | instalado el 2026-09-18, **explícito** |
+| `clangd` | 22.1.8 | **ya estaba**: lo trae el paquete `clang` (§21) |
+| `vim` | — | intacto, como red de seguridad |
+
+### Sin plugins, y es una decisión
+
+Neovim 0.12 trae cliente LSP y completado automático nativos. Comprobado en este
+equipo antes de escribir una línea de configuración:
+
+```
+vim.lsp.config              SI      vim.lsp.completion.enable   SI
+vim.lsp.enable              SI      parser Tree-sitter de C     SI
+vim.diagnostic.config       SI      parser Tree-sitter de C++   NO
+```
+
+Con eso, `dotfiles/nvim/.config/nvim/init.lua` cubre C++ entero **sin gestor de
+plugins, sin lockfile y sin descargas de red**. Un gestor entrará cuando haga
+falta algo que el núcleo no dé —`blink.cmp` para mejor ordenación de candidatos,
+o Tree-sitter para C++, que es el único hueco medido—, no antes.
+
+**El resaltado de C++ no usa Tree-sitter**, porque Neovim no incluye ese parser
+(sí el de C). Usa el archivo de sintaxis clásico, que funciona. No es un fallo
+pendiente: es el precio conocido de no meter plugins.
+
+Tampoco se redefinen atajos que ya existen: 0.12 trae de serie `grn` (rename),
+`gra` (code action), `grr` (referencias), `gri`, `grt`, `gO` y `<C-S>`. La
+configuración solo añade `gd`, `gD`, `<leader>e` y `<leader>f`.
+
+### ⚠️ El paquete Stow va con `--no-folding`
+
+```bash
+stow --no-folding -d dotfiles -t ~ nvim
+```
+
+Con un `stow nvim` normal, `~/.config/nvim` sería **un enlace al directorio del
+repositorio**, y el `theme.lua` que escribe matugen caería dentro del repo. Es
+literalmente el fallo que tuvo wlogout el 2026-08-28 (§17). Con `--no-folding`,
+`~/.config/nvim` es un directorio **real** y solo `init.lua` es enlace.
+
+La comprobación de que se cumple: tras `theme-apply`, `git status` no muestra
+nada sin seguimiento dentro de `dotfiles/nvim/` salvo el propio `init.lua`.
+
+### El tema, por matugen
+
+Mismo patrón que Hyprland: la plantilla
+`dotfiles/matugen/.config/matugen/templates/nvim-theme.lua` genera
+`~/.config/nvim/theme.lua`, que `init.lua` carga con `pcall(dofile, ...)`. El
+`pcall` no sobra: en una restauración con Stow hecho pero `theme-apply` aún sin
+correr, el artefacto no existe, y sin él Neovim mostraría un error en cada
+`git commit`. Cae a `habamax` y sigue.
+
+**La plantilla solo trae colores; qué grupo usa cada color vive en `init.lua`**,
+que es lo versionado. Mismo reparto que Hyprland: valores en el artefacto, uso
+en la config.
+
+Dos decisiones que no son cosméticas:
+
+- **`Normal` va con fondo `NONE`**, no con el color de superficie. kitty corre
+  con `background_opacity 0.8` y esa transparencia solo se aplica a las celdas
+  con fondo **por defecto**: una celda con color explícito se dibuja opaca. Con
+  el color puesto, Neovim sería un rectángulo opaco dentro de una terminal
+  translúcida.
+- **Los comentarios no usan el ANSI *bright black***, aunque el resto de la
+  sintaxis sí salga de los ANSI del proyecto. Medido contra el fondo real
+  (`#0c141b`): bright black da **2.08:1**, por debajo de legible. Se usa
+  `outline_variant`, **3.97:1**. Un comentario debe ceder frente al código, no
+  desaparecer.
+
+Contrastes del resto, medidos el 2026-09-18: texto normal 16.99:1, palabras
+clave 8.12:1, tipos 10.82:1, cadenas 10.15:1, errores 7.01:1, avisos 9.28:1.
+
+**No hay recarga de Neovim en `theme-apply`, a propósito.** `init.lua` lee el
+tema al arrancar; las instancias abiertas conservan los colores viejos hasta que
+se reinician. Para un editor es aceptable —a diferencia de la barra, que debe
+cuadrar con el fondo al instante—.
+
+### `clangd` necesita saber cómo se compila el proyecto
+
+Sin `compile_commands.json` (lo genera CMake con
+`-DCMAKE_EXPORT_COMPILE_COMMANDS=ON`, o `bear -- make`) o un `compile_flags.txt`
+en la raíz, `clangd` **adivina los flags** y marca errores falsos en cuanto se
+usen cabeceras propias. No es opcional en un proyecto real. Enlaza con §21: los
+defectos de `g++` ya no son los que supone la documentación de terceros, así que
+un `-std=` explícito en ese archivo evita la sorpresa.
+
+### Validación observada
+
+Con un proyecto de prueba fuera del repositorio (`compile_flags.txt` con
+`-std=c++23`), en modo `--headless`, o sea sin depender de mirar la pantalla:
+
+| Comprobación | Resultado |
+|---|---|
+| Cliente enganchado | `clangd` |
+| Raíz detectada | la del proyecto, por `compile_flags.txt` |
+| Candidatos para `v.` con `v` un `std::vector<int>` | **41** |
+| Entre ellos | `append_range`, `assign_range` — **son de C++23**, o sea que el `-std` del archivo llegó al servidor |
+| Diagnósticos ante un error introducido a propósito | 2, con mensaje de clangd |
+| `Normal.bg` tras el tema | `NONE` (transparencia conservada) |
+| `Comment.fg` | `#6d757e`, el corregido |
+
+**Sin comprobar**: que el menú de completado aparezca solo al teclear en una
+sesión interactiva. La capacidad está activada y el servidor responde, pero el
+popup exige una terminal de verdad. Ver §15.
